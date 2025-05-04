@@ -11,7 +11,8 @@ npx expo start
 
 # 설치
 npm install
-npx expo install expo-router react-native-safe-area-context react-native-screens expo-linking expo-constants expo-status-bar expo-image-picker expo-auth-session
+npx expo install expo-router react-native-safe-area-context react-native-screens expo-linking expo-constants expo-status-bar expo-image-picker expo-auth-session react-native-svg
+npm install --save-dev react-native-svg-transformer
 ```
 
 ## Prettier 설정

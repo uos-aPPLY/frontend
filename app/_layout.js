@@ -1,16 +1,19 @@
 import { Stack } from "expo-router";
 
-const RootLayout = () => {
+export default function RootLayout() {
   return (
-    <Stack>
-      <Stack.Screen
-        name="(tabs)"
-        options={{
-          headerShown: false,
-        }}
-      />
+    <Stack
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+
+      {/* 3) 만약 /diary/[id] 같이 탭 외에 개별 화면이 필요하다면
+          <Stack.Screen name="diary/[id]" options={{ title: '상세' }} />
+      */}
     </Stack>
   );
-};
-
-export default RootLayout;
+}
