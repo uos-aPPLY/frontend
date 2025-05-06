@@ -2,11 +2,16 @@
   "expo": {
     "name": "diarypic-fe",
     "slug": "diarypic-fe",
-    "scheme": "diarypic-fe",
+    "scheme": [
+      "diarypic.app",
+      "com.apply.diarypic",
+      "kakao4aea82ec6ceb08c4f6d7f0fb157c8ee1"
+    ],
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "entryPoint": "node_modules/expo-router/entry.js",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -14,18 +19,47 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.apply.diarypic"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "package": "com.apply.diarypic",
       "edgeToEdgeEnabled": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-router"]
+    "extra": {
+      "BACKEND_URL": "http://localhost:8080",
+      "router": {},
+      "eas": {
+        "projectId": "98161b2c-c0b4-419d-ac4d-e76300ee8121"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-dev-client",
+      [
+        "@react-native-seoul/kakao-login",
+        {
+          "kakaoAppKey": "ff26e5dd397aa1e1d9927f1e0531548d",
+          "kotlinVersion": "1.9.0"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "extraMavenRepos": [
+              "https://devrepo.kakao.com/content/groups/public/"
+            ]
+          }
+        }
+      ]
+    ]
   }
 }
