@@ -1,12 +1,8 @@
-import { useRouter } from "expo-router";
-import { useEffect } from "react";
+import { registerRootComponent } from 'expo';
 
-export default function Index() {
-  const router = useRouter();
+import App from './App';
 
-  useEffect(() => {
-    router.replace("/home");
-  }, [router]);
-
-  return null;
-}
+// registerRootComponent calls AppRegistry.registerComponent('main', () => App);
+// It also ensures that whether you load the app in Expo Go or in a native build,
+// the environment is set up appropriately
+registerRootComponent(App);
