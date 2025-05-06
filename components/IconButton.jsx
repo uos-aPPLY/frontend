@@ -1,9 +1,9 @@
 import { Image, Pressable, StyleSheet } from 'react-native';
 
-const IconButton = ({ source, onPress, size = 24, style }) => {
+const IconButton = ({ source, onPress, wsize = 24, hsize =24, style }) => {
     return (
         <Pressable onPress={onPress} style={[styles.button, style]}>
-            <Image source={source} style={{ width: size, height: size }} resizeMode="contain" />
+            <Image source={source} style={{ width: wsize, height: hsize }} resizeMode="contain" />
         </Pressable>
     );
 };
@@ -14,5 +14,6 @@ const styles = StyleSheet.create({
     button: {
         justifyContent: 'center',
         alignItems: 'center',
+        outlineStyle: 'none',
     },
 });

@@ -1,8 +1,9 @@
 // app/_layout.js
+import { Slot, useSegments } from "expo-router";
 import React from "react";
-import { Slot, Redirect, useSegments } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
+import { DiaryProvider } from "../contexts/DiaryContext";
 
 function RootLayoutNav() {
   const { user, loading } = useAuth();
@@ -15,18 +16,19 @@ function RootLayoutNav() {
       </View>
     );
   }
-
+{/* 개발 중
   if (!user && segments[0] !== "login") {
     return <Redirect href="/login" />;
   }
 
   if (user && !segments.length) {
-    return <Redirect href="/home" />;
+    return <Redirect href="/(tabs)" />;
   }
 
   if (user && segments[0] === "login") {
-    return <Redirect href="/home" />;
+    return <Redirect href="/(tabs)" />;
   }
+*/}
 
   return <Slot />;
 }
@@ -34,7 +36,9 @@ function RootLayoutNav() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RootLayoutNav />
+      <DiaryProvider>
+        <RootLayoutNav />
+      </DiaryProvider>
     </AuthProvider>
   );
 }
