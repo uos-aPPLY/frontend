@@ -9,23 +9,9 @@ async function fetchProfile(token) {
   const res = await fetch(`${BACKEND_URL}/api/users/me`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-
-  // 1) JSON 응답이 아닐 경우 파싱 시도 안 함
-  const contentType = res.headers.get("content-type") || "";
-  if (!contentType.includes("application/json")) {
-    console.warn(
-      "프로필 응답이 JSON이 아닙니다. 로그인 페이지로 리다이렉트합니다."
-    );
-    return null;
-  }
-
-  // 2) 상태코드도 체크
-  if (!res.ok) {
-    console.warn("프로필 조회 실패:", res.status);
-    return null;
-  }
-
-  // 3) JSON 파싱
+  if (!res.ok) return null;
+  const ct = res.headers.get("content-type") || "";
+  if (!ct.includes("application/json")) return null;
   return await res.json();
 }
 
@@ -43,18 +29,31 @@ export function AuthProvider({ children }) {
           const profile = await fetchProfile(token);
           setUser(profile);
         }
-      } catch (e) {
-        console.error("Auth load error:", e);
       } finally {
         setLoading(false);
       }
     })();
   }, []);
 
+  // 백엔드 JWT 저장 + 프로필 반환
   const saveToken = async (token) => {
     await SecureStore.setItemAsync("accessToken", token);
     const profile = await fetchProfile(token);
-    setUser(profile || {});
+    setUser(profile);
+    return profile; // <-- 프로필을 돌려줌
+  };
+
+  // 약관 동의 처리
+  const agreeToTerms = async () => {
+    const token = await SecureStore.getItemAsync("accessToken");
+    if (!token) return null;
+    const res = await fetch(`${BACKEND_URL}/api/users/me/agree-terms`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("약관 동의 실패");
+    // 로컬 유저 상태에도 반영
+    setUser((u) => ({ ...u, hasAgreedToTerms: true }));
   };
 
   const signOut = async () => {
@@ -63,7 +62,9 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, saveToken, signOut }}>
+    <AuthContext.Provider
+      value={{ user, loading, saveToken, agreeToTerms, signOut }}
+    >
       {children}
     </AuthContext.Provider>
   );

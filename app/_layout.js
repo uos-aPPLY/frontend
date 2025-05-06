@@ -6,7 +6,8 @@ import { AuthProvider, useAuth } from "../contexts/AuthContext";
 
 function RootLayoutNav() {
   const { user, loading } = useAuth();
-  const segments = useSegments(); // ['login'], ['home'], [](=root) 등
+  const segments = useSegments();
+  const openSegment = segments[0]; // e.g. 'login', 'home', 'terms'
 
   if (loading) {
     return (
@@ -16,15 +17,14 @@ function RootLayoutNav() {
     );
   }
 
-  if (!user && segments[0] !== "login") {
+  if (!user && openSegment !== "login" && openSegment !== "terms") {
     return <Redirect href="/login" />;
   }
 
-  if (user && !segments.length) {
+  if (user && !openSegment) {
     return <Redirect href="/home" />;
   }
-
-  if (user && segments[0] === "login") {
+  if (user && openSegment === "login") {
     return <Redirect href="/home" />;
   }
 
