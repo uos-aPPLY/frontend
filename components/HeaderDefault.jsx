@@ -8,17 +8,17 @@ const HeaderSearch = ({  }) => {
         <View style={styles.container}>
             <View style={styles.left}>
                 <Image
-                    source={require('../../assets/character/char2.png')}
+                    source={require('../assets/character/char2.png')}
                     style={styles.char2}
                 />
                 <Image
-                    source={require('../../assets/icons/whitelogo.png')}
+                    source={require('../assets/icons/whitelogo.png')}
                     style={styles.logo}
                 />
             </View>
             <View style={styles.right}>
                 <IconButton
-                    source={require('../../assets/icons/whitesearchicon.png')}
+                    source={require('../assets/icons/whitesearchicon.png')}
                     size={22}
                     onPress={() => {}}
                 />
@@ -52,11 +52,11 @@ const styles = StyleSheet.create({
     },
     char2: {
         width: 35,
-        height: 35,
+        height: 33,
         marginRight: 10,
     },
     logo: {
         width: 100,
-        height: 35,
+        height: 33,
     },
     });

@@ -1,10 +1,12 @@
-import { Text, View, StyleSheet } from "react-native";
-import HeaderDefault from "../../src/components/HeaderDefault";
-import HeaderSearch from "../../src/components/HeaderSearch";
-import IconButton from "../../src/components/IconButton";
+import { useRouter } from "expo-router";
+import { StyleSheet, View } from "react-native";
+import HeaderDefault from "../../components/HeaderDefault";
+import IconButton from "../../components/IconButton";
 
 
 export default function Home() {
+  const nav = useRouter();
+
   return (
     <>
     <HeaderDefault>
@@ -13,7 +15,9 @@ export default function Home() {
         <View style={styles.card}>
           <IconButton
             source={require('../../assets/icons/bigpinkplusicon.png')}
-            size={50}
+            hsize={50}
+            wsize={50}
+            onPress={() => nav.push('/create?date=' + new Date().toISOString().slice(0, 10))}
           />
         </View>
     </View>
