@@ -3,6 +3,7 @@ import React, { useEffect } from "react";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
+import { DiaryProvider } from "../contexts/DiaryContext";
 
 function RootLayoutNav() {
   const { user, loading } = useAuth();
@@ -44,7 +45,9 @@ function RootLayoutNav() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RootLayoutNav />
+      <DiaryProvider>
+        <RootLayoutNav />
+      </DiaryProvider>
     </AuthProvider>
   );
 }
