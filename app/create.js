@@ -17,8 +17,6 @@ export default function PhotoPage() {
     const date = params.date || new Date().toISOString().slice(0, 10);
     const { text, setText, selectedCharacter, setSelectedCharacter } = useDiary();
     const [isPickerVisible, setIsPickerVisible] = useState(false);
-    const [isEmotionSelected, setIsEmotionSelected] = useState(false);
-
 
     const openGallery = async () => {
         const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -50,12 +48,16 @@ export default function PhotoPage() {
     behavior={Platform.OS === "ios" ? "padding" : "height"}
     style={{ flex: 1 }}
 >
-        <ScrollView style={{ flex: 1, backgroundColor: '#FCF9F4' }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        >
         <View style={styles.all}>
-            <HeaderDate date={date} onBack={() => nav.back()} hasText={text.trim().length > 0}/>
+            <HeaderDate
+                date={date}
+                onBack={() => {
+                    setText('');
+                    setSelectedCharacter(require('../assets/character/char1.png')); // 또는 초기 캐릭터 이미지
+                    nav.push('./(tabs)/calendar');
+                    }} 
+                    hasText={text.trim().length > 0}
+            />
             <CardPicture isPlaceholder onPress={openGallery} />
             <View style={styles.middle}>
                 <IconButton
@@ -89,7 +91,6 @@ export default function PhotoPage() {
             )}
             </View>
         </View>
-        </ScrollView>
         </KeyboardAvoidingView>
     );
 }
@@ -97,13 +98,15 @@ export default function PhotoPage() {
 const styles = StyleSheet.create({
     all: {
         backgroundColor: '#FCF9F4',
-        paddingBottom: 30,
+        paddingBottom: 45,
+        flex: 1,
     },
     middle: {
         padding: 10,
     },
     low: {
         paddingHorizontal: 30,
+        flex: 1,
     },
     overlay: {
         flexDirection: 'row',

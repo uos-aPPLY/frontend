@@ -1,9 +1,20 @@
-import { View, Text } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
+import { useRouter } from "expo-router";
+import HeaderCalender from "../../components/HeaderCalendar";
 
 export default function Calendar() {
+  const nav = useRouter();
+
   return (
-    <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-      <Text>캘린더 화면</Text>
+    <View style={styles.container}>
+      <HeaderCalender/>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#FCF9F4",
+  },
+});

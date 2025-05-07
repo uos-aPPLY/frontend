@@ -8,7 +8,7 @@ const HeaderSearch = ({ value, onChangeText, onBack }) => {
         <View style={styles.container}>
             <View style ={styles.searchBox}>
                 <Image
-                    source={require('../../assets/icons/brownsearchicon.png')}
+                    source={require('../assets/icons/brownsearchicon.png')}
                     style={styles.searchIcon}
                 />
                 <TextInput
@@ -16,12 +16,14 @@ const HeaderSearch = ({ value, onChangeText, onBack }) => {
                     onChangeText={onChangeText}
                     style={styles.input}
                     cursorColor="#AC8B78"
+                    autoFocus
             />
             </View>
             <View style={{ marginLeft: 15 }}>
                 <IconButton
-                    source={require('../../assets/icons/xicon.png')}
-                    size={18}
+                    source={require('../assets/icons/xicon.png')}
+                    hsize={17}
+                    wsize={17}
                     onPress={onBack}
                 />
             </View>
