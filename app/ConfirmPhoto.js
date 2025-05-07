@@ -7,20 +7,26 @@ import axios from 'axios';
 export default function ConfirmPhoto({ onBack }) {
     const nav = useRouter();
     const [photoList, setPhotoList] = useState([]);
+    const token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwiaWF0IjoxNzQ2NTkyODYxLCJleHAiOjE3NDY1OTY0NjF9.d0ojO-dAG2PEtE2KPJBoI9rTmLljo4QKA0Cpk88uyUs"
 
     useEffect(() => {
         const fetchPhotos = async () => {
             try {
-                const res = await axios.get('http://10.0.92.215:8082/api/photos/selection/temp');
+                const res = await axios.get('http://localhost:8080/api/photos/selection/temp',{
+                    headers: {
+                      Authorization: `Bearer ${token}`, // 로그인 후 받은 JWT
+                    },
+                    withCredentials: true,
+            });
                 const urls = res.data.map(photo => photo.photoUrl); // photoUrl 배열 추출
                 setPhotoList(urls);
             } catch (error) {
                 console.error('임시 사진 불러오기 실패', error);
             }
-        };
-
-        fetchPhotos();
-    }, []);
+            };
+        
+            fetchPhotos();
+        }, []);
 
     return (
         <View style={styles.container}>
@@ -30,7 +36,7 @@ export default function ConfirmPhoto({ onBack }) {
                     hsize={22}
                     wsize={22}
                     style={styles.back}
-                    onPress={() => navigator.back()}
+                    onPress={() => nav.push('/create')}
                 />
                 <Text style={styles.date}>원하는 일기 방식을 선택해주세요</Text>
                 <View style={{ width: 24 }} /> {/* 오른쪽 여백 */}
@@ -71,6 +77,39 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
         justifyContent: 'center',
         gap: 10,
+    },
+    image: {
+        width: 100,
+        height: 100,
+        margin: 5,
+        borderRadius: 8,
+    },
+    date: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#a78c7b',
+        textAlign: 'center',
+    },
+    buttonRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginTop: 20,
+    },
+    button: {
+        backgroundColor: '#FEE500',
+        borderRadius: 8,
+        padding: 10,
+        width: '40%',
+        alignItems: 'center',
+    },
+    buttonText: {
+        color: '#fff',
+        fontSize: 16,
+    },
+    container: {
+        flex: 1,
+        backgroundColor: '#FCF9F4',
+        padding: 20,
     },
     image: {
         width: 100,

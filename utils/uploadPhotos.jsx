@@ -16,7 +16,7 @@ export const uploadPhotos = async (assets) => {
 
     try {
         const res = await axios.post(
-        'http://10.0.92.215:8082/api/photos/upload',
+        'http://localhost:8080/api/photos/upload',
         formData,
         {
             headers: {

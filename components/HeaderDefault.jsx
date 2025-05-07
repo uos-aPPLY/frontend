@@ -1,8 +1,21 @@
 // src/components/HeaderSearch.jsx
-import { Image, StyleSheet, View } from 'react-native';
+import { Text, Image, StyleSheet, View } from 'react-native';
 import IconButton from './IconButton';
+import { useFonts, HomemadeApple_400Regular } from '@expo-google-fonts/homemade-apple';
+import AppLoading from 'expo-app-loading';
+import { useRouter } from 'expo-router';
 
 const HeaderSearch = ({  }) => {
+    const nav = useRouter();
+
+    const [fontsLoaded] = useFonts({
+        HomemadeApple_400Regular,
+    });
+
+    if (!fontsLoaded) {
+        return <AppLoading />;
+    }
+
     return (
     <View style={styles.all}>
         <View style={styles.container}>
@@ -11,16 +24,16 @@ const HeaderSearch = ({  }) => {
                     source={require('../assets/character/char2.png')}
                     style={styles.char2}
                 />
-                <Image
-                    source={require('../assets/icons/whitelogo.png')}
-                    style={styles.logo}
-                />
+                <Text style={styles.logo}>
+                DiaryPic
+                </Text>
             </View>
             <View style={styles.right}>
                 <IconButton
                     source={require('../assets/icons/whitesearchicon.png')}
-                    size={22}
-                    onPress={() => {}}
+                    wsize={23}
+                    height={22}
+                    onPress={() => {nav.push('/search?from=main');}}
                 />
             </View>
         </View>
@@ -45,18 +58,20 @@ const styles = StyleSheet.create({
         borderBottomLeftRadius: 10,
         borderBottomRightRadius: 10,
     },
+    logo: {
+        fontSize: 20,
+        fontFamily: 'HomemadeApple_400Regular',
+        color: '#fff',
+
+    },
     left: {
         flexDirection: 'row',
         alignItems: 'center',
         flex: 1,
     },
     char2: {
-        width: 35,
-        height: 33,
-        marginRight: 10,
-    },
-    logo: {
-        width: 100,
-        height: 33,
+        width: 40,
+        height: 38,
+        marginRight: 15,
     },
     });

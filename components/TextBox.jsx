@@ -15,10 +15,10 @@ export default function TextBox({ value, onChangeText, placeholder }) {
 
 const styles = StyleSheet.create({
     input: {
-        minHeight: 289,
+        flex: 1,
         backgroundColor: '#fff',
         borderRadius: 16,
-        padding: 16,
+        padding: 20,
         fontSize: 14,
         color: '#AC8B78',
         textAlignVertical: 'top', // 안드로이드에서 세로 정렬

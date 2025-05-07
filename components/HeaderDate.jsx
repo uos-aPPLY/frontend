@@ -1,11 +1,9 @@
 import { View, Text, StyleSheet } from 'react-native';
 import IconButton from './IconButton';
-import { useNavigation } from '@react-navigation/native';
 
 const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
 
 function formatDateWithDay(dateString) {
-    const nav = useNavigation();
     const date = new Date(dateString);
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
