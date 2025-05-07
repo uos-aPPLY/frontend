@@ -1,10 +1,12 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState } from "react";
 
 const DiaryContext = createContext();
 
 export function DiaryProvider({ children }) {
-  const [text, setText] = useState('');
-  const [selectedCharacter, setSelectedCharacter] = useState(require('../assets/character/char1.png'));
+  const [text, setText] = useState("");
+  const [selectedCharacter, setSelectedCharacter] = useState(
+    require("../assets/character/char1.png")
+  );
 
   return (
     <DiaryContext.Provider

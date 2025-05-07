@@ -50,9 +50,6 @@ export default function Login() {
       console.log("Backend login response:", {
         backendAccessToken,
       });
-
-      const profile = await saveToken(backendAccessToken);
-
       // if (!profile?.hasAgreedToTerms) {
       //   router.replace("/terms");
       // } else {
