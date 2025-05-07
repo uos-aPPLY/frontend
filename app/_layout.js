@@ -1,6 +1,6 @@
 // app/_layout.js
-import { Slot, useSegments, useRouter } from "expo-router";
-import React , {useEffect} from "react";
+import React, { useEffect } from "react";
+import { Slot, useRouter, useSegments } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { DiaryProvider } from "../contexts/DiaryContext";
