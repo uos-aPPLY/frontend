@@ -14,6 +14,11 @@ npm install
 npm install -g expo
 npx expo install expo-dev-client
 npx expo install expo-router react-native-safe-area-context react-native-screens expo-linking expo-constants expo-status-bar expo-image-picker expo-auth-session expo-secure-store @react-native-seoul/kakao-login
+npm install axios
+npx expo install @expo-google-fonts/caveat expo-font
+npx expo install @expo-google-fonts/homemade-apple expo-font
+npx expo install expo-app-loading
+npx expo install expo-image-picker@latest
 ```
 
 ## Prettier 설정
