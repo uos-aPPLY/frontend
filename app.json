@@ -60,12 +60,8 @@
           }
         }
       ],
-<<<<<<< HEAD
       "expo-font",
       "expo-secure-store"
-=======
-      "expo-font"
->>>>>>> 8fbf41f (chore: assets 수정)
     ]
   }
 }
