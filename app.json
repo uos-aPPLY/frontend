@@ -61,7 +61,7 @@
         }
       ],
       "expo-font",
-      "expo-scure-store"
+      "expo-secure-store"
     ]
   }
 }
