@@ -1,3 +1,4 @@
+// app/(tabs)/_layout.js
 import { Tabs } from "expo-router";
 import { Image } from "react-native";
 import HomeIcon from "../../assets/icons/homeicon.png";

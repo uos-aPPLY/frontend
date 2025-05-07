@@ -46,25 +46,20 @@ export default function Login() {
         throw new Error(`Backend login failed: ${errText}`);
       }
 
-      const {
-        accessToken: backendAccessToken,
-        accessTokenExpiresIn,
-        userInfo,
-      } = await res.json();
-
+      const { accessToken: backendAccessToken } = await res.json();
       console.log("Backend login response:", {
         backendAccessToken,
-        accessTokenExpiresIn,
-        userInfo,
       });
 
-      await saveToken(backendAccessToken);
+      const profile = await saveToken(backendAccessToken);
 
-      if (!userInfo.hasAgreedToTerms) {
-        router.replace("/terms");
-      } else {
-        router.replace("/home");
-      }
+      // if (!profile?.hasAgreedToTerms) {
+      //   router.replace("/terms");
+      // } else {
+      //   router.replace("/home");
+      // }
+      await saveToken(backendAccessToken);
+      router.replace("/terms");
     } catch (error) {
       console.log("Login Fail:", error);
     }
@@ -83,13 +78,21 @@ export default function Login() {
         resizeMode="contain"
       />
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.loginButton} onPress={login}>
+        <TouchableOpacity style={styles.kakaoLoginButton} onPress={login}>
           <Image
             source={require("../assets/icons/kakaoicon.png")}
             style={styles.kakaoIcon}
             resizeMode="contain"
           />
           <Text style={styles.loginButtonText}>카카오로 시작하기</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.googleLoginButton} onPress={login}>
+          <Image
+            source={require("../assets/icons/googleicon.png")}
+            style={styles.kakaoIcon}
+            resizeMode="contain"
+          />
+          <Text style={styles.loginButtonText}>구글로 시작하기</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -113,14 +116,28 @@ const styles = StyleSheet.create({
     bottom: 100,
     width: "100%",
     alignItems: "center",
+    gap: 10,
   },
-  loginButton: {
-    width: 315,
+  kakaoLoginButton: {
+    width: "80%",
     height: 50,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#FEE500",
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  googleLoginButton: {
+    width: "80%",
+    height: 50,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+    borderColor: "#d3d3d3",
+    borderWidth: 1,
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 24,
