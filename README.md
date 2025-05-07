@@ -8,6 +8,7 @@ npx expo login
 
 # 실행
 npx expo start
+npx expo start --dev-client -c
 
 # 설치
 npm install
