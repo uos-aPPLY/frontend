@@ -25,14 +25,16 @@ const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       try {
-        const token = await SecureStore.getItemAsync("accessToken");
-        if (token) {
-          const profile = await fetchProfile(token);
+        const storedToken = await SecureStore.getItemAsync("accessToken");
+        if (storedToken) {
+          setToken(storedToken);
+          const profile = await fetchProfile(storedToken);
           setUser(profile);
         }
       } finally {
@@ -41,9 +43,10 @@ export function AuthProvider({ children }) {
     })();
   }, []);
 
-  const saveToken = async (token) => {
-    await SecureStore.setItemAsync("accessToken", token);
-    const profile = await fetchProfile(token);
+  const saveToken = async (newToken) => {
+    await SecureStore.setItemAsync("accessToken", newToken);
+    setToken(newToken);
+    const profile = await fetchProfile(newToken);
     setUser(profile);
     return profile;
   };
@@ -62,11 +65,12 @@ export function AuthProvider({ children }) {
   const signOut = async () => {
     await SecureStore.deleteItemAsync("accessToken");
     setUser(null);
+    setToken(null);
   };
 
   const value = useMemo(
-    () => ({ user, loading, saveToken, agreeToTerms, signOut }),
-    [user, loading]
+    () => ({ user, token, loading, saveToken, agreeToTerms, signOut }),
+    [user, token, loading]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
