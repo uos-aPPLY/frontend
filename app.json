@@ -23,7 +23,8 @@
       "bundleIdentifier": "com.apply.diarypic",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "사진을 업로드하기 위해 앨범 접근 권한이 필요합니다.",
-        "NSCameraUsageDescription": "사진 촬영을 위해 카메라 접근 권한이 필요합니다."
+        "NSCameraUsageDescription": "사진 촬영을 위해 카메라 접근 권한이 필요합니다.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -31,7 +32,10 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff",
         "android": {
-          "permissions": ["READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"]
+          "permissions": [
+            "READ_EXTERNAL_STORAGE",
+            "WRITE_EXTERNAL_STORAGE"
+          ]
         }
       },
       "package": "com.apply.diarypic",
