@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -6,18 +7,17 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import HeaderDate from "../components/HeaderDate";
-import React from "react";
-import CardPicture from "../components/CardPicture";
 import * as ImagePicker from "expo-image-picker";
+import { useLocalSearchParams, useRouter } from "expo-router";
+
+import HeaderDate from "../components/HeaderDate";
+import CardPicture from "../components/CardPicture";
 import IconButton from "../components/IconButton";
-import { useState } from "react";
-import characterList from "../assets/characterList";
 import TextBox from "../components/TextBox";
-import { uploadPhotos } from "../utils/uploadPhotos";
+import characterList from "../assets/characterList";
 import { useDiary } from "../contexts/DiaryContext";
 import { useAuth } from "../contexts/AuthContext";
+import { uploadPhotos } from "../utils/uploadPhotos";
 
 export default function PhotoPage() {
   const nav = useRouter();
