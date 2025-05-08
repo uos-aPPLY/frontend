@@ -7,7 +7,7 @@ export default function Calendar() {
 
   return (
     <View style={styles.container}>
-      <HeaderCalender/>
+      <HeaderCalender />
     </View>
   );
 }
