@@ -21,12 +21,10 @@ export async function uploadPhotos(assets, token) {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
+      "Content-Type": "multipart/form-data",
     },
     body: formData,
   });
-  const responseText = await response.text();
-  console.log("응답 내용 확인:", responseText);
-  console.log("백엔드 주소:", BACKEND_URL);
 
   if (!response.ok) {
     const errorText = await response.text();
