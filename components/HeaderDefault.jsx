@@ -33,7 +33,7 @@ const HeaderSearch = ({}) => {
           <IconButton
             source={require("../assets/icons/whitesearchicon.png")}
             wsize={23}
-            height={22}
+            hsize={22}
             onPress={() => {
               nav.push("/search?from=main");
             }}
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: 45,
+    paddingTop: 60,
     borderBottomLeftRadius: 10,
     borderBottomRightRadius: 10,
   },
