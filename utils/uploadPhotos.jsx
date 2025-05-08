@@ -1,33 +1,38 @@
-import axios from 'axios';
+// utils/uploadPhotos.js
+import Constants from "expo-constants";
 
-export const uploadPhotos = async (assets) => {
-    const formData = new FormData();
+const { BACKEND_URL } = Constants.expoConfig.extra;
 
-    assets.forEach((asset, index) => {
-        const uriParts = asset.uri.split('.');
-        const fileType = uriParts[uriParts.length - 1];
+export async function uploadPhotos(assets, token) {
+  const formData = new FormData();
 
-        formData.append('files', {
-        uri: asset.uri,
-        name: `photo_${index}.${fileType}`,
-        type: `image/${fileType}`,
-        });
+  assets.forEach((asset, index) => {
+    const uriParts = asset.uri.split(".");
+    const fileType = uriParts[uriParts.length - 1];
+
+    formData.append("files", {
+      uri: asset.uri,
+      name: `photo_${index}.${fileType}`,
+      type: `image/${fileType}`,
     });
+  });
 
-    try {
-        const res = await axios.post(
-        'http://localhost:8080/api/photos/upload',
-        formData,
-        {
-            headers: {
-            'Content-Type': 'multipart/form-data',
-            },
-        }
-        );
-        console.log('업로드 성공:', res.data);
-        return res.data;
-    } catch (error) {
-        console.error('업로드 중 에러:', error);
-        throw error;
-    }
-};
+  const response = await fetch(`${BACKEND_URL}/api/photos/upload`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "multipart/form-data",
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("업로드 중 에러:", errorText);
+    throw new Error(`업로드 실패: ${response.status} ${errorText}`);
+  }
+
+  const data = await response.json();
+  console.log("업로드 성공:", data);
+  return data;
+}

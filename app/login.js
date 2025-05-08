@@ -25,22 +25,38 @@ export default function Login() {
 
   const login = async () => {
     try {
+      // 카카오 SDK 로그인
       const kakaoResult = await KakaoLogin.login({ redirectUri });
       console.log("Login Success", kakaoResult);
 
-      const res = await fetch(`${BACKEND_URL}/auth/kakao-login`, {
+      // 백엔드 POST /api/auth/login
+      const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: kakaoResult.accessToken }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${kakaoResult.accessToken}`,
+        },
+        body: JSON.stringify({
+          provider: "kakao",
+          accessToken: kakaoResult.accessToken,
+        }),
       });
       if (!res.ok) {
         const errText = await res.text();
         throw new Error(`Backend login failed: ${errText}`);
       }
-      const { jwt: backendJwt } = await res.json();
 
-      await saveToken(backendJwt);
-      router.replace("/home");
+      const { accessToken: backendAccessToken } = await res.json();
+      console.log("Backend login response:", {
+        backendAccessToken,
+      });
+      // if (!profile?.hasAgreedToTerms) {
+      //   router.replace("/terms");
+      // } else {
+      //   router.replace("/home");
+      // }
+      await saveToken(backendAccessToken);
+      router.replace("/terms");
     } catch (error) {
       console.log("Login Fail:", error);
     }
@@ -53,15 +69,27 @@ export default function Login() {
         style={styles.logo}
         resizeMode="contain"
       />
-      <Text style={styles.title}>DiaryPic</Text>
+      <Image
+        source={require("../assets/brownicon.png")}
+        style={styles.logo}
+        resizeMode="contain"
+      />
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.loginButton} onPress={login}>
+        <TouchableOpacity style={styles.kakaoLoginButton} onPress={login}>
           <Image
             source={require("../assets/icons/kakaoicon.png")}
             style={styles.kakaoIcon}
             resizeMode="contain"
           />
           <Text style={styles.loginButtonText}>카카오로 시작하기</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.googleLoginButton} onPress={login}>
+          <Image
+            source={require("../assets/icons/googleicon.png")}
+            style={styles.kakaoIcon}
+            resizeMode="contain"
+          />
+          <Text style={styles.loginButtonText}>구글로 시작하기</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -78,27 +106,35 @@ const styles = StyleSheet.create({
   logo: {
     width: 120,
     height: 120,
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#AC8B78",
-    marginBottom: 32,
+    marginVertical: -10,
   },
   buttonContainer: {
     position: "absolute",
     bottom: 100,
     width: "100%",
     alignItems: "center",
+    gap: 10,
   },
-  loginButton: {
-    width: 315,
+  kakaoLoginButton: {
+    width: "80%",
     height: 50,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#FEE500",
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  googleLoginButton: {
+    width: "80%",
+    height: 50,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+    borderColor: "#d3d3d3",
+    borderWidth: 1,
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 24,

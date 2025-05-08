@@ -1,5 +1,11 @@
 // contexts/AuthContext.js
-import React, { createContext, useState, useEffect, useContext } from "react";
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  useMemo,
+} from "react";
 import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 
@@ -9,23 +15,9 @@ async function fetchProfile(token) {
   const res = await fetch(`${BACKEND_URL}/api/users/me`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-
-  // 1) JSON 응답이 아닐 경우 파싱 시도 안 함
-  const contentType = res.headers.get("content-type") || "";
-  if (!contentType.includes("application/json")) {
-    console.warn(
-      "프로필 응답이 JSON이 아닙니다. 로그인 페이지로 리다이렉트합니다."
-    );
-    return null;
-  }
-
-  // 2) 상태코드도 체크
-  if (!res.ok) {
-    console.warn("프로필 조회 실패:", res.status);
-    return null;
-  }
-
-  // 3) JSON 파싱
+  if (!res.ok) return null;
+  const ct = res.headers.get("content-type") || "";
+  if (!ct.includes("application/json")) return null;
   return await res.json();
 }
 
@@ -33,40 +25,55 @@ const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       try {
-        const token = await SecureStore.getItemAsync("accessToken");
-        if (token) {
-          const profile = await fetchProfile(token);
+        const storedToken = await SecureStore.getItemAsync("accessToken");
+        if (storedToken) {
+          setToken(storedToken);
+          const profile = await fetchProfile(storedToken);
           setUser(profile);
         }
-      } catch (e) {
-        console.error("Auth load error:", e);
       } finally {
         setLoading(false);
       }
     })();
   }, []);
 
-  const saveToken = async (token) => {
-    await SecureStore.setItemAsync("accessToken", token);
-    const profile = await fetchProfile(token);
-    setUser(profile || {});
+  const saveToken = async (newToken) => {
+    await SecureStore.setItemAsync("accessToken", newToken);
+    setToken(newToken);
+    const profile = await fetchProfile(newToken);
+    setUser(profile);
+    return profile;
+  };
+
+  const agreeToTerms = async () => {
+    const token = await SecureStore.getItemAsync("accessToken");
+    if (!token) return null;
+    const res = await fetch(`${BACKEND_URL}/api/users/me/agree-terms`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("약관 동의 실패");
+    setUser((u) => ({ ...u, hasAgreedToTerms: true }));
   };
 
   const signOut = async () => {
     await SecureStore.deleteItemAsync("accessToken");
     setUser(null);
+    setToken(null);
   };
 
-  return (
-    <AuthContext.Provider value={{ user, loading, saveToken, signOut }}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({ user, token, loading, saveToken, agreeToTerms, signOut }),
+    [user, token, loading]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => useContext(AuthContext);
