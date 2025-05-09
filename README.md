@@ -20,6 +20,7 @@ npx expo install expo-build-properties
 npx expo install @expo-google-fonts/caveat expo-font
 npx expo install @expo-google-fonts/homemade-apple expo-font
 npx expo install expo-app-loading
+npm install query-string
 ```
 
 ## Prettier 설정
