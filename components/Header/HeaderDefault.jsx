@@ -1,6 +1,6 @@
 // src/components/HeaderSearch.jsx
 import { Text, Image, StyleSheet, View } from "react-native";
-import IconButton from "./IconButton";
+import IconButton from "../IconButton";
 import {
   useFonts,
   HomemadeApple_400Regular,
