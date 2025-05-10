@@ -7,91 +7,76 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
-  Platform,
+  Alert,
 } from "react-native";
 import * as KakaoLogin from "@react-native-seoul/kakao-login";
+import NaverLogin from "@react-native-seoul/naver-login";
 import { useRouter } from "expo-router";
 import * as Linking from "expo-linking";
-import {
-  GoogleSignin,
-  statusCodes,
-} from "@react-native-google-signin/google-signin";
 import { useAuth } from "../contexts/AuthContext";
 import Constants from "expo-constants";
 
 const {
   BACKEND_URL,
-  GOOGLE_IOS_CLIENT_ID,
-  GOOGLE_ANDROID_CLIENT_ID,
-  GOOGLE_WEB_CLIENT_ID,
+  NAVER_CLIENT_KEY,
+  NAVER_CLIENT_SECRET,
+  NAVER_APP_NAME,
+  NAVER_SERVICE_URL_SCHEME_IOS,
 } = Constants.expoConfig.extra;
 
 export default function Login() {
   const router = useRouter();
   const { saveToken } = useAuth();
 
-  // Kakao Redirect URI
   const kakaoRedirectUri = Linking.createURL("oauth", { scheme: "diarypic" });
 
-  console.log(GOOGLE_IOS_CLIENT_ID);
-  console.log(GOOGLE_WEB_CLIENT_ID);
-  // Configure Google Signin
+  // Naver SDK 초기화
   useEffect(() => {
-    GoogleSignin.configure({
-      iosClientId: GOOGLE_IOS_CLIENT_ID,
-      webClientId: GOOGLE_WEB_CLIENT_ID,
-      offlineAccess: true,
-      scopes: ["openid", "profile", "email"],
-    });
+    (async () => {
+      try {
+        await NaverLogin.initialize({
+          appName: NAVER_APP_NAME,
+          consumerKey: NAVER_CLIENT_KEY,
+          consumerSecret: NAVER_CLIENT_SECRET,
+          serviceUrlSchemeIOS: NAVER_SERVICE_URL_SCHEME_IOS,
+          disableNaverAppAuthIOS: true,
+        });
+        console.log("Naver SDK initialized");
+      } catch (e) {
+        console.error("Naver 초기화 오류", e);
+        Alert.alert("네이버 초기화 실패", e.message ?? "");
+      }
+    })();
   }, []);
 
-  // Google Login Handler
-  // ------------------- Google 로그인 -------------------
-  const handleGoogleLogin = async () => {
+  // Naver Login Handler
+  const handleNaverLogin = async () => {
     try {
-      await GoogleSignin.hasPlayServices({
-        showPlayServicesUpdateDialog: true,
-      });
-
-      /* 1) 기존 세션 초기화 */
-      await GoogleSignin.signOut().catch(() => {});
-
-      /* 2) 로그인 */
-      const signInRes = await GoogleSignin.signIn(); // user info
-      const tokenRes = await GoogleSignin.getTokens(); // { idToken, accessToken }
-
-      // signInRes.user.idToken (iOS) vs tokenRes.idToken (Android) 보완
-      const idToken = tokenRes.idToken || signInRes.idToken;
-      const accessToken = tokenRes.accessToken;
-
-      if (!idToken) {
-        console.log("signInRes →", signInRes); // 최종 디버깅용
-        throw new Error("Google idToken이 없습니다.");
-      }
-
-      console.log("Google tokens →", { idToken, accessToken });
-
-      /* 3) 백엔드 전송 */
-      const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider: "google", idToken }),
-      });
-
-      if (!res.ok) {
-        console.error("Backend login failed", await res.text());
+      const { successResponse, failureResponse } = await NaverLogin.login();
+      console.log("Naver Access Token: ", successResponse);
+      if (failureResponse) {
+        if (!failureResponse.isCancel) {
+          Alert.alert("네이버 로그인 오류", failureResponse.message);
+        }
         return;
       }
 
+      const { accessToken } = successResponse.accessToken;
+      const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider: "naver", accessToken }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+
       const { accessToken: backendAccessToken } = await res.json();
+      console.log("Naver Access Token: ", accessToken);
+      console.log("Backend Token: ", backendAccessToken);
       await saveToken(backendAccessToken);
       router.replace("/terms");
-    } catch (error) {
-      if (error?.code === statusCodes.SIGN_IN_CANCELLED) {
-        console.log("사용자가 Google 로그인을 취소했습니다.");
-      } else {
-        console.error("Google 로그인 오류", error);
-      }
+    } catch (e) {
+      console.error("네이버 로그인 처리 오류:", e);
+      Alert.alert("네이버 로그인 실패", e.message ?? "알 수 없는 오류");
     }
   };
 
@@ -155,20 +140,21 @@ export default function Login() {
           <Text style={styles.loginButtonText}>카카오로 시작하기</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.googleLoginButton}
-          onPress={handleGoogleLogin}
+          style={styles.naverLoginButton}
+          onPress={handleNaverLogin}
         >
           <Image
-            source={require("../assets/icons/googleicon.png")}
-            style={styles.kakaoIcon}
+            source={require("../assets/icons/navericon.png")}
+            style={styles.naverIcon}
           />
-          <Text style={styles.loginButtonText}>구글로 시작하기</Text>
+          <Text style={styles.naverloginButtonText}>네이버로 시작하기</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 }
 
+// Styles (기존과 동일)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -199,15 +185,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 24,
   },
-  googleLoginButton: {
+  naverLoginButton: {
     width: "80%",
     height: 50,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#fff",
-    borderColor: "#d3d3d3",
-    borderWidth: 1,
+    backgroundColor: "#03C75A",
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 24,
@@ -217,8 +201,18 @@ const styles = StyleSheet.create({
     height: 20,
     marginRight: 10,
   },
+  naverIcon: {
+    width: 35,
+    height: 35,
+    marginRight: 5,
+  },
   loginButtonText: {
     color: "#000",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  naverloginButtonText: {
+    color: "#fff",
     fontSize: 16,
     fontWeight: "600",
   },

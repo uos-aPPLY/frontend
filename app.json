@@ -36,8 +36,10 @@
     },
     "extra": {
       "BACKEND_URL": "http://localhost:8080",
-      "GOOGLE_IOS_CLIENT_ID": "661799666714-1peeqbc09tgb6b85mua90p4h7p1livte.apps.googleusercontent.com",
-      "GOOGLE_WEB_CLIENT_ID": "661799666714-iv7cmcndl3avaruite6higkdtrtffbne.apps.googleusercontent.com",
+      "NAVER_CLIENT_KEY": "atRAYVo5eD6F4allALAO",
+      "NAVER_CLIENT_SECRET": "focDCksfty",
+      "NAVER_APP_NAME": "DiaryPic",
+      "NAVER_SERVICE_URL_SCHEME_IOS": "com.apply.diarypic",
       "router": {},
       "eas": {
         "projectId": "98161b2c-c0b4-419d-ac4d-e76300ee8121"
@@ -53,6 +55,12 @@
         }
       ],
       [
+        "@react-native-seoul/naver-login",
+        {
+          "urlScheme": "com.apply.diarypic"
+        }
+      ],
+      [
         "expo-build-properties",
         {
           "android": {
@@ -64,14 +72,9 @@
           }
         }
       ],
-      [
-        "@react-native-google-signin/google-signin",
-        {
-          "iosUrlScheme": "com.googleusercontent.apps.661799666714-1peeqbc09tgb6b85mua90p4h7p1livte"
-        }
-      ],
       "expo-font",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-web-browser"
     ]
   }
 }

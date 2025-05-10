@@ -16,6 +16,7 @@
     "@react-native-kakao/core": "^2.4.0",
     "@react-native-kakao/user": "^2.4.0",
     "@react-native-seoul/kakao-login": "^5.4.1",
+    "@react-native-seoul/naver-login": "^4.1.2",
     "axios": "^1.9.0",
     "expo": "~53.0.8",
     "expo-app-loading": "^2.1.1",
