@@ -34,7 +34,7 @@ export async function uploadPhotos(assets, token) {
     throw new Error(`업로드 실패: ${response.status} ${errorText}`);
   }
 
-  const data = await response.json();
+  const data = JSON.parse(responseText);
   console.log("업로드 성공:", data);
   return data;
 }

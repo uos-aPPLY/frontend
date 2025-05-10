@@ -6,6 +6,7 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
+  ScrollView,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -59,7 +60,8 @@ export default function PhotoPage() {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       style={{ flex: 1 }}
     >
       <View style={styles.all}>
@@ -72,37 +74,46 @@ export default function PhotoPage() {
           }}
           hasText={text.trim().length > 0}
         />
-        <CardPicture isPlaceholder onPress={openGallery} />
         <View style={styles.middle}>
-          <IconButton
-            source={selectedCharacter}
-            wsize={40}
-            hsize={40}
-            onPress={() => setIsPickerVisible(!isPickerVisible)}
-          />
-        </View>
-        <View style={styles.low}>
-          {isPickerVisible ? (
-            <View style={styles.overlay}>
-              {characterList.map((char, index) => (
-                <TouchableOpacity
-                  key={index}
-                  onPress={() => {
-                    setSelectedCharacter(char);
-                    setIsPickerVisible(false);
-                  }}
-                >
-                  <Image source={char} style={styles.characterIcon} />
-                </TouchableOpacity>
-              ))}
+          <ScrollView
+            contentContainerStyle={styles.scrollContainer}
+            keyboardShouldPersistTaps="handled"
+          >
+            <CardPicture isPlaceholder onPress={openGallery} />
+
+            <View style={styles.characterPicker}>
+              <IconButton
+                source={selectedCharacter}
+                wsize={40}
+                hsize={40}
+                onPress={() => setIsPickerVisible(!isPickerVisible)}
+              />
             </View>
-          ) : (
-            <TextBox
-              value={text}
-              onChangeText={setText}
-              placeholder="오늘의 이야기를 써보세요."
-            />
-          )}
+
+            <View style={[styles.low, { marginBottom: 50 }]}>
+              {isPickerVisible ? (
+                <View style={styles.overlay}>
+                  {characterList.map((char, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      onPress={() => {
+                        setSelectedCharacter(char);
+                        setIsPickerVisible(false);
+                      }}
+                    >
+                      <Image source={char} style={styles.characterIcon} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ) : (
+                <TextBox
+                  value={text}
+                  onChangeText={setText}
+                  placeholder="오늘의 이야기를 써보세요."
+                />
+              )}
+            </View>
+          </ScrollView>
         </View>
       </View>
     </KeyboardAvoidingView>
@@ -112,11 +123,17 @@ export default function PhotoPage() {
 const styles = StyleSheet.create({
   all: {
     backgroundColor: "#FCF9F4",
-    paddingBottom: 45,
     flex: 1,
   },
   middle: {
+    flex: 1,
+    backgroundColor: "#FCF9F4",
+    paddingTop: 20,
+  },
+  characterPicker: {
     padding: 10,
+    justifyContent: "center",
+    alignItems: "center",
   },
   low: {
     paddingHorizontal: 30,
@@ -133,5 +150,8 @@ const styles = StyleSheet.create({
     width: 64,
     height: 62,
     margin: 15,
+  },
+  scrollContainer: {
+    flexGrow: 1,
   },
 });

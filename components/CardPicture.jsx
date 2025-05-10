@@ -32,7 +32,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: "100%",
-    height: 313,
+    aspectRatio: 1,
     backgroundColor: "#F1F2F1",
     marginTop: 30,
     borderRadius: 30,
