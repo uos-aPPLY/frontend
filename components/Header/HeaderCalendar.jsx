@@ -3,7 +3,7 @@ import { View, Image, TouchableOpacity, StyleSheet, Text } from "react-native";
 import { useFonts, Caveat_600SemiBold } from "@expo-google-fonts/caveat";
 import { useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import IconButton from "./IconButton";
+import IconButton from "../IconButton";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -31,7 +31,7 @@ export default function Header() {
     <View style={styles.container}>
       <View style={styles.left}>
         <Image
-          source={require("../assets/character/char2.png")}
+          source={require("../../assets/character/char2.png")}
           style={styles.char2}
         />
         <View style={styles.dateWrapper}>
@@ -42,8 +42,8 @@ export default function Header() {
           <Image
             source={
               isOn
-                ? require("../assets/icons/righton.png")
-                : require("../assets/icons/leftoff.png")
+                ? require("../../assets/icons/righton.png")
+                : require("../../assets/icons/leftoff.png")
             }
             style={styles.toggleImage}
           />
@@ -52,7 +52,7 @@ export default function Header() {
 
       <View style={styles.right}>
         <IconButton
-          source={require("../assets/icons/brownsearchicon.png")}
+          source={require("../../assets/icons/brownsearchicon.png")}
           hsize={22}
           wsize={22}
           onPress={() => {

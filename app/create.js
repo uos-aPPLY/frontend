@@ -11,7 +11,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
-import HeaderDate from "../components/HeaderDate";
+import HeaderDate from "../components/Header/HeaderDate";
 import CardPicture from "../components/CardPicture";
 import IconButton from "../components/IconButton";
 import TextBox from "../components/TextBox";

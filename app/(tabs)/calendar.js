@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
-import HeaderCalender from "../../components/HeaderCalendar";
+import HeaderCalender from "../../components/Header/HeaderCalendar";
 
 export default function Calendar() {
   const nav = useRouter();

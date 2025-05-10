@@ -26,12 +26,13 @@ export default function ConfirmPhoto() {
   const [selected, setSelected] = useState([]);
   const { token } = useAuth();
 
-  const toggleSelect = (uri) => {
-    if (selected.includes(uri)) {
-      setSelected((prev) => prev.filter((u) => u !== uri));
+  const toggleSelect = (photo) => {
+    const exists = selected.find((p) => p.id === photo.id);
+    if (exists) {
+      setSelected((prev) => prev.filter((p) => p.id !== photo.id));
     } else {
       if (selected.length >= 9) return;
-      setSelected((prev) => [...prev, uri]);
+      setSelected((prev) => [...prev, photo]);
     }
   };
 
@@ -48,8 +49,8 @@ export default function ConfirmPhoto() {
 
         const data = await res.json();
 
-        const ids = data.map((photo) => photo.id);
-        setPhotoList(ids);
+        console.log("임시 사진 목록:", data);
+        setPhotoList(data);
       } catch (error) {
         console.error("임시 사진 불러오기 실패", error);
       }
@@ -60,7 +61,6 @@ export default function ConfirmPhoto() {
 
   const handleBack = async () => {
     try {
-      /*
       const res = await fetch(`${BACKEND_URL}/api/photos/selection/temp`, {
         method: "GET",
         headers: {
@@ -82,7 +82,6 @@ export default function ConfirmPhoto() {
       );
 
       console.log("모든 임시 사진 삭제 완료");
-      */
     } catch (error) {
       console.error("사진 삭제 중 오류:", error);
     }
@@ -121,14 +120,15 @@ export default function ConfirmPhoto() {
         numColumns={3}
         keyExtractor={(_, i) => i.toString()}
         renderItem={({ item }) => {
-          if (!item) {
+          if (!item)
             return <View style={{ width: IMAGE_SIZE, height: IMAGE_SIZE }} />;
-          }
-          const isSelected = selected.includes(item);
+
+          const isSelected = selected.some((p) => p.id === item.id);
+
           return (
             <Pressable onPress={() => toggleSelect(item)}>
               <View style={styles.imageWrapper}>
-                <Image source={{ uri: item }} style={styles.image} />
+                <Image source={{ uri: item.photoUrl }} style={styles.image} />
                 {isSelected && (
                   <>
                     <View style={styles.overlay} />
