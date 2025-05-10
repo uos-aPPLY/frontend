@@ -25,9 +25,18 @@ function RootLayoutNav() {
       return;
     }
 
-    // 2) 인증 후 루트('/')나 '/login' 접근 시 홈으로
-    if (user && (openSegment === "" || openSegment === "login")) {
+    if (user && !user.hasAgreedToTerms && openSegment !== "terms") {
+      router.replace("/terms");
+      return;
+    }
+
+    if (
+      user &&
+      user.hasAgreedToTerms &&
+      (openSegment === "" || openSegment === "login")
+    ) {
       router.replace("/home");
+      return;
     }
   }, [user, loading, openSegment, router]);
 

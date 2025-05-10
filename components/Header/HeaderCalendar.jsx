@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     height: 114,
     flexDirection: "row",
     paddingHorizontal: 30,
-    paddingTop: 45,
+    // paddingTop: 45,
   },
   char2: {
     width: 40,

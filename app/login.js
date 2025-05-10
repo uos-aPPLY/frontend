@@ -61,7 +61,7 @@ export default function Login() {
         return;
       }
 
-      const { accessToken } = successResponse.accessToken;
+      const { accessToken } = successResponse;
       const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -70,7 +70,6 @@ export default function Login() {
       if (!res.ok) throw new Error(await res.text());
 
       const { accessToken: backendAccessToken } = await res.json();
-      console.log("Naver Access Token: ", accessToken);
       console.log("Backend Token: ", backendAccessToken);
       await saveToken(backendAccessToken);
       router.replace("/terms");
@@ -102,13 +101,6 @@ export default function Login() {
       console.log("Backend login response:", {
         backendAccessToken,
       });
-
-      const profile = await saveToken(backendAccessToken);
-      // if (!profile?.hasAgreedToTerms) {
-      //   router.replace("/terms");
-      // } else {
-      //   router.replace("/home");
-      // }
       await saveToken(backendAccessToken);
       router.replace("/terms");
     } catch (error) {
