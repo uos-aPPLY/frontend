@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Image, TouchableOpacity, StyleSheet, Text } from "react-native";
 import { useFonts, Caveat_600SemiBold } from "@expo-google-fonts/caveat";
 import { useRouter } from "expo-router";
-import AppLoading from "expo-app-loading";
+import * as SplashScreen from "expo-splash-screen";
 import IconButton from "./IconButton";
+
+SplashScreen.preventAutoHideAsync();
 
 export default function Header() {
   const nav = useRouter();
@@ -13,8 +15,14 @@ export default function Header() {
     Caveat_600SemiBold,
   });
 
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
   if (!fontsLoaded) {
-    return <AppLoading />;
+    return null;
   }
 
   const toggleSwitch = () => setIsOn((prev) => !prev);

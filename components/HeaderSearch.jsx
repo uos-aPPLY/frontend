@@ -1,30 +1,50 @@
-// src/components/HeaderSearch.jsx
-import { Image, StyleSheet, TextInput, View } from "react-native";
+import { Text, Image, StyleSheet, View } from "react-native";
 import IconButton from "./IconButton";
+import {
+  useFonts,
+  HomemadeApple_400Regular,
+} from "@expo-google-fonts/homemade-apple";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
+import { useRouter } from "expo-router";
 
-const HeaderSearch = ({ value, onChangeText, onBack }) => {
+SplashScreen.preventAutoHideAsync();
+
+const HeaderSearch = () => {
+  const nav = useRouter();
+
+  const [fontsLoaded] = useFonts({
+    HomemadeApple_400Regular,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return null; 
+  }
+
   return (
     <View style={styles.all}>
       <View style={styles.container}>
-        <View style={styles.searchBox}>
+        <View style={styles.left}>
           <Image
-            source={require("../assets/icons/brownsearchicon.png")}
-            style={styles.searchIcon}
+            source={require("../assets/character/char2.png")}
+            style={styles.char2}
           />
-          <TextInput
-            value={value}
-            onChangeText={onChangeText}
-            style={styles.input}
-            cursorColor="#AC8B78"
-            autoFocus
-          />
+          <Text style={styles.logo}>DiaryPic</Text>
         </View>
-        <View style={{ marginLeft: 15 }}>
+        <View style={styles.right}>
           <IconButton
-            source={require("../assets/icons/xicon.png")}
-            hsize={17}
-            wsize={17}
-            onPress={onBack}
+            source={require("../assets/icons/whitesearchicon.png")}
+            wsize={23}
+            hsize={22}
+            onPress={() => {
+              nav.push("/search?from=main");
+            }}
           />
         </View>
       </View>
@@ -45,29 +65,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: 45,
+    paddingTop: 60,
     borderBottomLeftRadius: 10,
     borderBottomRightRadius: 10,
   },
-  searchIcon: {
-    width: 22,
-    height: 22,
-    marginRight: 10,
+  logo: {
+    fontSize: 20,
+    fontFamily: "HomemadeApple_400Regular",
+    color: "#fff",
   },
-  searchBox: {
-    flex: 1,
+  left: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    height: 40,
-  },
-  input: {
     flex: 1,
-    height: 40,
-    backgroundColor: "#fff",
-    fontSize: 16,
-    outlineStyle: "none",
+  },
+  char2: {
+    width: 40,
+    height: 38,
+    marginRight: 15,
   },
 });
