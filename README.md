@@ -22,7 +22,6 @@ npx expo install @expo-google-fonts/caveat expo-font
 npx expo install @expo-google-fonts/homemade-apple expo-font
 npx expo install expo-app-loading
 npx expo install @react-native-google-signin/google-signin
-npm install query-string
 ```
 
 ## Prettier 설정
