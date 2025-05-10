@@ -1,5 +1,5 @@
 // app/(onboarding)/speechstyle.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   View,
@@ -8,11 +8,11 @@ import {
   StyleSheet,
   TextInput,
   ScrollView,
-  KeyboardAvoidingView,
   Platform,
   Image,
   Alert,
 } from "react-native";
+import Modal from "react-native-modal";
 import { useRouter } from "expo-router";
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
@@ -39,6 +39,12 @@ export default function SpeechStyle() {
   const [selected, setSelected] = useState(null);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalText, setModalText] = useState(text);
+
+  useEffect(() => {
+    setModalText(text);
+  }, [text]);
 
   const onSelect = (style) => {
     setSelected(style);
@@ -123,21 +129,20 @@ export default function SpeechStyle() {
         </View>
       </ScrollView>
 
-      <Text style={styles.descriptionText}>말투 커스터마이징이 가능해요.</Text>
       {isValid && (
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.editorContainer}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
-        >
-          <TextInput
+        <View style={styles.editorContainer}>
+          <Text style={styles.descriptionText}>
+            말투 커스터마이징이 가능해요.
+          </Text>
+
+          <TouchableOpacity
             style={styles.textInput}
-            multiline
-            value={text}
-            onChangeText={setText}
-            editable={!loading}
-          />
-        </KeyboardAvoidingView>
+            activeOpacity={0.7}
+            onPress={() => setModalVisible(true)}
+          >
+            <Text>{text}</Text>
+          </TouchableOpacity>
+        </View>
       )}
 
       <TouchableOpacity
@@ -152,6 +157,31 @@ export default function SpeechStyle() {
           {loading ? "저장 중..." : "확인"}
         </Text>
       </TouchableOpacity>
+      <Modal
+        isVisible={modalVisible}
+        swipeDirection="down"
+        onSwipeComplete={() => {
+          setText(modalText);
+          setModalVisible(false);
+        }}
+        onBackdropPress={() => {
+          setText(modalText);
+          setModalVisible(false);
+        }}
+        style={styles.modal}
+        avoidKeyboard
+      >
+        <View style={styles.modalContent}>
+          <View style={styles.modalHandle} />
+          <TextInput
+            style={styles.modalTextInput}
+            multiline
+            autoFocus
+            value={modalText}
+            onChangeText={setModalText}
+          />
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -218,4 +248,31 @@ const styles = StyleSheet.create({
   confirmEnabled: { backgroundColor: "#D68089" },
   confirmDisabled: { backgroundColor: "#D9D9D9" },
   confirmText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  modal: {
+    justifyContent: "flex-end",
+    margin: 0,
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  modalHandle: {
+    width: 40,
+    height: 5,
+    backgroundColor: "#ccc",
+    borderRadius: 2.5,
+    alignSelf: "center",
+    marginBottom: 10,
+  },
+  modalTextInput: {
+    minHeight: 100,
+    borderRadius: 20,
+    padding: 15,
+    backgroundColor: "#f9f9f9",
+    fontSize: 14,
+  },
 });

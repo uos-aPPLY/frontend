@@ -15,56 +15,70 @@ import { useAuth } from "../../contexts/AuthContext";
 
 export default function Terms() {
   const router = useRouter();
-  const { signOut } = useAuth();
-
-  const [allAgreed, setAllAgreed] = useState(false);
-  const [ageChecked, setAgeChecked] = useState(false);
-  const [termsChecked, setTermsChecked] = useState(false);
-  const [privacyChecked, setPrivacyChecked] = useState(false);
-  const [marketingChecked, setMarketingChecked] = useState(false);
-
-  const allRequiredAgreed = ageChecked && termsChecked && privacyChecked;
+  const { fetchTerms, submitAgreements, signOut } = useAuth();
+  const [terms, setTerms] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (allAgreed) {
-      setAgeChecked(true);
-      setTermsChecked(true);
-      setPrivacyChecked(true);
-      setMarketingChecked(true);
-    } else {
-      setAgeChecked(false);
-      setTermsChecked(false);
-      setPrivacyChecked(false);
-      setMarketingChecked(false);
-    }
-  }, [allAgreed]);
+    (async () => {
+      try {
+        const list = await fetchTerms();
+        setTerms(list);
+      } catch (e) {
+        Alert.alert("약관 로드 오류", e.message);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
-  useEffect(() => {
-    if (ageChecked && termsChecked && privacyChecked && marketingChecked) {
-      setAllAgreed(true);
-    } else if (allAgreed) {
-      setAllAgreed(false);
+  const toggle = (id) =>
+    setTerms((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, agreed: !t.agreed } : t))
+    );
+
+  const allRequiredAgreed = terms
+    .filter((t) => t.required)
+    .every((t) => t.agreed);
+  const allChecked = terms.every((t) => t.agreed);
+
+  const toggleAll = () =>
+    setTerms((prev) => prev.map((t) => ({ ...t, agreed: !allChecked })));
+
+  const onConfirm = async () => {
+    try {
+      const agreements = terms.map(({ id, agreed }) => ({
+        termsId: id,
+        agreed,
+      }));
+      await submitAgreements(agreements);
+      router.replace("/nickname");
+    } catch (e) {
+      Alert.alert("제출 실패", e.message);
     }
-  }, [ageChecked, termsChecked, privacyChecked, marketingChecked]);
+  };
+
+  if (loading) return null;
+
+  const renderRow = (t) => (
+    <View key={t.id} style={styles.item}>
+      <Checkbox
+        value={t.agreed}
+        onValueChange={() => toggle(t.id)}
+        style={styles.checkbox}
+        color={t.agreed ? "#D68089" : "#D9D9D9"}
+      />
+      <Text style={styles.itemText}>
+        {t.required ? "[필수] " : "[선택] "}
+        {t.title}
+      </Text>
+    </View>
+  );
 
   const goBack = async () => {
     await signOut();
     router.replace("/login");
   };
-
-  const onConfirm = () => {
-    // 백엔드 미구현
-    router.replace("/nickname");
-  };
-
-  const renderCheckbox = (checked, setChecked) => (
-    <Checkbox
-      value={checked}
-      onValueChange={() => setChecked((prev) => !prev)}
-      style={styles.checkbox}
-      color={checked ? "#D68089" : "#D9D9D9"}
-    />
-  );
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
@@ -79,31 +93,23 @@ export default function Terms() {
       </TouchableOpacity>
 
       <Text style={styles.header}>서비스 이용 약관에{"\n"}동의해주세요.</Text>
+
       <View style={styles.item}>
-        {renderCheckbox(allAgreed, setAllAgreed)}
+        <Checkbox
+          value={allChecked}
+          onValueChange={toggleAll}
+          style={styles.checkbox}
+          color={allChecked ? "#D68089" : "#D9D9D9"}
+        />
         <Text style={styles.itemText}>전체 동의</Text>
       </View>
 
       <View style={styles.separator} />
 
       <ScrollView style={styles.textContainer}>
-        <View style={styles.item}>
-          {renderCheckbox(ageChecked, setAgeChecked)}
-          <Text style={styles.itemText}>[필수] 만 14세 이상입니다.</Text>
-        </View>
-        <View style={styles.item}>
-          {renderCheckbox(termsChecked, setTermsChecked)}
-          <Text style={styles.itemText}>[필수] 서비스 이용약관</Text>
-        </View>
-        <View style={styles.item}>
-          {renderCheckbox(privacyChecked, setPrivacyChecked)}
-          <Text style={styles.itemText}>[필수] 개인정보 처리방침</Text>
-        </View>
-        <View style={styles.item}>
-          {renderCheckbox(marketingChecked, setMarketingChecked)}
-          <Text style={styles.itemText}>[선택] 마케팅 정보 수신 동의</Text>
-        </View>
+        {terms.map(renderRow)}
       </ScrollView>
+
       <TouchableOpacity
         style={[
           styles.confirmButton,

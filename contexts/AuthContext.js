@@ -10,18 +10,18 @@ import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
+const AuthContext = createContext();
+
+const authHeader = (token) => ({ Authorization: `Bearer ${token}` });
 
 async function fetchProfile(token) {
-  const res = await fetch(`${BACKEND_URL}/api/users/me`, {
-    headers: { Authorization: `Bearer ${token}` },
+  const r = await fetch(`${BACKEND_URL}/api/users/me`, {
+    headers: authHeader(token),
   });
-  if (!res.ok) return null;
-  const ct = res.headers.get("content-type") || "";
-  if (!ct.includes("application/json")) return null;
-  return await res.json();
+  return r.ok && r.headers.get("content-type")?.includes("json")
+    ? r.json()
+    : null;
 }
-
-const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -51,15 +51,33 @@ export function AuthProvider({ children }) {
     return profile;
   };
 
-  const agreeToTerms = async () => {
-    const token = await SecureStore.getItemAsync("accessToken");
-    if (!token) return null;
-    const res = await fetch(`${BACKEND_URL}/api/users/me/agree-terms`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
+  const fetchTerms = async () => {
+    const r = await fetch(`${BACKEND_URL}/api/terms`, {
+      headers: authHeader(token),
     });
-    if (!res.ok) throw new Error("약관 동의 실패");
+    if (!r.ok) throw new Error("약관 목록 조회 실패");
+    return r.json(); // [{id, title, required, ...}, ...]
+  };
+
+  const submitAgreements = async (agreements) => {
+    const r = await fetch(`${BACKEND_URL}/api/terms/agreements`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeader(token) },
+      body: JSON.stringify({ agreements }),
+    });
+    if (!r.ok) throw new Error("약관 동의 제출 실패");
     setUser((u) => ({ ...u, hasAgreedToTerms: true }));
+  };
+
+  const checkRequiredAgreed = async () => {
+    const r = await fetch(
+      `${BACKEND_URL}/api/terms/agreements/check-required`,
+      {
+        headers: authHeader(token),
+      }
+    );
+    if (!r.ok) return false;
+    return (await r.json()) === true;
   };
 
   const signOut = async () => {
@@ -69,7 +87,16 @@ export function AuthProvider({ children }) {
   };
 
   const value = useMemo(
-    () => ({ user, token, loading, saveToken, agreeToTerms, signOut }),
+    () => ({
+      user,
+      token,
+      loading,
+      saveToken,
+      fetchTerms,
+      submitAgreements,
+      checkRequiredAgreed,
+      signOut,
+    }),
     [user, token, loading]
   );
 
