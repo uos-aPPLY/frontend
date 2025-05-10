@@ -8,6 +8,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { useRouter } from "expo-router";
 
+// 스플래시 화면 유지
 SplashScreen.preventAutoHideAsync();
 
 const HeaderSearch = () => {
@@ -24,7 +25,7 @@ const HeaderSearch = () => {
   }, [fontsLoaded]);
 
   if (!fontsLoaded) {
-    return null; 
+    return null; // 로딩 중일 땐 아무것도 렌더링하지 않음
   }
 
   return (
