@@ -12,6 +12,7 @@
   "dependencies": {
     "@expo-google-fonts/caveat": "^0.3.0",
     "@expo-google-fonts/homemade-apple": "^0.3.0",
+    "@react-native-google-signin/google-signin": "^13.2.0",
     "@react-native-kakao/core": "^2.4.0",
     "@react-native-kakao/user": "^2.4.0",
     "@react-native-seoul/kakao-login": "^5.4.1",

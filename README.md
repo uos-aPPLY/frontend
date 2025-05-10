@@ -13,6 +13,7 @@ npx expo start --dev-client -c
 # 설치
 npm install
 npm install -g expo
+npm install -g eas-cli
 npx expo install expo-dev-client
 npx expo install expo-router react-native-safe-area-context react-native-screens expo-linking expo-constants expo-status-bar expo-image-picker expo-auth-session expo-secure-store @react-native-seoul/kakao-login
 npm install axios
@@ -20,6 +21,7 @@ npx expo install expo-build-properties
 npx expo install @expo-google-fonts/caveat expo-font
 npx expo install @expo-google-fonts/homemade-apple expo-font
 npx expo install expo-app-loading
+npx expo install @react-native-google-signin/google-signin
 ```
 
 ## Prettier 설정
