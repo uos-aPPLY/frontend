@@ -1,20 +1,22 @@
-import * as ImagePicker from "expo-image-picker";
-import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  Image,
   KeyboardAvoidingView,
   Platform,
+  Image,
+  View,
   StyleSheet,
   TouchableOpacity,
-  View,
 } from "react-native";
-import characterList from "../assets/characterList";
-import CardPicture from "../components/CardPicture";
+import * as ImagePicker from "expo-image-picker";
+import { useLocalSearchParams, useRouter } from "expo-router";
+
 import HeaderDate from "../components/HeaderDate";
+import CardPicture from "../components/CardPicture";
 import IconButton from "../components/IconButton";
 import TextBox from "../components/TextBox";
+import characterList from "../assets/characterList";
 import { useDiary } from "../contexts/DiaryContext";
+import { useAuth } from "../contexts/AuthContext";
 import { uploadPhotos } from "../utils/uploadPhotos";
 
 export default function PhotoPage() {
@@ -23,6 +25,8 @@ export default function PhotoPage() {
   const date = params.date || new Date().toISOString().slice(0, 10);
   const { text, setText, selectedCharacter, setSelectedCharacter } = useDiary();
   const [isPickerVisible, setIsPickerVisible] = useState(false);
+  const { token } = useAuth();
+  console.log("토큰:", token);
 
   const openGallery = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -40,8 +44,12 @@ export default function PhotoPage() {
     });
 
     if (!result.canceled) {
+      if (!token) {
+        console.error("토큰이 없습니다. 로그인 후 다시 시도하세요.");
+        return;
+      }
       try {
-        await uploadPhotos(result.assets);
+        await uploadPhotos(result.assets, token);
         nav.push("/confirmPhoto");
       } catch (error) {
         console.error("업로드 실패", error);
@@ -59,7 +67,7 @@ export default function PhotoPage() {
           date={date}
           onBack={() => {
             setText("");
-            setSelectedCharacter(require("../assets/character/char1.png")); // 또는 초기 캐릭터 이미지
+            setSelectedCharacter(require("../assets/character/char1.png"));
             nav.push("./(tabs)/calendar");
           }}
           hasText={text.trim().length > 0}
