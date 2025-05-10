@@ -123,6 +123,7 @@ export default function SpeechStyle() {
         </View>
       </ScrollView>
 
+      <Text style={styles.descriptionText}>말투 커스터마이징이 가능해요.</Text>
       {isValid && (
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -192,7 +193,12 @@ const styles = StyleSheet.create({
   },
   styleText: { fontSize: 16, color: "black" },
   styleTextSelected: { fontSize: 16, color: "#D68089", fontWeight: "600" },
-
+  descriptionText: {
+    fontSize: 12,
+    color: "#000000",
+    marginLeft: 5,
+    marginBottom: 5,
+  },
   editorContainer: {},
   textInput: {
     height: 120,
