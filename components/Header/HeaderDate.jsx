@@ -18,7 +18,7 @@ export default function HeaderDate({ date, onBack, hasText = false }) {
   return (
     <View style={styles.header}>
       <IconButton
-        source={require("../assets/icons/backicon.png")}
+        source={require("../../assets/icons/backicon.png")}
         hsize={22}
         wsize={22}
         style={styles.back}
@@ -27,7 +27,7 @@ export default function HeaderDate({ date, onBack, hasText = false }) {
       <Text style={styles.date}>{formatted}</Text>
       {hasText ? (
         <IconButton
-          source={require("../assets/icons/browncheckicon.png")}
+          source={require("../../assets/icons/browncheckicon.png")}
           wsize={22}
           hsize={22}
           style={styles.check}

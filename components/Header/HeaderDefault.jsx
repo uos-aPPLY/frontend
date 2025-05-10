@@ -1,4 +1,3 @@
-// src/components/HeaderSearch.jsx
 import { Text, Image, StyleSheet, View } from "react-native";
 import IconButton from "../IconButton";
 import {
@@ -24,14 +23,14 @@ const HeaderSearch = ({}) => {
       <View style={styles.container}>
         <View style={styles.left}>
           <Image
-            source={require("../assets/character/char2.png")}
+            source={require("../../assets/character/char2.png")}
             style={styles.char2}
           />
           <Text style={styles.logo}>DiaryPic</Text>
         </View>
         <View style={styles.right}>
           <IconButton
-            source={require("../assets/icons/whitesearchicon.png")}
+            source={require("../../assets/icons/whitesearchicon.png")}
             wsize={23}
             hsize={22}
             onPress={() => {
