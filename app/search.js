@@ -1,6 +1,6 @@
 import { View, StyleSheet } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import HeaderSearch from "../components/HeaderSearch";
+import HeaderSearch from "../components/Header/HeaderSearch";
 import { useState } from "react";
 
 export default function Search() {

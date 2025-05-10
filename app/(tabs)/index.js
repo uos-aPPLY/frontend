@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { StyleSheet, View, Text } from "react-native";
-import HeaderDefault from "../../components/HeaderDefault";
+import HeaderDefault from "../../components/Header/HeaderDefault";
 import IconButton from "../../components/IconButton";
 
 export default function Home() {
@@ -16,7 +16,7 @@ export default function Home() {
     "과거와 미래가 만나는 그곳, \n사진 속에서 이야기해요.",
   ];
 
-  const today = new Date().getDay(); 
+  const today = new Date().getDay();
   const message = messages[today];
 
   return (
