@@ -2,7 +2,10 @@ import { Image, Pressable, StyleSheet } from "react-native";
 
 const IconButton = ({ source, onPress, wsize = 24, hsize = 24, style }) => {
   return (
-    <Pressable onPress={onPress} style={[styles.button, style]}>
+    <Pressable
+      onPress={onPress}
+      style={[styles.button, { width: wsize, height: hsize }, style]}
+    >
       <Image
         source={source}
         style={{ width: wsize, height: hsize }}

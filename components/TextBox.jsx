@@ -15,6 +15,7 @@ export default function TextBox({ value, onChangeText, placeholder }) {
 
 const styles = StyleSheet.create({
   input: {
+    height: 360,
     flex: 1,
     backgroundColor: "#fff",
     borderRadius: 16,
