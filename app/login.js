@@ -119,7 +119,6 @@ export default function Login() {
       });
 
       const profile = await saveToken(backendAccessToken);
-
       // if (!profile?.hasAgreedToTerms) {
       //   router.replace("/terms");
       // } else {

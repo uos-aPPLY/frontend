@@ -122,6 +122,7 @@ export default function SpeechStyle() {
           ))}
         </View>
       </ScrollView>
+
       <Text style={styles.descriptionText}>말투 커스터마이징이 가능해요.</Text>
       {isValid && (
         <KeyboardAvoidingView
