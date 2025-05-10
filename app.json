@@ -1,12 +1,8 @@
 {
   "expo": {
-    "name": "diarypic-fe",
-    "slug": "diarypic-fe",
-    "scheme": [
-      "diarypic.app",
-      "com.apply.diarypic",
-      "kakao4aea82ec6ceb08c4f6d7f0fb157c8ee1"
-    ],
+    "name": "diarypic",
+    "slug": "diarypic",
+    "scheme": ["diarypic", "diarypic.app", "com.apply.diarypic"],
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -23,29 +19,25 @@
       "bundleIdentifier": "com.apply.diarypic",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "사진을 업로드하기 위해 앨범 접근 권한이 필요합니다.",
-        "NSCameraUsageDescription": "사진 촬영을 위해 카메라 접근 권한이 필요합니다.",
-        "ITSAppUsesNonExemptEncryption": false
+        "NSCameraUsageDescription": "사진 촬영을 위해 카메라 접근 권한이 필요합니다."
       }
     },
     "android": {
+      "package": "com.apply.diarypic",
+      "edgeToEdgeEnabled": true,
+      "permissions": ["READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff",
-        "android": {
-          "permissions": [
-            "READ_EXTERNAL_STORAGE",
-            "WRITE_EXTERNAL_STORAGE"
-          ]
-        }
-      },
-      "package": "com.apply.diarypic",
-      "edgeToEdgeEnabled": true
+        "backgroundColor": "#ffffff"
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
       "BACKEND_URL": "http://localhost:8080",
+      "GOOGLE_IOS_CLIENT_ID": "661799666714-1peeqbc09tgb6b85mua90p4h7p1livte.apps.googleusercontent.com",
+      "GOOGLE_WEB_CLIENT_ID": "661799666714-iv7cmcndl3avaruite6higkdtrtffbne.apps.googleusercontent.com",
       "router": {},
       "eas": {
         "projectId": "98161b2c-c0b4-419d-ac4d-e76300ee8121"
@@ -57,18 +49,25 @@
       [
         "@react-native-seoul/kakao-login",
         {
-          "kakaoAppKey": "ff26e5dd397aa1e1d9927f1e0531548d",
-          "kotlinVersion": "1.9.0"
+          "kakaoAppKey": "ff26e5dd397aa1e1d9927f1e0531548d"
         }
       ],
       [
         "expo-build-properties",
         {
           "android": {
+            "compileSdkVersion": 34,
+            "targetSdkVersion": 34,
             "extraMavenRepos": [
-              "https://devrepo.kakao.com/content/groups/public/"
+              "https://devrepo.kakao.com/nexus/content/groups/public/"
             ]
           }
+        }
+      ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.661799666714-1peeqbc09tgb6b85mua90p4h7p1livte"
         }
       ],
       "expo-font",
