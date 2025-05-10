@@ -34,7 +34,6 @@ const styles = StyleSheet.create({
     width: "100%",
     aspectRatio: 1,
     backgroundColor: "#F1F2F1",
-    marginTop: 30,
     borderRadius: 30,
     alignItems: "center",
     justifyContent: "center",
