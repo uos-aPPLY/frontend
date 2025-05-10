@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, SafeAreaView } from "react-native";
 import { useRouter } from "expo-router";
 import HeaderCalender from "../../components/Header/HeaderCalendar";
+import CalendarComponent from "../../components/Calendar/Calendar";
 
 export default function Calendar() {
   const nav = useRouter();
@@ -8,6 +9,7 @@ export default function Calendar() {
   return (
     <SafeAreaView style={styles.container}>
       <HeaderCalender />
+      <CalendarComponent />
     </SafeAreaView>
   );
 }

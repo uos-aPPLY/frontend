@@ -24,6 +24,7 @@ npx expo install @react-native-google-signin/google-signin
 npm install query-string@6
 npx expo install @react-native-seoul/naver-login
 npm install react-native-modal
+npm install date-fns --save
 ```
 
 ## Prettier 설정
