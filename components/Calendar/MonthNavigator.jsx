@@ -1,3 +1,4 @@
+// components/Calendar/MonthNavigator.jsx
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Image } from "react-native";
 import { addMonths, subMonths, format } from "date-fns";
@@ -6,14 +7,19 @@ import {
   Inter_600SemiBold,
 } from "@expo-google-fonts/inter";
 import AppLoading from "expo-app-loading";
+import { useRouter } from "expo-router";
 
 export default function MonthNavigator({ currentMonth, onPrev, onNext }) {
+  const router = useRouter();
   const [fontsInterLoaded] = useInterFonts({
     Inter_600SemiBold,
   });
   if (!fontsInterLoaded) {
     return <AppLoading />;
   }
+
+  const monthParam = format(currentMonth, "yyyy-MM");
+
   return (
     <View style={styles.header}>
       <TouchableOpacity onPress={onPrev} style={styles.iconButton}>
@@ -23,7 +29,12 @@ export default function MonthNavigator({ currentMonth, onPrev, onNext }) {
         />
       </TouchableOpacity>
 
-      <Text style={styles.monthText}>{format(currentMonth, "M월")}</Text>
+      <TouchableOpacity
+        onPress={() => router.push(`/diaries/${monthParam}`)}
+        style={styles.monthButton}
+      >
+        <Text style={styles.monthText}>{format(currentMonth, "M월")}</Text>
+      </TouchableOpacity>
 
       <TouchableOpacity onPress={onNext}>
         <Text style={styles.iconButton}>
@@ -62,4 +73,5 @@ const styles = StyleSheet.create({
     color: "#A78C7B",
     marginHorizontal: 20,
   },
+  monthButton: {},
 });
