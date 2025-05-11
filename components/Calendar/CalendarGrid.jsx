@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   },
   dayText: {
     fontSize: 18,
-    color: "#D68089",
+    color: "rgba(214, 128, 137, 0.7)",
     fontFamily: "Inter_600SemiBold",
   },
   inactiveDayText: {

@@ -199,10 +199,14 @@ const styles = StyleSheet.create({
   },
   styleButtonSelected: {
     borderWidth: 7,
-    borderColor: "#D68089",
+    borderColor: "rgba(214, 128, 137, 0.7)",
   },
   styleText: { fontSize: 16, color: "black" },
-  styleTextSelected: { fontSize: 16, color: "#D68089", fontWeight: "600" },
+  styleTextSelected: {
+    fontSize: 16,
+    color: "rgba(214, 128, 137, 0.7)",
+    fontWeight: "600",
+  },
   descriptionText: {
     fontSize: 12,
     color: "#000000",
@@ -225,7 +229,7 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 14,
   },
-  confirmEnabled: { backgroundColor: "#D68089" },
+  confirmEnabled: { backgroundColor: "rgba(214, 128, 137, 0.7)" },
   confirmDisabled: { backgroundColor: "#D9D9D9" },
   confirmText: { color: "#fff", fontSize: 16, fontWeight: "600" },
   modal: {

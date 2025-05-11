@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginHorizontal: 6,
   },
-  dotActive: { backgroundColor: "#D68089" },
+  dotActive: { backgroundColor: "rgba(214, 128, 137, 0.7)" },
   dotInactive: { backgroundColor: "#D9D9D9" },
   buttonContainer: {
     paddingHorizontal: 30,
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   nextButton: {
     width: "100%",
     height: 50,
-    backgroundColor: "#D68089",
+    backgroundColor: "rgba(214, 128, 137, 0.7)",
     borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
