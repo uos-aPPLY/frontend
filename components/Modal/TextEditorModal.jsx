@@ -1,3 +1,4 @@
+// components/Modal/TextEditorModal.jsx
 import React, { useState, useEffect } from "react";
 import { View, TextInput, StyleSheet, Platform } from "react-native";
 import Modal from "react-native-modal";
