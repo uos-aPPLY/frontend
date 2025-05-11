@@ -26,7 +26,7 @@ const {
 
 export default function Login() {
   const router = useRouter();
-  const { saveToken } = useAuth();
+  const { saveToken, checkRequiredAgreed } = useAuth();
 
   const kakaoRedirectUri = Linking.createURL("oauth", { scheme: "diarypic" });
 
@@ -61,7 +61,7 @@ export default function Login() {
         return;
       }
 
-      const { accessToken } = successResponse.accessToken;
+      const { accessToken } = successResponse;
       const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -70,10 +70,17 @@ export default function Login() {
       if (!res.ok) throw new Error(await res.text());
 
       const { accessToken: backendAccessToken } = await res.json();
-      console.log("Naver Access Token: ", accessToken);
       console.log("Backend Token: ", backendAccessToken);
+
       await saveToken(backendAccessToken);
-      router.replace("/terms");
+
+      const requiredAgreed = await checkRequiredAgreed();
+      console.log(requiredAgreed);
+      if (requiredAgreed) {
+        router.replace("/home");
+      } else {
+        router.replace("/terms");
+      }
     } catch (e) {
       console.error("네이버 로그인 처리 오류:", e);
       Alert.alert("네이버 로그인 실패", e.message ?? "알 수 없는 오류");
@@ -102,15 +109,15 @@ export default function Login() {
       console.log("Backend login response:", {
         backendAccessToken,
       });
-
-      const profile = await saveToken(backendAccessToken);
-      // if (!profile?.hasAgreedToTerms) {
-      //   router.replace("/terms");
-      // } else {
-      //   router.replace("/home");
-      // }
       await saveToken(backendAccessToken);
-      router.replace("/terms");
+      const requiredAgreed = await checkRequiredAgreed();
+      console.log("requiredAgreed:", requiredAgreed);
+
+      if (requiredAgreed) {
+        router.replace("/home");
+      } else {
+        router.replace("/terms");
+      }
     } catch (error) {
       console.log("Login Fail:", error);
     }
