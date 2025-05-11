@@ -13,14 +13,33 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
+import TextEditorModal from "../../components/Modal/TextEditorModal";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 const { width } = Dimensions.get("window");
-const CARD_WIDTH = (width - 20 * 2 - 12) / 2;
+const CARD_WIDTH = (width - 30 * 2 - 18) / 2; // padding 20 each side + 12 gap
 
 export default function ProfilePage() {
   const [albums, setAlbums] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [nickname, setNickname] = useState("수빈");
+  const [isModalVisible, setModalVisible] = useState(false);
+
+  useEffect(() => {
+    async function fetchProfile() {
+      try {
+        const token = await SecureStore.getItemAsync("accessToken");
+        const res = await fetch(`${BACKEND_URL}/api/users/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const json = await res.json();
+        setNickname(json.nickname || "");
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    fetchProfile();
+  }, []);
 
   useEffect(() => {
     async function fetchAlbums() {
@@ -57,6 +76,28 @@ export default function ProfilePage() {
     fetchAlbums();
   }, []);
 
+  const handleSaveNickname = async (newName) => {
+    const cleaned = newName
+      .replace(/[\r\n]/g, "")
+      .trim()
+      .slice(0, 10);
+    try {
+      const token = await SecureStore.getItemAsync("accessToken");
+      await fetch(`${BACKEND_URL}/api/users/nickname`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ nickname: cleaned }),
+      });
+      setNickname(cleaned);
+    } catch (e) {
+      console.error(e);
+    }
+    setModalVisible(false);
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.center}>
@@ -66,12 +107,19 @@ export default function ProfilePage() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Image
-          source={require("../../assets/icons/settingicon.png")}
-          style={styles.settingsIcon}
-        />
+    <View style={styles.container}>
+      <SafeAreaView style={styles.header} edges={["top"]}>
+        <TouchableOpacity
+          onPress={() => {
+            /* 설정 눌렀을 때 */
+          }}
+          style={styles.settingsWrapper}
+        >
+          <Image
+            source={require("../../assets/icons/settingicon.png")}
+            style={styles.settingsIcon}
+          />
+        </TouchableOpacity>
         <View style={styles.profileRow}>
           <Image
             source={require("../../assets/bangulicon.png")}
@@ -79,18 +127,20 @@ export default function ProfilePage() {
           />
           <View style={styles.nameSection}>
             <View style={styles.nameRow}>
-              <Text style={styles.name}>수빈</Text>
-              <Image
-                source={require("../../assets/icons/editicon.png")}
-                style={styles.editIcon}
-              />
+              <Text style={styles.name}>{nickname}</Text>
+              <TouchableOpacity onPress={() => setModalVisible(true)}>
+                <Image
+                  source={require("../../assets/icons/editicon.png")}
+                  style={styles.editIcon}
+                />
+              </TouchableOpacity>
             </View>
             <Text style={styles.stats}>총 일기 수 10</Text>
             <Text style={styles.stats}>올해 일기 수 10</Text>
             <Text style={styles.stats}>이번 달 일기 수 10</Text>
           </View>
         </View>
-      </View>
+      </SafeAreaView>
 
       <FlatList
         data={albums}
@@ -100,12 +150,20 @@ export default function ProfilePage() {
         contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.card} activeOpacity={0.8}>
-            <Image source={{ uri: item.coverUrl }} style={styles.cardImage} />
+            <View style={styles.imageWrapper}>
+              <Image source={{ uri: item.coverUrl }} style={styles.cardImage} />
+            </View>
             <Text style={styles.cardText}>{item.name}</Text>
           </TouchableOpacity>
         )}
       />
-    </SafeAreaView>
+      <TextEditorModal
+        visible={isModalVisible}
+        initialText={nickname}
+        onSave={handleSaveNickname}
+        onCancel={() => setModalVisible(false)}
+      />
+    </View>
   );
 }
 
@@ -124,13 +182,18 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(214, 128, 137, 0.7)",
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
-    paddingVertical: 20,
-    paddingHorizontal: 20,
+    paddingHorizontal: 40,
+    paddingVertical: 26,
+  },
+  settingsWrapper: {
+    position: "absolute",
+    top: 0,
+    right: 0,
   },
   settingsIcon: {
     position: "absolute",
-    top: 20,
-    right: 20,
+    top: 60,
+    right: 30,
     resizeMode: "contain",
     width: 24,
     height: 24,
@@ -138,12 +201,12 @@ const styles = StyleSheet.create({
   profileRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 20,
   },
   bangulicon: {
-    width: 60,
-    height: 60,
-    marginRight: 16,
+    width: 64,
+    height: 64,
+    marginRight: 26,
+    resizeMode: "contain",
   },
   nameSection: {
     flex: 1,
@@ -151,30 +214,31 @@ const styles = StyleSheet.create({
   nameRow: {
     flexDirection: "row",
     alignItems: "center",
+    marginBottom: 10,
   },
   name: {
-    fontSize: 20,
-    color: "#FFF",
+    fontSize: 22,
+    color: "#FFFFFF",
     fontWeight: "bold",
   },
   editIcon: {
     marginLeft: 8,
     resizeMode: "contain",
-    width: 20,
-    height: 20,
+    width: 18,
+    height: 18,
   },
   stats: {
     fontSize: 14,
-    color: "#FFF",
-    marginTop: 4,
+    color: "#FFFFFF",
+    marginTop: 2,
   },
   listContent: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingHorizontal: 30,
+    paddingTop: 30,
   },
   row: {
     justifyContent: "space-between",
-    marginBottom: 16,
+    marginBottom: 10,
   },
   card: {
     width: CARD_WIDTH,
@@ -183,11 +247,23 @@ const styles = StyleSheet.create({
   cardImage: {
     width: CARD_WIDTH,
     height: CARD_WIDTH,
-    borderRadius: 20,
+    borderRadius: 30,
+    overflow: "hidden",
+  },
+  imageWrapper: {
+    width: CARD_WIDTH,
+    height: CARD_WIDTH,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2.5 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.6,
+    overflow: "visible",
   },
   cardText: {
-    marginTop: 8,
+    marginTop: 6,
     fontSize: 14,
-    color: "#8B6F5B",
+    color: "#AC8B78",
   },
 });
