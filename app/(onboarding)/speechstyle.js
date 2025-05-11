@@ -6,16 +6,14 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  TextInput,
   ScrollView,
-  Platform,
   Image,
   Alert,
 } from "react-native";
-import Modal from "react-native-modal";
 import { useRouter } from "expo-router";
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
+import TextEditorModal from "../../components/Modal/TextEditorModal";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
@@ -157,31 +155,13 @@ export default function SpeechStyle() {
           {loading ? "저장 중..." : "확인"}
         </Text>
       </TouchableOpacity>
-      <Modal
-        isVisible={modalVisible}
-        swipeDirection="down"
-        onSwipeComplete={() => {
-          setText(modalText);
-          setModalVisible(false);
-        }}
-        onBackdropPress={() => {
-          setText(modalText);
-          setModalVisible(false);
-        }}
-        style={styles.modal}
-        avoidKeyboard
-      >
-        <View style={styles.modalContent}>
-          <View style={styles.modalHandle} />
-          <TextInput
-            style={styles.modalTextInput}
-            multiline
-            autoFocus
-            value={modalText}
-            onChangeText={setModalText}
-          />
-        </View>
-      </Modal>
+
+      <TextEditorModal
+        visible={modalVisible}
+        initialText={text}
+        onSave={(edited) => setText(edited)}
+        onCancel={() => setModalVisible(false)}
+      />
     </SafeAreaView>
   );
 }
