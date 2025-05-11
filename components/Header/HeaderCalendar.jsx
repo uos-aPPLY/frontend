@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Image, TouchableOpacity, StyleSheet, Text } from "react-native";
 import { useFonts, Caveat_600SemiBold } from "@expo-google-fonts/caveat";
+import { format } from "date-fns";
 import { useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import IconButton from "../IconButton";
@@ -25,6 +26,10 @@ export default function Header() {
     return null;
   }
 
+  const today = new Date();
+  const dateStr = format(today, "yyyy.MM.dd");
+  const dayStr = format(today, "EEE");
+
   const toggleSwitch = () => setIsOn((prev) => !prev);
 
   return (
@@ -35,9 +40,12 @@ export default function Header() {
           style={styles.char2}
         />
         <View style={styles.dateWrapper}>
-          <Text style={styles.dateText}>2025.04.09</Text>
-          <Text style={styles.dayText}>Wed</Text>
+          <Text style={styles.dateText}>{dateStr}</Text>
+          <Text style={styles.dayText}>{dayStr}</Text>
         </View>
+      </View>
+
+      <View style={styles.right}>
         <TouchableOpacity onPress={toggleSwitch}>
           <Image
             source={
@@ -48,9 +56,6 @@ export default function Header() {
             style={styles.toggleImage}
           />
         </TouchableOpacity>
-      </View>
-
-      <View style={styles.right}>
         <IconButton
           source={require("../../assets/icons/brownsearchicon.png")}
           hsize={22}
@@ -66,17 +71,13 @@ export default function Header() {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#FCF9F4",
-    width: "100%",
-    height: 114,
     flexDirection: "row",
     paddingHorizontal: 30,
-    // paddingTop: 45,
   },
   char2: {
-    width: 40,
-    height: 38,
-    marginRight: 10,
+    width: 44,
+    height: 40,
+    resizeMode: "contain",
   },
   dateWrapper: {
     flexDirection: "column",
@@ -84,10 +85,9 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontFamily: "Caveat_600SemiBold",
-    fontSize: 24,
-    marginRight: 10,
+    fontSize: 28,
     color: "#AC8B78",
-    lineHeight: 20,
+    marginBottom: -10,
   },
   dayText: {
     fontFamily: "Caveat_600SemiBold",
@@ -98,15 +98,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     flex: 1,
+    gap: 20,
   },
   right: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-end",
+    gap: 25,
   },
   toggleImage: {
-    width: 26,
-    height: 19,
-    marginLeft: 10,
+    width: 30,
+    height: 20,
+    resizeMode: "contain",
   },
 });

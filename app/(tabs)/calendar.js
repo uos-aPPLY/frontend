@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FCF9F4",
   },
   headerWrapper: {
-    paddingBottom: 30,
+    paddingBottom: 50,
   },
   calendarContainer: {
     flex: 1,
@@ -81,6 +81,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 50,
+    marginBottom: 70,
   },
 });
