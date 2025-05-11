@@ -65,7 +65,7 @@ export default function CalendarGrid({
   const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return (
-    <View style={[styles.container, { height: screenHeight * 0.44 }]}>
+    <View style={[styles.container, { minHeight: screenHeight * 0.44 }]}>
       <View style={styles.weekDaysRow}>
         {daysOfWeek.map((day) => (
           <Text key={day} style={styles.weekDayText}>
@@ -138,6 +138,7 @@ const styles = StyleSheet.create({
     alignContent: "center",
     justifyContent: "center",
     paddingHorizontal: 5,
+    paddingTop: 10,
   },
   weekDaysRow: {
     flexDirection: "row",
