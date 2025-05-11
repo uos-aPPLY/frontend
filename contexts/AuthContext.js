@@ -70,14 +70,15 @@ export function AuthProvider({ children }) {
   };
 
   const checkRequiredAgreed = async () => {
-    const r = await fetch(
+    const t = await SecureStore.getItemAsync("accessToken");
+    const res = await fetch(
       `${BACKEND_URL}/api/terms/agreements/check-required`,
       {
-        headers: authHeader(token),
+        headers: { Authorization: `Bearer ${t}` },
       }
     );
-    if (!r.ok) return false;
-    return (await r.json()) === true;
+    if (!res.ok) return false;
+    return await res.json();
   };
 
   const signOut = async () => {
