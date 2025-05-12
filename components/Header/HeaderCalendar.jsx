@@ -1,17 +1,17 @@
 // components/Header/HeaderCalendar.jsx
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { View, Image, TouchableOpacity, StyleSheet, Text } from "react-native";
 import { useFonts, Caveat_600SemiBold } from "@expo-google-fonts/caveat";
 import { format } from "date-fns";
 import { useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import IconButton from "../IconButton";
+import ToggleSwitch from "../ToggleSwitch";
 
 SplashScreen.preventAutoHideAsync();
 
 export default function Header() {
   const nav = useRouter();
-  const [isOn, setIsOn] = useState(false);
 
   const [fontsLoaded] = useFonts({
     Caveat_600SemiBold,
@@ -31,8 +31,6 @@ export default function Header() {
   const dateStr = format(today, "yyyy.MM.dd");
   const dayStr = format(today, "EEE");
 
-  const toggleSwitch = () => setIsOn((prev) => !prev);
-
   return (
     <View style={styles.container}>
       <View style={styles.left}>
@@ -47,16 +45,11 @@ export default function Header() {
       </View>
 
       <View style={styles.right}>
-        <TouchableOpacity onPress={toggleSwitch}>
-          <Image
-            source={
-              isOn
-                ? require("../../assets/icons/righton.png")
-                : require("../../assets/icons/leftoff.png")
-            }
-            style={styles.toggleImage}
-          />
-        </TouchableOpacity>
+        <ToggleSwitch
+          onImage={require("../../assets/icons/righton.png")}
+          offImage={require("../../assets/icons/leftoff.png")}
+          style={styles.toggleImage}
+        />
         <IconButton
           source={require("../../assets/icons/brownsearchicon.png")}
           hsize={22}
