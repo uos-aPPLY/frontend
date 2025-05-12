@@ -27,6 +27,11 @@ npm install react-native-modal
 npx expo install expo-image-manipulator
 npm install date-fns --save
 npx expo install @expo-google-fonts/inter
+npm install react-native-draggable-flatlist
+npx expo install react-native-gesture-handler
+npx expo install react-native-reanimated
+
+
 ```
 
 ## Prettier 설정

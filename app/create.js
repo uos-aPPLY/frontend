@@ -7,13 +7,13 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  onPress,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as ImageManipulator from "expo-image-manipulator";
 
 import HeaderDate from "../components/Header/HeaderDate";
-import CardPicture from "../components/CardPicture";
 import IconButton from "../components/IconButton";
 import TextBox from "../components/TextBox";
 import characterList from "../assets/characterList";
@@ -109,7 +109,16 @@ export default function CreatePage() {
             contentContainerStyle={styles.scrollContainer}
             keyboardShouldPersistTaps="handled"
           >
-            <CardPicture isPlaceholder onPress={openGallery} />
+            <View style={styles.shadowWrapper}>
+              <View style={styles.card}>
+                <IconButton
+                  source={require("../assets/icons/bigpinkplusicon.png")}
+                  wsize={50}
+                  hsize={50}
+                  onPress={openGallery}
+                />
+              </View>
+            </View>
 
             <View style={styles.characterPicker}>
               <IconButton
@@ -161,6 +170,25 @@ const styles = StyleSheet.create({
   all: {
     backgroundColor: "#FCF9F4",
     flex: 1,
+  },
+  shadowWrapper: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderRadius: 30,
+    paddingHorizontal: 30,
+  },
+  card: {
+    width: "100%",
+    aspectRatio: 1,
+    backgroundColor: "#F1F2F1",
+    borderRadius: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    position: "relative",
   },
   middle: {
     flex: 1,
