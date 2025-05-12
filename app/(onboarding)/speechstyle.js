@@ -6,16 +6,14 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  TextInput,
   ScrollView,
-  Platform,
   Image,
   Alert,
 } from "react-native";
-import Modal from "react-native-modal";
 import { useRouter } from "expo-router";
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
+import TextEditorModal from "../../components/Modal/TextEditorModal";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
@@ -157,31 +155,13 @@ export default function SpeechStyle() {
           {loading ? "저장 중..." : "확인"}
         </Text>
       </TouchableOpacity>
-      <Modal
-        isVisible={modalVisible}
-        swipeDirection="down"
-        onSwipeComplete={() => {
-          setText(modalText);
-          setModalVisible(false);
-        }}
-        onBackdropPress={() => {
-          setText(modalText);
-          setModalVisible(false);
-        }}
-        style={styles.modal}
-        avoidKeyboard
-      >
-        <View style={styles.modalContent}>
-          <View style={styles.modalHandle} />
-          <TextInput
-            style={styles.modalTextInput}
-            multiline
-            autoFocus
-            value={modalText}
-            onChangeText={setModalText}
-          />
-        </View>
-      </Modal>
+
+      <TextEditorModal
+        visible={modalVisible}
+        initialText={text}
+        onSave={(edited) => setText(edited)}
+        onCancel={() => setModalVisible(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -219,10 +199,14 @@ const styles = StyleSheet.create({
   },
   styleButtonSelected: {
     borderWidth: 7,
-    borderColor: "#D68089",
+    borderColor: "rgba(214, 128, 137, 0.7)",
   },
   styleText: { fontSize: 16, color: "black" },
-  styleTextSelected: { fontSize: 16, color: "#D68089", fontWeight: "600" },
+  styleTextSelected: {
+    fontSize: 16,
+    color: "rgba(214, 128, 137, 0.7)",
+    fontWeight: "600",
+  },
   descriptionText: {
     fontSize: 12,
     color: "#000000",
@@ -245,7 +229,7 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 14,
   },
-  confirmEnabled: { backgroundColor: "#D68089" },
+  confirmEnabled: { backgroundColor: "rgba(214, 128, 137, 0.7)" },
   confirmDisabled: { backgroundColor: "#D9D9D9" },
   confirmText: { color: "#fff", fontSize: 16, fontWeight: "600" },
   modal: {

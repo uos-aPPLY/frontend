@@ -66,7 +66,7 @@ export default function Terms() {
         value={t.agreed}
         onValueChange={() => toggle(t.id)}
         style={styles.checkbox}
-        color={t.agreed ? "#D68089" : "#D9D9D9"}
+        color={t.agreed ? "rgba(214, 128, 137, 0.7)" : "#D9D9D9"}
       />
       <Text style={styles.itemText}>
         {t.required ? "[필수] " : "[선택] "}
@@ -99,7 +99,7 @@ export default function Terms() {
           value={allChecked}
           onValueChange={toggleAll}
           style={styles.checkbox}
-          color={allChecked ? "#D68089" : "#D9D9D9"}
+          color={allChecked ? "rgba(214, 128, 137, 0.7)" : "#D9D9D9"}
         />
         <Text style={styles.itemText}>전체 동의</Text>
       </View>
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
     marginBottom: 60,
   },
   confirmButtonEnabled: {
-    backgroundColor: "#D68089",
+    backgroundColor: "rgba(214, 128, 137, 0.7)",
   },
   confirmButtonDisabled: {
     backgroundColor: "#D9D9D9",

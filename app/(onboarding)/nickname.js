@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
     marginBottom: 60,
   },
   confirmButtonEnabled: {
-    backgroundColor: "#D68089",
+    backgroundColor: "rgba(214, 128, 137, 0.7)",
   },
   confirmButtonDisabled: {
     backgroundColor: "#D9D9D9",

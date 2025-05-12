@@ -25,6 +25,8 @@ npm install query-string@6
 npx expo install @react-native-seoul/naver-login
 npm install react-native-modal
 npx expo install expo-image-manipulator
+npm install date-fns --save
+npx expo install @expo-google-fonts/inter
 ```
 
 ## Prettier 설정
