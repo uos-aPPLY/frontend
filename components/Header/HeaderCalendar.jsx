@@ -72,12 +72,8 @@ export default function Header() {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#FCF9F4",
-    width: "100%",
-    height: 130,
     flexDirection: "row",
     paddingHorizontal: 30,
-    paddingTop: 60,
   },
   char2: {
     width: 44,

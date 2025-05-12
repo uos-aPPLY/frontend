@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
+import { useRouter } from "expo-router";
 import TextEditorModal from "../../components/Modal/TextEditorModal";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
@@ -20,9 +21,10 @@ const { width } = Dimensions.get("window");
 const CARD_WIDTH = (width - 30 * 2 - 18) / 2; // padding 20 each side + 12 gap
 
 export default function ProfilePage() {
+  const router = useRouter();
   const [albums, setAlbums] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [nickname, setNickname] = useState("수빈");
+  const [nickname, setNickname] = useState("");
   const [isModalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
@@ -110,9 +112,7 @@ export default function ProfilePage() {
     <View style={styles.container}>
       <SafeAreaView style={styles.header} edges={["top"]}>
         <TouchableOpacity
-          onPress={() => {
-            /* 설정 눌렀을 때 */
-          }}
+          onPress={() => router.push("/settings")}
           style={styles.settingsWrapper}
         >
           <Image
@@ -149,7 +149,16 @@ export default function ProfilePage() {
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.card} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={styles.card}
+            activeOpacity={0.8}
+            onPress={() =>
+              router.push({
+                pathname: `/albums/${item.id}`,
+                params: { name: item.name },
+              })
+            }
+          >
             <View style={styles.imageWrapper}>
               <Image source={{ uri: item.coverUrl }} style={styles.cardImage} />
             </View>
