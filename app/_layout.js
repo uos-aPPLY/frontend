@@ -1,5 +1,7 @@
 // app/_layout.js
 import React, { useEffect } from "react";
+import "react-native-reanimated";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
@@ -66,7 +68,9 @@ export default function RootLayout() {
     <AuthProvider>
       <DiaryProvider>
         <PhotoProvider>
-          <RootLayoutNav />
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <RootLayoutNav />
+          </GestureHandlerRootView>
         </PhotoProvider>
       </DiaryProvider>
     </AuthProvider>

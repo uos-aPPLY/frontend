@@ -37,6 +37,10 @@ export default function confirmPhoto() {
   };
 
   useEffect(() => {
+    console.log("✅ selected 변경됨:", selected);
+  }, [selected]);
+
+  useEffect(() => {
     const fetchPhotos = async () => {
       if (!token) return;
       try {
@@ -49,7 +53,7 @@ export default function confirmPhoto() {
 
         const data = await res.json();
 
-        console.log("임시 사진 목록:", data);
+        console.log("🥵임시 사진 목록:", data);
         setPhotoList(data);
       } catch (error) {
         console.error("임시 사진 불러오기 실패", error);
