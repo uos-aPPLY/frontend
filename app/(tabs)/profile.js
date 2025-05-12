@@ -162,6 +162,7 @@ export default function ProfilePage() {
         initialText={nickname}
         onSave={handleSaveNickname}
         onCancel={() => setModalVisible(false)}
+        hintText="최대 10자까지 작성 가능해요."
       />
     </View>
   );

@@ -1,6 +1,6 @@
 // components/Modal/TextEditorModal.jsx
 import React, { useState, useEffect } from "react";
-import { View, TextInput, StyleSheet, Platform } from "react-native";
+import { View, Text, TextInput, StyleSheet, Platform } from "react-native";
 import Modal from "react-native-modal";
 
 export default function TextEditorModal({
@@ -8,6 +8,7 @@ export default function TextEditorModal({
   initialText,
   onSave,
   onCancel,
+  hintText = "",
 }) {
   const [localText, setLocalText] = useState(initialText);
 
@@ -31,6 +32,7 @@ export default function TextEditorModal({
     >
       <View style={styles.content}>
         <View style={styles.handle} />
+        {hintText ? <Text style={styles.hint}>{hintText}</Text> : null}
         <TextInput
           style={styles.input}
           multiline
@@ -63,6 +65,12 @@ const styles = StyleSheet.create({
     borderRadius: 2.5,
     alignSelf: "center",
     marginBottom: 10,
+  },
+  hint: {
+    fontSize: 12,
+    color: "#888",
+    textAlign: "left",
+    marginBottom: 5,
   },
   input: {
     minHeight: 100,
