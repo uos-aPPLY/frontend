@@ -20,7 +20,7 @@ const { BACKEND_URL } = Constants.expoConfig.extra;
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const IMAGE_SIZE = (SCREEN_WIDTH - 4) / 3;
 
-export default function ConfirmPhoto() {
+export default function confirmPhoto() {
   const nav = useRouter();
   const { photoList, setPhotoList, selected, setSelected, setMode } =
     usePhoto();
