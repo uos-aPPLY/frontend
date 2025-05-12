@@ -32,6 +32,7 @@ npx expo install expo-notifications
 npm install react-native-draggable-flatlist
 npx expo install react-native-gesture-handler
 npx expo install react-native-reanimated
+```
 
 ## Prettier 설정
 
@@ -50,4 +51,3 @@ npx expo install react-native-reanimated
 - 새로운 branch를 만들때, main branch에서 git pull 하고 생성하기
 - [Commit message convention](https://velog.io/@jiheon/Git-Commit-message-%EA%B7%9C%EC%B9%99)을 따르기
 - 주의: **main branch에 절대 push 금지🚫**
-```
