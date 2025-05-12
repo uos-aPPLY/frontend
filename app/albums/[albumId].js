@@ -1,4 +1,4 @@
-// app/diaries/[month].js
+// app/albums/[albumId].js
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -12,51 +12,40 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
-import { useLocalSearchParams } from "expo-router";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { parse, format } from "date-fns";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
-export default function DiaryList() {
+export default function AlbumDiaryList() {
   const router = useRouter();
-  const { month } = useLocalSearchParams();
+  const { albumId, name } = useLocalSearchParams();
   const [diaries, setDiaries] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const monthDate = React.useMemo(
-    () => parse(month, "yyyy-MM", new Date()),
-    [month]
-  );
-  const displayMonth = React.useMemo(
-    () => format(monthDate, "yyyy년 M월"),
-    [monthDate]
-  );
-
-  const goBack = () => {
-    router.replace("/calendar");
-  };
+  const title = name ?? (albumId === "favorite" ? "좋아요" : "앨범 일기");
 
   useEffect(() => {
     (async () => {
       try {
         const token = await SecureStore.getItemAsync("accessToken");
-        const response = await fetch(`${BACKEND_URL}/api/diaries`, {
+        const url =
+          albumId === "favorite"
+            ? `${BACKEND_URL}/api/albums/favorites`
+            : `${BACKEND_URL}/api/albums/${albumId}/diaries`;
+        const res = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const json = await response.json();
-
-        const filtered = json.content.filter((d) =>
-          d.diaryDate.startsWith(month)
-        );
-        setDiaries(filtered);
+        const json = await res.json();
+        setDiaries(json);
       } catch (err) {
         console.error(err);
       } finally {
         setLoading(false);
       }
     })();
-  }, [month]);
+  }, [albumId]);
+
+  const goBack = () => router.replace("/profile");
 
   if (loading) {
     return (
@@ -71,12 +60,12 @@ export default function DiaryList() {
       <TouchableOpacity onPress={goBack} style={styles.backButton}>
         <Image
           source={require("../../assets/icons/backicon.png")}
-          style={styles.backicon}
+          style={styles.backIcon}
           resizeMode="contain"
         />
       </TouchableOpacity>
       <View style={styles.headerContainer}>
-        <Text style={styles.monthTitle}>{displayMonth}</Text>
+        <Text style={styles.title}>{title}</Text>
       </View>
 
       <FlatList
@@ -113,11 +102,7 @@ export default function DiaryList() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FCF9F4",
-    paddingTop: 26,
-  },
+  container: { flex: 1, backgroundColor: "#FCF9F4", paddingTop: 26 },
   center: {
     flex: 1,
     justifyContent: "center",
@@ -137,11 +122,8 @@ const styles = StyleSheet.create({
     left: 20,
     zIndex: 1,
   },
-  backicon: {
-    width: 24,
-    height: 24,
-  },
-  monthTitle: {
+  backIcon: { width: 24, height: 24 },
+  title: {
     flex: 1,
     textAlign: "center",
     fontSize: 20,
@@ -171,31 +153,14 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 30,
     overflow: "hidden",
   },
-  cardImage: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
-  },
-  cardImage: {
-    width: 120,
-    height: 120,
-    resizeMode: "cover",
-  },
+  cardImage: { width: 120, height: 120, resizeMode: "cover" },
   cardTextContainer: {
     flex: 1,
     padding: 18,
     justifyContent: "space-between",
   },
-  cardContent: {
-    fontSize: 16,
-    color: "#A78C7B",
-    lineHeight: 22,
-  },
-  cardDate: {
-    fontSize: 14,
-    color: "#C7C7CC",
-    textAlign: "right",
-  },
+  cardContent: { fontSize: 16, color: "#A78C7B", lineHeight: 22 },
+  cardDate: { fontSize: 14, color: "#C7C7CC", textAlign: "right" },
   emptyText: {
     textAlign: "center",
     marginTop: 50,
