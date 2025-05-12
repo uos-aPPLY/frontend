@@ -24,6 +24,7 @@ npx expo install @react-native-google-signin/google-signin
 npm install query-string@6
 npx expo install @react-native-seoul/naver-login
 npm install react-native-modal
+npx expo install expo-image-manipulator
 ```
 
 ## Prettier 설정

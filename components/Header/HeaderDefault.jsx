@@ -4,18 +4,27 @@ import {
   useFonts,
   HomemadeApple_400Regular,
 } from "@expo-google-fonts/homemade-apple";
-import AppLoading from "expo-app-loading";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
 import { useRouter } from "expo-router";
 
-const HeaderSearch = ({}) => {
+SplashScreen.preventAutoHideAsync();
+
+const HeaderSearch = () => {
   const nav = useRouter();
 
   const [fontsLoaded] = useFonts({
     HomemadeApple_400Regular,
   });
 
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
   if (!fontsLoaded) {
-    return <AppLoading />;
+    return null;
   }
 
   return (
@@ -50,15 +59,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#FCF9F4",
   },
   container: {
-    height: 114,
+    height: 130,
     width: "100%",
     backgroundColor: "#E3A7AD",
     paddingHorizontal: 30,
     flexDirection: "row",
     alignItems: "center",
     paddingTop: 60,
-    borderBottomLeftRadius: 10,
-    borderBottomRightRadius: 10,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
   logo: {
     fontSize: 20,

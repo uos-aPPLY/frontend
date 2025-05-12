@@ -4,6 +4,7 @@ import { Slot, useRouter, useSegments } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { DiaryProvider } from "../contexts/DiaryContext";
+import { PhotoProvider } from "../contexts/PhotoContext";
 
 function RootLayoutNav() {
   const { user, loading } = useAuth();
@@ -46,7 +47,9 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <DiaryProvider>
-        <RootLayoutNav />
+        <PhotoProvider>
+          <RootLayoutNav />
+        </PhotoProvider>
       </DiaryProvider>
     </AuthProvider>
   );

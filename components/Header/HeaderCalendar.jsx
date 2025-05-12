@@ -68,10 +68,10 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: "#FCF9F4",
     width: "100%",
-    height: 114,
+    height: 130,
     flexDirection: "row",
     paddingHorizontal: 30,
-    paddingTop: 45,
+    paddingTop: 60,
   },
   char2: {
     width: 40,
