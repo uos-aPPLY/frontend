@@ -26,7 +26,7 @@ export default function ToggleSwitch({
 
 const styles = StyleSheet.create({
   pressable: {
-    padding: 4,
+    paddingHorizontal: 4,
   },
   image: {
     width: 30,

@@ -4,40 +4,53 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
-  Switch,
+  Pressable,
   Platform,
   Image,
   ScrollView,
 } from "react-native";
+import ToggleSwitch from "../components/ToggleSwitch";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-// import DateTimePicker from "@react-native-community/datetimepicker";
+import { useAuth } from "../contexts/AuthContext";
+import Withdrawal from "../components/Settings/Withdrawal";
+import ConfirmModal from "../components/Modal/ConfirmModal";
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { signOut } = useAuth();
   const [photoAlertEnabled, setPhotoAlertEnabled] = useState(false);
   const [alertTime, setAlertTime] = useState(new Date(0, 0, 0, 12, 0));
-  const [showPicker, setShowPicker] = useState(false);
-
-  const onChangeTime = (_, selected) => {
-    setShowPicker(Platform.OS === "ios");
-    if (selected) setAlertTime(selected);
-  };
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
   const goBack = () => {
     router.replace("/profile");
   };
 
+  const handleLogoutConfirm = () => {
+    setLogoutModalVisible(false);
+    signOut();
+    router.replace("/login");
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <TouchableOpacity onPress={goBack} style={styles.backButton}>
+      <ConfirmModal
+        visible={logoutModalVisible}
+        title="로그아웃 하시겠어요?"
+        message="로그아웃 시 다시 로그인해야 합니다."
+        cancelText="취소"
+        confirmText="로그아웃"
+        onCancel={() => setLogoutModalVisible(false)}
+        onConfirm={handleLogoutConfirm}
+      />
+      <Pressable onPress={goBack} style={styles.backButton}>
         <Image
           source={require("../assets/icons/backicon.png")}
           style={styles.backicon}
           resizeMode="contain"
         />
-      </TouchableOpacity>
+      </Pressable>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>설정</Text>
       </View>
@@ -46,9 +59,19 @@ export default function SettingsPage() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>고객문의</Text>
           {["문의하기", "서비스 이용약관", "개인정보처리방침"].map((t) => (
-            <TouchableOpacity key={t} style={styles.item}>
-              <Text style={styles.itemText}>{t}</Text>
-            </TouchableOpacity>
+            <Pressable
+              key={t}
+              style={styles.item}
+              onPress={() => {
+                /* 핸들러 */
+              }}
+            >
+              {({ pressed }) => (
+                <Text style={[styles.itemText, pressed && { opacity: 0.5 }]}>
+                  {t}
+                </Text>
+              )}
+            </Pressable>
           ))}
         </View>
 
@@ -57,30 +80,22 @@ export default function SettingsPage() {
           <Text style={styles.sectionTitle}>알림</Text>
           <View style={styles.itemRow}>
             <Text style={styles.itemText}>사진찍기 알림</Text>
-            <Switch
-              value={photoAlertEnabled}
-              onValueChange={setPhotoAlertEnabled}
+            <ToggleSwitch
+              onImage={require("../assets/icons/righton.png")}
+              offImage={require("../assets/icons/leftoff.png")}
+              initialState={photoAlertEnabled}
+              onToggle={setPhotoAlertEnabled}
+              style={styles.toggleSwitch}
             />
           </View>
-          <TouchableOpacity
-            style={styles.itemRow}
-            onPress={() => setShowPicker(true)}
-          >
+          <Pressable style={styles.itemRow}>
             <Text style={styles.itemText}>알림 시간</Text>
             <Text style={styles.itemText}>
               {alertTime.getHours() < 12 ? "오전 " : "오후 "}
               {(alertTime.getHours() % 12 || 12).toString().padStart(2, "0")}:
               {alertTime.getMinutes().toString().padStart(2, "0")}
             </Text>
-          </TouchableOpacity>
-          {/* {showPicker && (
-          <DateTimePicker
-            value={alertTime}
-            mode="time"
-            display="default"
-            onChange={onChangeTime}
-          />
-        )} */}
+          </Pressable>
         </View>
 
         {/* 데이터 */}
@@ -92,20 +107,36 @@ export default function SettingsPage() {
             "기본 키워드 설정",
             "내보내기 (txt, pdf)",
           ].map((t) => (
-            <TouchableOpacity key={t} style={styles.item}>
-              <Text style={styles.itemText}>{t}</Text>
-            </TouchableOpacity>
+            <Pressable
+              key={t}
+              style={styles.item}
+              onPress={() => {
+                /* 핸들러 */
+              }}
+            >
+              {({ pressed }) => (
+                <Text style={[styles.itemText, pressed && { opacity: 0.5 }]}>
+                  {t}
+                </Text>
+              )}
+            </Pressable>
           ))}
         </View>
 
         {/* 계정 관리 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>계정 관리</Text>
-          {["구독 내역", "로그아웃", "회원탈퇴"].map((t) => (
-            <TouchableOpacity key={t} style={styles.item}>
-              <Text style={styles.itemText}>{t}</Text>
-            </TouchableOpacity>
-          ))}
+          <Pressable
+            style={styles.item}
+            onPress={() => setLogoutModalVisible(true)}
+          >
+            {({ pressed }) => (
+              <Text style={[styles.itemText, pressed && { opacity: 0.5 }]}>
+                로그아웃
+              </Text>
+            )}
+          </Pressable>
+          <Withdrawal style={styles.item} textStyle={styles.itemText} />
         </View>
       </ScrollView>
     </SafeAreaView>
