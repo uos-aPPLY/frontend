@@ -1,51 +1,28 @@
-import { Text, Image, StyleSheet, View } from "react-native";
+import { Image, StyleSheet, TextInput, View } from "react-native";
 import IconButton from "../IconButton";
-import {
-  useFonts,
-  HomemadeApple_400Regular,
-} from "@expo-google-fonts/homemade-apple";
-import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
-import { useRouter } from "expo-router";
 
-// 스플래시 화면 유지
-SplashScreen.preventAutoHideAsync();
-
-const HeaderSearch = () => {
-  const nav = useRouter();
-
-  const [fontsLoaded] = useFonts({
-    HomemadeApple_400Regular,
-  });
-
-  useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded]);
-
-  if (!fontsLoaded) {
-    return null; // 로딩 중일 땐 아무것도 렌더링하지 않음
-  }
-
+const HeaderSearch = ({ value, onChangeText, onBack }) => {
   return (
     <View style={styles.all}>
       <View style={styles.container}>
-        <View style={styles.left}>
+        <View style={styles.searchBox}>
           <Image
-            source={require("../../assets/character/char2.png")}
-            style={styles.char2}
+            source={require("../../assets/icons/brownsearchicon.png")}
+            style={styles.searchIcon}
           />
-          <Text style={styles.logo}>DiaryPic</Text>
+          <TextInput
+            value={value}
+            onChangeText={onChangeText}
+            style={styles.input}
+            cursorColor="#AC8B78"
+          />
         </View>
-        <View style={styles.right}>
+        <View style={{ marginLeft: 15 }}>
           <IconButton
-            source={require("../../assets/icons/whitesearchicon.png")}
-            wsize={23}
-            hsize={22}
-            onPress={() => {
-              nav.push("/search?from=main");
-            }}
+            source={require("../../assets/icons/xicon.png")}
+            hsize={18}
+            wsize={18}
+            onPress={onBack}
           />
         </View>
       </View>
@@ -60,29 +37,35 @@ const styles = StyleSheet.create({
     backgroundColor: "#FCF9F4",
   },
   container: {
-    height: 114,
+    height: 130,
     width: "100%",
     backgroundColor: "#E3A7AD",
     paddingHorizontal: 30,
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: 60,
-    borderBottomLeftRadius: 10,
-    borderBottomRightRadius: 10,
+    paddingTop: 55,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
-  logo: {
-    fontSize: 20,
-    fontFamily: "HomemadeApple_400Regular",
-    color: "#fff",
+  searchIcon: {
+    width: 22,
+    height: 22,
+    marginRight: 10,
   },
-  left: {
+  searchBox: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    flex: 1,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    height: 40,
   },
-  char2: {
-    width: 40,
-    height: 38,
-    marginRight: 15,
+  input: {
+    flex: 1,
+    height: 40,
+    backgroundColor: "#fff",
+    fontSize: 16,
+    outlineStyle: "none",
   },
 });

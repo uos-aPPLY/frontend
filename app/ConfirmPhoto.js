@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   Image,
-  Button,
   TouchableOpacity,
   Pressable,
   FlatList,
@@ -13,7 +12,8 @@ import {
 import { useRouter } from "expo-router";
 import IconButton from "../components/IconButton";
 import { useAuth } from "../contexts/AuthContext";
-import { handleDiaryRoute } from "../utils/handleDiaryRoute";
+import { usePhoto } from "../contexts/PhotoContext";
+import { formatGridData } from "../utils/formatGridData";
 import Constants from "expo-constants";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
@@ -22,8 +22,8 @@ const IMAGE_SIZE = (SCREEN_WIDTH - 4) / 3;
 
 export default function ConfirmPhoto() {
   const nav = useRouter();
-  const [photoList, setPhotoList] = useState([]);
-  const [selected, setSelected] = useState([]);
+  const { photoList, setPhotoList, selected, setSelected, setMode } =
+    usePhoto();
   const { token } = useAuth();
 
   const toggleSelect = (photo) => {
@@ -88,21 +88,12 @@ export default function ConfirmPhoto() {
 
     nav.push("/create");
   };
-  const formatGridData = (data, numColumns) => {
-    const filledData = [...data];
-    const remainder = data.length % numColumns;
-    if (remainder !== 0) {
-      const blanksToAdd = numColumns - remainder;
-      for (let i = 0; i < blanksToAdd; i++) {
-        filledData.push(null); // 빈칸을 의미하는 null 추가
-      }
-    }
-    return filledData;
-  };
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View
+        style={[styles.header, photoList.length <= 9 && { marginBottom: 30 }]}
+      >
         <IconButton
           source={require("../assets/icons/backicon.png")}
           hsize={22}
@@ -110,10 +101,16 @@ export default function ConfirmPhoto() {
           style={styles.back}
           onPress={handleBack}
         />
-        <Text style={styles.date}>일기에 꼭 넣고 싶은 사진을 고르세요</Text>
+        <Text style={styles.letter}>
+          {photoList.length <= 9
+            ? "원하는 일기 방식을 선택해주세요."
+            : "일기에 꼭 넣고 싶은 사진을 고르세요"}
+        </Text>
         <View style={{ width: 24 }} />
       </View>
-      <Text style={styles.count}>{`${selected.length}/9`}</Text>
+      {photoList.length > 9 && (
+        <Text style={styles.count}>{`${selected.length}/9`}</Text>
+      )}
 
       <FlatList
         data={formatGridData(photoList, 3)}
@@ -121,15 +118,18 @@ export default function ConfirmPhoto() {
         keyExtractor={(_, i) => i.toString()}
         renderItem={({ item }) => {
           if (!item)
-            return <View style={{ width: IMAGE_SIZE, height: IMAGE_SIZE }} />;
+            return (
+              <View style={{ width: IMAGE_SIZE + 2, height: IMAGE_SIZE }} />
+            );
 
           const isSelected = selected.some((p) => p.id === item.id);
+          const isSelectable = photoList.length > 9;
 
           return (
-            <Pressable onPress={() => toggleSelect(item)}>
+            <Pressable onPress={() => isSelectable && toggleSelect(item)}>
               <View style={styles.imageWrapper}>
                 <Image source={{ uri: item.photoUrl }} style={styles.image} />
-                {isSelected && (
+                {isSelectable && isSelected && (
                   <>
                     <View style={styles.overlay} />
                     <Image
@@ -148,30 +148,24 @@ export default function ConfirmPhoto() {
       <View style={styles.buttonRow}>
         <TouchableOpacity
           style={styles.button}
-          onPress={() =>
-            handleDiaryRoute({
-              mode: "write", // 또는 "generate"
-              selected,
-              photoList,
-              token,
-              nav,
-            })
-          }
+          onPress={() => {
+            setPhotoList(photoList);
+            setSelected(selected);
+            setMode("write");
+            nav.push("/loading");
+          }}
         >
           <Text style={styles.buttonText}>직접 쓰기</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.button}
-          onPress={() =>
-            handleDiaryRoute({
-              mode: "generate", // 또는 "generate"
-              selected,
-              photoList,
-              token,
-              nav,
-            })
-          }
+          onPress={() => {
+            setPhotoList(photoList);
+            setSelected(selected);
+            setMode("generate");
+            nav.push("/loading");
+          }}
         >
           <Text style={styles.buttonText}>AI 생성 일기</Text>
         </TouchableOpacity>
@@ -191,8 +185,8 @@ const styles = StyleSheet.create({
     paddingTop: 75,
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
     backgroundColor: "#FCF9F4",
+    alignItems: "flex-end",
   },
   count: {
     fontSize: 14,
@@ -220,7 +214,7 @@ const styles = StyleSheet.create({
     height: IMAGE_SIZE,
     margin: 1,
   },
-  date: {
+  letter: {
     fontSize: 16,
     fontWeight: "bold",
     color: "#a78c7b",
@@ -230,21 +224,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     marginTop: 20,
-    paddingBottom: 60,
+    marginBottom: 60,
     gap: 20,
+    paddingHorizontal: 30,
   },
   button: {
-    backgroundColor: "#E1A4A9",
-    borderRadius: 14,
-    height: 50,
-    justifyContent: "center",
+    backgroundColor: "#D9A2A8",
+    borderRadius: 16,
+    paddingVertical: 16,
     alignItems: "center",
-    width: "40%",
-    alignItems: "center",
+    flex: 1,
   },
   buttonText: {
     color: "#fff",
     fontSize: 16,
+    fontWeight: "bold",
   },
   overlay: {
     position: "absolute",

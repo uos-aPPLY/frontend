@@ -29,9 +29,10 @@ export default function Home() {
             source={require("../../assets/icons/bigpinkplusicon.png")}
             hsize={50}
             wsize={50}
-            onPress={() =>
-              nav.push("/create?date=" + new Date().toISOString().slice(0, 10))
-            }
+            onPress={() => {
+              const date = new Date().toISOString().slice(0, 10);
+              nav.push(`/create?date=${date}&from=home`);
+            }}
           />
         </View>
       </View>
@@ -65,7 +66,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   message: {
-    fontSize: 14,
+    fontSize: 16,
     textAlign: "center",
     marginBottom: 10,
     color: "#A8907C",

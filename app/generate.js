@@ -1,29 +1,63 @@
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  Image,
+  FlatList,
   TouchableOpacity,
-  ScrollView,
+  Dimensions,
+  Image,
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import IconButton from "../components/IconButton";
+import CardPicture from "../components/CardPicture";
+import { usePhoto } from "../contexts/PhotoContext";
+
+const screenWidth = Dimensions.get("window").width;
 
 export default function GeneratePage() {
   const nav = useRouter();
-  const { photos = [] } = useLocalSearchParams();
-  const [keywords, setKeywords] = useState([
-    "#인물",
-    "#사물",
-    "#음식",
-    "#동물",
-    "#풍경",
-  ]);
+  const { photos: rawPhotos = "{}" } = useLocalSearchParams();
+  const { photoList } = usePhoto();
 
-  const handleAddKeyword = () => {
-    // 키워드 추가 로직
+  const [photos, setPhotos] = useState([]);
+  const [keywords, setKeywords] = useState([]);
+  const [hiddenIds, setHiddenIds] = useState([]);
+  const [mainPhotoId, setMainPhotoId] = useState(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    try {
+      const parsed = JSON.parse(rawPhotos);
+      const recommendedPhotoIds = parsed?.recommendedPhotoIds;
+
+      if (!Array.isArray(recommendedPhotoIds)) return;
+
+      const filtered = photoList.filter((photo) =>
+        recommendedPhotoIds.includes(photo.id)
+      );
+
+      setPhotos(filtered);
+      setMainPhotoId(recommendedPhotoIds[0]);
+      setKeywords(
+        filtered.map(() => ["#인물", "#사물", "#음식", "#동물", "#풍경"])
+      );
+    } catch (err) {
+      console.error("추천 사진 파싱 오류:", err);
+    }
+  }, [rawPhotos, photoList]);
+
+  const handleAddKeyword = (index) => {
+    const newKeywords = [...keywords];
+    newKeywords[index].push(`#새키워드${newKeywords[index].length + 1}`);
+    setKeywords(newKeywords);
   };
+
+  const handleHidePhoto = (id) => {
+    setHiddenIds((prev) => [...prev, id]);
+  };
+
+  const visiblePhotos = photos.filter((photo) => !hiddenIds.includes(photo.id));
 
   return (
     <View style={styles.container}>
@@ -33,41 +67,66 @@ export default function GeneratePage() {
           source={require("../assets/icons/backicon.png")}
           hsize={22}
           wsize={22}
-          onPress={() => nav.back()}
+          onPress={() => nav.push("/confirmPhoto")}
         />
         <Text style={styles.title}>포커스 키워드 & 순서 설정</Text>
         <View style={{ width: 22 }} />
       </View>
 
-      {/* 설명 텍스트 */}
-      <Text style={styles.subtitle}>
-        AI 일기 생성 퀄리티를 위해 각 사진의 포커스를 지정해주세요!
-      </Text>
-
-      {/* 대표 이미지 */}
-      <View style={styles.imageWrapper}>
-        <Image source={{ uri: photos[0] }} style={styles.image} />
-        <Text style={styles.label}>대표 사진</Text>
+      {/* 사진 썸네일 인디케이터 */}
+      <View style={styles.thumbnailRow}>
+        {visiblePhotos.map((photo, idx) =>
+          currentIndex === idx ? (
+            <Image
+              key={photo.id}
+              source={{ uri: photo.photoUrl }}
+              style={styles.activeThumbnail}
+            />
+          ) : (
+            <View key={photo.id} style={styles.inactiveDot} />
+          )
+        )}
       </View>
 
-      {/* 키워드 선택 */}
-      <View style={styles.keywordContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {keywords.map((kw, index) => (
-            <View key={index} style={styles.keywordTag}>
-              <Text style={styles.keywordText}>{kw}</Text>
+      <FlatList
+        data={visiblePhotos}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
+        onScroll={(e) => {
+          const index = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
+          setCurrentIndex(index);
+        }}
+        scrollEventThrottle={16}
+        renderItem={({ item, index }) => (
+          <View style={styles.imageSlide}>
+            <CardPicture
+              id={item.id}
+              imageSource={item.photoUrl}
+              showControls={true}
+              onDelete={() => handleHidePhoto(item.id)}
+              isMain={item.id === mainPhotoId}
+              onPressMain={() => setMainPhotoId(item.id)}
+            />
+
+            <View style={styles.keywordContainer}>
+              {keywords[index]?.map((kw, i) => (
+                <View key={i} style={styles.keywordTag}>
+                  <Text style={styles.keywordText}>{kw}</Text>
+                </View>
+              ))}
+              <TouchableOpacity
+                style={styles.addKeyword}
+                onPress={() => handleAddKeyword(index)}
+              >
+                <Text style={styles.addText}># +</Text>
+              </TouchableOpacity>
             </View>
-          ))}
-          <TouchableOpacity
-            style={styles.addKeyword}
-            onPress={handleAddKeyword}
-          >
-            <Text style={styles.addText}>+</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </View>
+          </View>
+        )}
+      />
 
-      {/* 다음 버튼 */}
       <TouchableOpacity style={styles.nextButton}>
         <Text style={styles.nextText}>다음</Text>
       </TouchableOpacity>
@@ -76,54 +135,66 @@ export default function GeneratePage() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FCF9F4",
-    paddingHorizontal: 24,
-    paddingTop: 70,
-  },
+  container: { flex: 1, backgroundColor: "#FCF9F4" },
   header: {
+    width: "100%",
+    paddingHorizontal: 30,
+    paddingTop: 75,
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
+    backgroundColor: "#FCF9F4",
+    alignItems: "flex-end",
+    marginBottom: 15,
   },
   title: {
     fontSize: 16,
     color: "#a78c7b",
     fontWeight: "bold",
   },
-  subtitle: {
-    fontSize: 12,
-    textAlign: "center",
-    color: "#7a6d63",
-    marginBottom: 16,
-  },
-  imageWrapper: {
+  thumbnailRow: {
+    flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
-    marginBottom: 20,
+    gap: 4,
+    marginTop: 20,
+    marginBottom: 10,
   },
-  image: {
-    width: 260,
-    height: 260,
-    borderRadius: 16,
+  thumbnailRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "flex-end",
+    marginBottom: 4,
+    gap: 6,
   },
-  label: {
-    marginTop: 6,
-    fontSize: 12,
-    color: "#D68089",
-    fontWeight: "bold",
+  inactiveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 3,
+    backgroundColor: "#ccc",
+  },
+  activeThumbnail: {
+    width: 22,
+    height: 22,
+    borderRadius: 4,
+    opacity: 1,
+  },
+  imageSlide: {
+    width: screenWidth,
+    paddingTop: 10,
+    alignItems: "center",
   },
   keywordContainer: {
     flexDirection: "row",
-    marginBottom: 24,
+    marginTop: 16,
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 6,
   },
   keywordTag: {
     paddingVertical: 6,
     paddingHorizontal: 12,
     backgroundColor: "#fff",
     borderRadius: 16,
-    marginRight: 8,
     borderWidth: 1,
     borderColor: "#ddd",
   },
@@ -132,22 +203,25 @@ const styles = StyleSheet.create({
     color: "#3f3f3f",
   },
   addKeyword: {
-    justifyContent: "center",
-    alignItems: "center",
-    width: 32,
-    height: 32,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: "#fff",
     borderRadius: 16,
-    backgroundColor: "#E1A4A9",
+    borderWidth: 1,
+    borderColor: "#ddd",
   },
   addText: {
-    color: "#fff",
-    fontSize: 18,
+    fontSize: 13,
+    color: "#3f3f3f",
   },
   nextButton: {
     backgroundColor: "#D9A2A8",
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderRadius: 16,
     alignItems: "center",
+    marginHorizontal: 30,
+    marginTop: 20,
+    marginBottom: 60,
   },
   nextText: {
     fontSize: 16,
