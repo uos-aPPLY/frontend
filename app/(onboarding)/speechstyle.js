@@ -10,7 +10,7 @@ import {
   Image,
   Alert,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
 import TextEditorModal from "../../components/Modal/TextEditorModal";
@@ -34,6 +34,7 @@ const templates = {
 
 export default function SpeechStyle() {
   const router = useRouter();
+  const { from } = useLocalSearchParams();
   const [selected, setSelected] = useState(null);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -50,7 +51,11 @@ export default function SpeechStyle() {
   };
 
   const goBack = () => {
-    router.replace("/nickname");
+    if (from === "settings") {
+      router.replace("/settings");
+    } else {
+      router.replace("/nickname");
+    }
   };
 
   const onConfirm = async () => {
@@ -74,7 +79,11 @@ export default function SpeechStyle() {
         throw new Error(`말투 저장 실패: ${errorText}`);
       }
 
-      router.replace("/tutorial");
+      if (from === "settings") {
+        router.replace("/settings");
+      } else {
+        router.replace("/tutorial");
+      }
     } catch (err) {
       console.error(err);
       Alert.alert("오류", err.message || "말투 저장 중 오류가 발생했습니다.");

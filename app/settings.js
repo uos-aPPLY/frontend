@@ -111,7 +111,9 @@ export default function SettingsPage() {
               key={t}
               style={styles.item}
               onPress={() => {
-                /* 핸들러 */
+                if (t === "말투 커스터마이징") {
+                  router.push("/speechstyle?from=settings");
+                }
               }}
             >
               {({ pressed }) => (
