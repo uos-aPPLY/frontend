@@ -1,4 +1,11 @@
-import { Text, View, Image, StyleSheet, TouchableOpacity } from "react-native";
+import {
+  Text,
+  View,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  Pressable,
+} from "react-native";
 import { deletePhotoById } from "../utils/clearTempPhotos";
 import { useAuth } from "../contexts/AuthContext";
 import IconButton from "./IconButton";
@@ -103,6 +110,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderWidth: 1,
+    shadowColor: "#000",
+    shadowOpacity: 0.4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 5,
   },
   badgeActive: {
     backgroundColor: "#D68089",
@@ -110,7 +122,7 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
   },
   badgeInactive: {
-    backgroundColor: "rgba(0,0,0,0.3)",
+    backgroundColor: "rgba(0,0,0,0.2)",
     borderColor: "#fff",
     borderWidth: 0.5,
   },
@@ -124,8 +136,9 @@ const styles = StyleSheet.create({
     right: 10,
     padding: 10,
     shadowColor: "#000",
-    shadowOpacity: 0.5,
-    shadowRadius: 3.5,
+    shadowOpacity: 0.4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
     elevation: 5,
   },
   closeIconImg: {

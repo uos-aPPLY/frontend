@@ -41,6 +41,10 @@ export default function LoadingPage() {
             }),
           }
         );
+        console.log("AI 추천 요청:", {
+          uploadedPhotoIds: photoList.map((p) => p.id),
+          mandatoryPhotoIds: selected.map((p) => p.id),
+        });
 
         const result = await res.json();
         console.log("AI 추천 결과:", result);
@@ -66,7 +70,6 @@ export default function LoadingPage() {
 
   return (
     <View style={styles.container}>
-      {/* 상단 뒤로가기 버튼 */}
       <View style={styles.header}>
         <IconButton
           source={require("../assets/icons/backicon.png")}
@@ -77,7 +80,7 @@ export default function LoadingPage() {
       </View>
 
       <ActivityIndicator size="large" color="#D68089" />
-      <Text style={styles.text}>AI가 사진을 분석 중입니다...</Text>
+      <Text style={styles.text}>AI가 베스트샷 선정 중 입니다...</Text>
     </View>
   );
 }

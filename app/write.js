@@ -1,3 +1,4 @@
+//create.js랑 코드 동일
 import { useState, useEffect } from "react";
 import {
   KeyboardAvoidingView,
