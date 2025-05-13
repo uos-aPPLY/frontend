@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -26,9 +26,16 @@ import { clearAllTempPhotos } from "../utils/clearTempPhotos";
 export default function CreatePage() {
   const nav = useRouter();
   const params = useLocalSearchParams();
-  const date = params.date || new Date().toISOString().slice(0, 10);
   const from = params.from || "calendar";
-  const { text, setText, selectedCharacter, setSelectedCharacter } = useDiary();
+  const {
+    text,
+    setText,
+    selectedCharacter,
+    setSelectedCharacter,
+    selectedDate,
+    setSelectedDate,
+  } = useDiary();
+  const date = selectedDate.toISOString().split("T")[0];
   const [isPickerVisible, setIsPickerVisible] = useState(false);
   const { token } = useAuth();
   console.log("토큰:", token);
@@ -96,11 +103,8 @@ export default function CreatePage() {
           onBack={() => {
             setText("");
             setSelectedCharacter(require("../assets/character/char1.png"));
-            if (from === "home") {
-              nav.push("/home");
-            } else {
-              nav.push("/calendar");
-            }
+            setSelectedDate(null);
+            nav.push("/calendar");
           }}
           hasText={text.trim().length > 0}
         />

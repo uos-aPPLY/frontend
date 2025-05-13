@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -22,7 +22,7 @@ const IMAGE_SIZE = (SCREEN_WIDTH - 4) / 3;
 
 export default function confirmPhoto() {
   const nav = useRouter();
-  const { photoList, setPhotoList, selected, setSelected, setMode } =
+  const { photoList, setPhotoList, selected, setSelected, setMode, reset } =
     usePhoto();
   const { token } = useAuth();
 
@@ -86,10 +86,10 @@ export default function confirmPhoto() {
       );
 
       console.log("모든 임시 사진 삭제 완료");
+      reset();
     } catch (error) {
       console.error("사진 삭제 중 오류:", error);
     }
-
     nav.push("/create");
   };
 
