@@ -12,7 +12,7 @@ function formatDateWithDay(dateString) {
   return `${year}.${month}.${day} (${dayName})`;
 }
 
-export default function HeaderDate({ date, onBack, hasText = false }) {
+export default function HeaderDate({ date, onBack, hasText = false, onSave }) {
   const formatted = formatDateWithDay(date);
 
   return (
@@ -31,7 +31,7 @@ export default function HeaderDate({ date, onBack, hasText = false }) {
           wsize={22}
           hsize={22}
           style={styles.check}
-          onPress={() => {}}
+          onPress={onSave}
         />
       ) : (
         <View style={{ width: 24 }} />

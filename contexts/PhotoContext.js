@@ -8,6 +8,7 @@ export const PhotoProvider = ({ children }) => {
   const [photoList, setPhotoList] = useState([]);
   const [selected, setSelected] = useState([]);
   const [mode, setMode] = useState(null);
+  const [mainPhotoId, setMainPhotoId] = useState(null);
 
   const reset = () => {
     setPhotoList([]);
@@ -25,6 +26,8 @@ export const PhotoProvider = ({ children }) => {
         mode,
         setMode,
         reset,
+        mainPhotoId,
+        setMainPhotoId,
       }}
     >
       {children}

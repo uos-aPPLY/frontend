@@ -1,4 +1,4 @@
-// app/diaries/_layout.js
+// app/diary/_layout.js
 import React from "react";
 import { Stack } from "expo-router";
 

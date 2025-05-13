@@ -50,17 +50,23 @@ export async function uploadPhotos(resizedAssets, token, originalAssets) {
     },
     body: formData,
   });
-  const responseText = await response.text();
 
-  console.log("응답 코드:", response.status);
-  console.log("응답 본문:", responseText);
+  const contentType = response.headers.get("content-type");
 
+  let data;
   if (!response.ok) {
-    console.error("업로드 중 에러:", responseText);
-    throw new Error(`업로드 실패: ${response.status} - ${responseText}`);
+    // 실패 응답 본문 추출
+    const errorText = await response.text();
+    console.error("업로드 중 에러:", errorText);
+    throw new Error(`업로드 실패: ${response.status} - ${errorText}`);
+  } else {
+    if (contentType?.includes("application/json")) {
+      data = await response.json();
+    } else {
+      data = await response.text(); // fallback
+    }
   }
 
-  const data = JSON.parse(responseText);
-  console.log("업로드 성공:", data);
+  console.log("✅ 업로드 성공:", data);
   return data;
 }
