@@ -1,4 +1,5 @@
-import { useState, useEffect, use } from "react";
+// app/create.js
+import { useState, useEffect } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -7,11 +8,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  onPress,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as ImageManipulator from "expo-image-manipulator";
+import { format } from "date-fns";
 
 import HeaderDate from "../components/Header/HeaderDate";
 import IconButton from "../components/IconButton";
@@ -25,8 +26,7 @@ import { openGalleryAndUpload } from "../utils/openGalleryAndUpload";
 
 export default function CreatePage() {
   const nav = useRouter();
-  const params = useLocalSearchParams();
-  const from = params.from || "calendar";
+  const { date: dateParam, from = "calendar" } = useLocalSearchParams();
   const {
     text,
     setText,
@@ -35,11 +35,14 @@ export default function CreatePage() {
     selectedDate,
     setSelectedDate,
   } = useDiary();
-  const date = selectedDate ? selectedDate.toISOString().split("T")[0] : ""; // 또는 디폴트 날짜 "2025-01-01" 등
 
+  const date = selectedDate ? selectedDate.toISOString().split("T")[0] : ""; // 또는 디폴트 날짜 "2025-01-01" 등
   const [isPickerVisible, setIsPickerVisible] = useState(false);
   const { token } = useAuth();
-  console.log("토큰:", token);
+  const seoulNow = new Date(
+    new Date().toLocaleString("sv", { timeZone: "Asia/Seoul" })
+  );
+  const date = dateParam || format(seoulNow, "yyyy-MM-dd");
 
   useEffect(() => {
     if (token) {
