@@ -1,12 +1,11 @@
 import React, { createContext, useContext, useState } from "react";
+import characterList from "../assets/characterList";
 
 const DiaryContext = createContext();
 
 export function DiaryProvider({ children }) {
   const [text, setText] = useState("");
-  const [selectedCharacter, setSelectedCharacter] = useState(
-    require("../assets/character/char1.png")
-  );
+  const [selectedCharacter, setSelectedCharacter] = useState(characterList[0]);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   return (

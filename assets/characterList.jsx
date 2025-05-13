@@ -1,9 +1,9 @@
 export default [
-    require('./character/char1.png'),
-    require('./character/char2.png'),
-    require('./character/char3.png'),
-    require('./character/char4.png'),
-    require('./character/char5.png'),
-    require('./character/char6.png'),
-    require('./character/char7.png'),
+  { name: "happy", source: require("./character/char1.png") },
+  { name: "smile", source: require("./character/char2.png") },
+  { name: "cool", source: require("./character/char3.png") },
+  { name: "angry", source: require("./character/char4.png") },
+  { name: "sneaky", source: require("./character/char5.png") },
+  { name: "annoyed", source: require("./character/char6.png") },
+  { name: "proud", source: require("./character/char7.png") },
 ];

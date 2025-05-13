@@ -24,8 +24,14 @@ export default function PhotoReorder() {
   const { BACKEND_URL } = Constants.expoConfig.extra;
   const [photos, setPhotos] = useState([]);
   const flatListRef = useRef(null);
+  const { photoList, setPhotoList } = usePhoto(); // ✅ usePhoto에서 가져오기
 
   useEffect(() => {
+    if (photoList.length > 0) {
+      // ✅ 이미 저장된 리스트 있으면 그대로 사용
+      setPhotos(photoList);
+      return;
+    }
     const fetchPhotos = async () => {
       try {
         const res = await fetch(`${BACKEND_URL}/api/photos/selection/temp`, {
@@ -34,7 +40,7 @@ export default function PhotoReorder() {
           },
         });
         const data = await res.json();
-        console.log("✅ API 결과:", data[0]);
+        console.log("✅ API 결과:", data);
         setPhotos(data);
       } catch (err) {
         console.error("사진 불러오기 실패:", err);
@@ -45,12 +51,13 @@ export default function PhotoReorder() {
   }, [token]);
 
   const handleSaveOrder = () => {
-    // TODO: 서버에 순서 저장 API 연동 예정
     console.log(
       "📦 최종 순서:",
       photos.map((p) => p.id)
     );
-    router.back();
+
+    setPhotoList(photos); // ✅ 순서 저장
+    router.back(); // 이전 화면으로 이동
   };
 
   return (
@@ -67,30 +74,34 @@ export default function PhotoReorder() {
         <View style={{ width: 22 }} /> {/* 오른쪽 여백 */}
       </View>
 
-      <DraggableFlatList
-        ref={flatListRef}
-        data={photos}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item, drag, isActive }) => (
-          <ScaleDecorator>
-            <View style={styles.cardWrapper}>
-              <View style={styles.cardShadowWrapper}>
-                <TouchableOpacity onPressIn={drag} activeOpacity={1}>
-                  <View style={[styles.card, isActive && { opacity: 0.8 }]}>
-                    <Image
-                      source={{ uri: item.photoUrl }}
-                      style={styles.cardImage}
-                    />
+      {photos.length > 0 && (
+        <DraggableFlatList
+          ref={flatListRef}
+          data={photos}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item, drag, isActive }) => {
+            console.log("🧩 아이템 ID:", item.id, "전체 item:", item);
+            return (
+              <ScaleDecorator>
+                <View style={styles.cardWrapper}>
+                  <View style={styles.cardShadowWrapper}>
+                    <TouchableOpacity onPressIn={drag} activeOpacity={1}>
+                      <View style={[styles.card, isActive && { opacity: 0.7 }]}>
+                        <Image
+                          source={{ uri: item.photoUrl }}
+                          style={styles.cardImage}
+                        />
+                      </View>
+                    </TouchableOpacity>
                   </View>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </ScaleDecorator>
-        )}
-        onDragEnd={({ data }) => setPhotos(data)}
-        contentContainerStyle={styles.listContent}
-      />
-
+                </View>
+              </ScaleDecorator>
+            );
+          }}
+          onDragEnd={({ data }) => setPhotos(data)}
+          contentContainerStyle={styles.listContent}
+        />
+      )}
       {/* 저장 버튼 */}
       <TouchableOpacity style={styles.saveButton} onPress={handleSaveOrder}>
         <Text style={styles.saveButtonText}>순서 저장</Text>
