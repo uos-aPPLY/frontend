@@ -8,7 +8,6 @@ import {
   Image,
   ActivityIndicator,
   TouchableOpacity,
-  Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as SecureStore from "expo-secure-store";
@@ -26,9 +25,8 @@ export default function WastePage() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [confirmVisible, setConfirmVisible] = useState(false);
-  const [confirmAction, setConfirmAction] = useState(null); // 'delete' or 'restore'
+  const [confirmAction, setConfirmAction] = useState(null);
 
-  // Fetch trash diaries
   const fetchTrash = async () => {
     setLoading(true);
     try {
@@ -49,7 +47,6 @@ export default function WastePage() {
     fetchTrash();
   }, []);
 
-  // Toggle selection of a diary
   const toggleSelect = (id) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -59,22 +56,26 @@ export default function WastePage() {
     });
   };
 
-  // Confirm and perform action
   const handleConfirm = async () => {
     setConfirmVisible(false);
     const token = await SecureStore.getItemAsync("accessToken");
     if (confirmAction === "delete") {
-      if (selectedIds.size === 0) return;
-      try {
+      if (selectedIds.size > 0) {
+        await Promise.all(
+          Array.from(selectedIds).map((id) =>
+            fetch(`${BACKEND_URL}/api/diaries/trash/${id}`, {
+              method: "DELETE",
+              headers: { Authorization: `Bearer ${token}` },
+            })
+          )
+        );
+      } else {
         await fetch(`${BACKEND_URL}/api/diaries/trash/all`, {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
         });
-      } catch (e) {
-        console.error(e);
       }
     } else if (confirmAction === "restore") {
-      // Restore each selected
       await Promise.all(
         Array.from(selectedIds).map((id) =>
           fetch(`${BACKEND_URL}/api/diaries/trash/${id}/restore`, {
@@ -84,17 +85,15 @@ export default function WastePage() {
         )
       );
     }
-    // Reset state and refresh list
     setSelectionMode(false);
     setSelectedIds(new Set());
     fetchTrash();
   };
 
-  // Render card
   const renderItem = ({ item }) => {
     const checked = selectedIds.has(item.id);
     return (
-      <Pressable
+      <TouchableOpacity
         style={styles.card}
         onPress={() => (selectionMode ? toggleSelect(item.id) : null)}
         activeOpacity={selectionMode ? 0.6 : 1}
@@ -102,6 +101,7 @@ export default function WastePage() {
         {selectionMode && (
           <Checkbox
             style={styles.checkbox}
+            color={"rgba(214, 128, 137, 1)"}
             value={checked}
             onValueChange={() => toggleSelect(item.id)}
           />
@@ -118,7 +118,7 @@ export default function WastePage() {
           </Text>
           <Text style={styles.cardDate}>{item.diaryDate}</Text>
         </View>
-      </Pressable>
+      </TouchableOpacity>
     );
   };
 
@@ -136,12 +136,14 @@ export default function WastePage() {
         visible={confirmVisible}
         title={
           confirmAction === "delete"
-            ? "선택한 일기를 영구 삭제하시겠어요?"
+            ? selectedIds.size > 0
+              ? "선택한 일기를 삭제하시겠어요?"
+              : "전체 일기를 삭제하시겠어요?"
             : "선택한 일기를 복원하시겠어요?"
         }
         message={
           confirmAction === "delete"
-            ? "삭제된 일기는 복구할 수 없습니다."
+            ? "삭제 후에는 복구할 수 없어요."
             : "일기가 휴지통에서 복원됩니다."
         }
         cancelText="취소"
@@ -195,7 +197,9 @@ export default function WastePage() {
               setConfirmVisible(true);
             }}
           >
-            <Text style={styles.footerText}>전체 삭제</Text>
+            <Text style={styles.footerText}>
+              {selectedIds.size > 0 ? "삭제" : "전체 삭제"}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.footerButton}
@@ -204,7 +208,9 @@ export default function WastePage() {
               setConfirmVisible(true);
             }}
           >
-            <Text style={styles.footerText}>전체 복구</Text>
+            <Text style={styles.footerText}>
+              {selectedIds.size > 0 ? "복구" : "전체 복구"}
+            </Text>
           </TouchableOpacity>
         </View>
       )}
@@ -246,8 +252,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2.5 },
     shadowOpacity: 0.2,
     shadowRadius: 1.6,
-    overflow: "hidden",
-    position: "relative",
+    overflow: "visible",
   },
   checkbox: {
     position: "absolute",
@@ -281,6 +286,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-around",
     marginBottom: 60,
   },
-  footerButton: { padding: 12 },
+  footerButton: { padding: 10 },
   footerText: { fontSize: 16, color: "#A78C7B", fontWeight: "600" },
 });
