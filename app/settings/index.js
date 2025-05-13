@@ -7,6 +7,7 @@ import {
   Pressable,
   Image,
   ScrollView,
+  Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -61,6 +62,9 @@ export default function SettingsPage() {
           <Text style={styles.sectionTitle}>고객문의</Text>
           {["문의하기", "서비스 이용약관", "개인정보처리방침"].map((t) => {
             let onPress;
+            if (t === "문의하기") {
+              onPress = () => router.push("/settings/help");
+            }
             if (t === "서비스 이용약관")
               onPress = () => router.push("/settings/termofservice");
             if (t === "개인정보처리방침")
