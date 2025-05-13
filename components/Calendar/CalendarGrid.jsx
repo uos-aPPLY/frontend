@@ -27,16 +27,14 @@ import {
   Inter_600SemiBold,
 } from "@expo-google-fonts/inter";
 import AppLoading from "expo-app-loading";
+import { useRouter } from "expo-router";
 
 const screenWidth = Dimensions.get("window").width;
 const DAY_ITEM_SIZE = (screenWidth - 60) / 7;
 const screenHeight = Dimensions.get("window").height;
 
-export default function CalendarGrid({
-  currentMonth,
-  diariesByDate,
-  onDatePress,
-}) {
+export default function CalendarGrid({ currentMonth, diariesByDate }) {
+  const router = useRouter();
   const [fontsCaveatLoaded] = useCaveatFonts({
     Caveat_600SemiBold,
   });
@@ -90,7 +88,13 @@ export default function CalendarGrid({
               <TouchableOpacity
                 key={di}
                 style={[styles.dayContainer, opacityStyle]}
-                onPress={() => onDatePress && onDatePress(day)}
+                onPress={() => {
+                  if (hasPhoto) {
+                    router.push(`/diary/${dateStr}`);
+                  } else {
+                    router.push(`/create?date=${dateStr}&from=calendar`);
+                  }
+                }}
                 disabled={!isCurrentMonth}
               >
                 {isToday && !todayHasDiary ? (
