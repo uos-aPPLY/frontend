@@ -25,6 +25,11 @@ export default function ProfilePage() {
   const [albums, setAlbums] = useState([]);
   const [loading, setLoading] = useState(true);
   const [nickname, setNickname] = useState("");
+  const [diaryCounts, setDiaryCounts] = useState({
+    total: 0,
+    year: 0,
+    month: 0,
+  });
   const [isModalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
@@ -36,6 +41,11 @@ export default function ProfilePage() {
         });
         const json = await res.json();
         setNickname(json.nickname || "");
+        setDiaryCounts({
+          total: json.totalDiariesCount || 0,
+          year: json.yearDiariesCount || 0,
+          month: json.monthDiariesCount || 0,
+        });
       } catch (e) {
         console.error(e);
       }
@@ -135,9 +145,11 @@ export default function ProfilePage() {
                 />
               </TouchableOpacity>
             </View>
-            <Text style={styles.stats}>총 일기 수 10</Text>
-            <Text style={styles.stats}>올해 일기 수 10</Text>
-            <Text style={styles.stats}>이번 달 일기 수 10</Text>
+            <Text style={styles.stats}>총 일기 수 {diaryCounts.total}</Text>
+            <Text style={styles.stats}>올해 일기 수 {diaryCounts.year}</Text>
+            <Text style={styles.stats}>
+              이번 달 일기 수 {diaryCounts.month}
+            </Text>
           </View>
         </View>
       </SafeAreaView>
