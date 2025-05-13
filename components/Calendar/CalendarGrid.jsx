@@ -26,7 +26,6 @@ import {
   useFonts as useInterFonts,
   Inter_600SemiBold,
 } from "@expo-google-fonts/inter";
-import AppLoading from "expo-app-loading";
 
 const screenWidth = Dimensions.get("window").width;
 const DAY_ITEM_SIZE = (screenWidth - 60) / 7;
@@ -44,7 +43,7 @@ export default function CalendarGrid({
     Inter_600SemiBold,
   });
   if (!fontsCaveatLoaded || !fontsInterLoaded) {
-    return <AppLoading />;
+    return <View />;
   }
 
   const today = new Date();

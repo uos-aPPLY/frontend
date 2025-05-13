@@ -5,16 +5,20 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
 import { addMonths, subMonths } from "date-fns";
+import { format } from "date-fns";
+import { useRouter } from "expo-router";
 import HeaderCalender from "../../components/Header/HeaderCalendar";
 import MonthNavigator from "../../components/Calendar/MonthNavigator";
 import CalendarGrid from "../../components/Calendar/CalendarGrid";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
-export default function Calendar({ onDatePress }) {
+export default function Calendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [diariesByDate, setDiariesByDate] = useState({});
   const [loading, setLoading] = useState(true);
+
+  const router = useRouter();
 
   useEffect(() => {
     (async () => {
@@ -37,6 +41,11 @@ export default function Calendar({ onDatePress }) {
     })();
   }, []);
 
+  const handleDatePress = (dateObj) => {
+    const dateStr = format(dateObj, "yyyy-MM-dd");
+    router.push(`/diaries/${dateStr}`);
+  };
+
   if (loading) {
     return <ActivityIndicator style={{ marginTop: 50 }} />;
   }
@@ -57,7 +66,7 @@ export default function Calendar({ onDatePress }) {
           <CalendarGrid
             currentMonth={currentMonth}
             diariesByDate={diariesByDate}
-            onDatePress={onDatePress}
+            onDatePress={handleDatePress}
           />
         </View>
       </View>

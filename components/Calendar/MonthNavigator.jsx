@@ -6,7 +6,6 @@ import {
   useFonts as useInterFonts,
   Inter_600SemiBold,
 } from "@expo-google-fonts/inter";
-import AppLoading from "expo-app-loading";
 import { useRouter } from "expo-router";
 
 export default function MonthNavigator({ currentMonth, onPrev, onNext }) {
@@ -15,7 +14,7 @@ export default function MonthNavigator({ currentMonth, onPrev, onNext }) {
     Inter_600SemiBold,
   });
   if (!fontsInterLoaded) {
-    return <AppLoading />;
+    return null;
   }
 
   const monthParam = format(currentMonth, "yyyy-MM");

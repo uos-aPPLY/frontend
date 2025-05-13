@@ -32,6 +32,8 @@ npx expo install expo-notifications
 npm install react-native-draggable-flatlist
 npx expo install react-native-gesture-handler
 npx expo install react-native-reanimated
+npx expo install expo-splash-screen
+
 ```
 
 ## Prettier 설정
