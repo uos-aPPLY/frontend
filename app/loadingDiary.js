@@ -108,4 +108,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 22,
   },
+  header: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingTop: 10,
+    paddingLeft: 10,
+    zIndex: 1,
+  },
 });

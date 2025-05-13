@@ -1,5 +1,4 @@
-//create.js랑 코드 동일
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -8,84 +7,63 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  FlatList,
+  Dimensions,
+  Text,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import * as ImageManipulator from "expo-image-manipulator";
-
+import { ScaleDecorator } from "react-native-draggable-flatlist";
 import HeaderDate from "../components/Header/HeaderDate";
-import CardPicture from "../components/CardPicture";
 import IconButton from "../components/IconButton";
 import TextBox from "../components/TextBox";
 import characterList from "../assets/characterList";
 import { useDiary } from "../contexts/DiaryContext";
 import { useAuth } from "../contexts/AuthContext";
-import { uploadPhotos } from "../utils/uploadPhotos";
 import { formatGridData } from "../utils/formatGridData";
-import { clearAllTempPhotos } from "../utils/clearTempPhotos";
+import Constants from "expo-constants";
 
-export default function PhotoPage() {
+const screenWidth = Dimensions.get("window").width;
+
+export default function WritePage() {
+  const flatListRef = useRef(null);
+
   const nav = useRouter();
-  const params = useLocalSearchParams();
-  const date = params.date || new Date().toISOString().slice(0, 10);
-  const from = params.from || "calendar";
-  const { text, setText, selectedCharacter, setSelectedCharacter } = useDiary();
-  const [isPickerVisible, setIsPickerVisible] = useState(false);
+  const {
+    text,
+    setText,
+    selectedCharacter,
+    setSelectedCharacter,
+    selectedDate,
+    setSelectedDate,
+  } = useDiary();
   const { token } = useAuth();
-  console.log("토큰:", token);
-
-  const openGallery = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (!permission.granted) {
-      alert("갤러리 접근 권한이 필요합니다.");
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: true,
-      selectionLimit: 160,
-      quality: 1,
-      exif: true,
-    });
-
-    if (!result.canceled) {
-      if (!token) {
-        console.error("토큰이 없습니다. 로그인 후 다시 시도하세요.");
-        return;
-      }
-      try {
-        const resizedAssets = await Promise.all(
-          result.assets.map((asset) =>
-            ImageManipulator.manipulateAsync(
-              asset.uri,
-              [{ resize: { width: 400 } }],
-              {
-                compress: 0.5,
-                format: ImageManipulator.SaveFormat.JPEG,
-              }
-            )
-          )
-        );
-        await uploadPhotos(resizedAssets, token);
-        nav.push("/confirmPhoto");
-      } catch (error) {
-        console.error("업로드 실패", error);
-      }
-    }
-  };
+  const { BACKEND_URL } = Constants.expoConfig.extra;
+  const [isPickerVisible, setIsPickerVisible] = useState(false);
+  const [tempPhotos, setTempPhotos] = useState([]);
+  const date = selectedDate?.toISOString().split("T")[0];
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
-    if (token) {
-      clearAllTempPhotos(token);
-    }
+    const fetchTempPhotos = async () => {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/photos/selection/temp`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await res.json();
+        setTempPhotos(data);
+      } catch (error) {
+        console.error("임시 사진 불러오기 실패:", error);
+      }
+    };
+    if (token) fetchTempPhotos();
   }, [token]);
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       style={{ flex: 1 }}
     >
       <View style={styles.all}>
@@ -94,27 +72,82 @@ export default function PhotoPage() {
           onBack={() => {
             setText("");
             setSelectedCharacter(require("../assets/character/char1.png"));
-            if (from === "home") {
-              nav.push("/home");
-            } else {
-              nav.push("/calendar");
-            }
+            setSelectedDate(null);
+            nav.push("/calendar");
           }}
           hasText={text.trim().length > 0}
         />
+
         <View style={styles.middle}>
           <ScrollView
             contentContainerStyle={styles.scrollContainer}
             keyboardShouldPersistTaps="handled"
           >
-            <CardPicture isPlaceholder onPress={openGallery} />
+            <View style={styles.imageWrapper}>
+              <View style={styles.pageIndicator}>
+                {tempPhotos.map((photo, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => {
+                      flatListRef.current?.scrollToIndex({
+                        index,
+                        animated: true,
+                      });
+                      setCurrentIndex(index); // 인디케이터 UI 업데이트
+                    }}
+                    style={styles.indicatorItem}
+                  >
+                    {currentIndex === index ? (
+                      <Image
+                        source={{ uri: photo.photoUrl }}
+                        style={styles.thumbnailImage}
+                      />
+                    ) : (
+                      <View style={styles.dot} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <FlatList
+                ref={flatListRef}
+                data={tempPhotos}
+                keyExtractor={(item, index) =>
+                  item.id?.toString() ?? index.toString()
+                }
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onMomentumScrollEnd={(e) => {
+                  const index = Math.round(
+                    e.nativeEvent.contentOffset.x / screenWidth
+                  );
+                  setCurrentIndex(index);
+                }}
+                renderItem={({ item }) => (
+                  <View style={styles.shadowCard}>
+                    <Image
+                      source={{ uri: item.photoUrl }}
+                      style={styles.image}
+                    />
+                  </View>
+                )}
+              />
+            </View>
 
             <View style={styles.characterPicker}>
+              <View style={{ width: 24, height: 24 }} />
               <IconButton
                 source={selectedCharacter}
                 wsize={40}
                 hsize={40}
                 onPress={() => setIsPickerVisible(!isPickerVisible)}
+              />
+              <IconButton
+                source={require("../assets/icons/pictureinfoicon.png")}
+                wsize={24}
+                hsize={24}
+                onPress={() => nav.push("/photoReorder")}
               />
             </View>
 
@@ -160,15 +193,74 @@ const styles = StyleSheet.create({
     backgroundColor: "#FCF9F4",
     flex: 1,
   },
+  pageIndicator: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  indicatorItem: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#D9D9D9",
+  },
+
+  dotActive: {
+    backgroundColor: "#A78C7B",
+  },
+
+  thumbnailImage: {
+    width: 22,
+    height: 22,
+    borderRadius: 4,
+  },
+
+  shadowCard: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 3,
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  card: {
+    width: "100%",
+    aspectRatio: 1,
+    backgroundColor: "#F1F2F1",
+    borderRadius: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    position: "relative",
+  },
+  image: {
+    width: screenWidth - 60,
+    aspectRatio: 1,
+    borderRadius: 20,
+    resizeMode: "cover",
+    marginHorizontal: 30, // 중앙 정렬
+  },
+
   middle: {
     flex: 1,
     backgroundColor: "#FCF9F4",
-    paddingTop: 20,
+    paddingTop: 15,
   },
   characterPicker: {
-    padding: 10,
-    justifyContent: "center",
+    paddingBottom: 10,
+    justifyContent: "space-between",
     alignItems: "center",
+    flexDirection: "row",
+    gap: 16,
+    paddingHorizontal: 35,
   },
   low: {
     paddingHorizontal: 30,
