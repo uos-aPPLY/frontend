@@ -42,7 +42,6 @@ export default function CreatePage() {
   const seoulNow = new Date(
     new Date().toLocaleString("sv", { timeZone: "Asia/Seoul" })
   );
-  const date = dateParam || format(seoulNow, "yyyy-MM-dd");
 
   useEffect(() => {
     if (token) {
