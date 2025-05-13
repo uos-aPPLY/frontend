@@ -7,6 +7,7 @@ export function DiaryProvider({ children }) {
   const [selectedCharacter, setSelectedCharacter] = useState(
     require("../assets/character/char1.png")
   );
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   return (
     <DiaryContext.Provider
@@ -15,6 +16,8 @@ export function DiaryProvider({ children }) {
         setText,
         selectedCharacter,
         setSelectedCharacter,
+        selectedDate,
+        setSelectedDate,
       }}
     >
       {children}

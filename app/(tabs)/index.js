@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { StyleSheet, View, Text } from "react-native";
 import HeaderDefault from "../../components/Header/HeaderDefault";
 import IconButton from "../../components/IconButton";
+import { useDiary } from "../../contexts/DiaryContext";
 
 export default function Home() {
   const nav = useRouter();
@@ -18,6 +19,7 @@ export default function Home() {
 
   const today = new Date().getDay();
   const message = messages[today];
+  const { selectedDate, setSelectedDate } = useDiary();
 
   return (
     <>
@@ -30,8 +32,8 @@ export default function Home() {
             hsize={50}
             wsize={50}
             onPress={() => {
-              const date = new Date().toISOString().slice(0, 10);
-              nav.push(`/create?date=${date}&from=home`);
+              setSelectedDate(new Date());
+              nav.push("/create");
             }}
           />
         </View>
