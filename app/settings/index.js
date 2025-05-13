@@ -7,7 +7,6 @@ import {
   Pressable,
   Image,
   ScrollView,
-  Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -89,23 +88,28 @@ export default function SettingsPage() {
             "말투 커스터마이징",
             "기본 키워드 설정",
             "내보내기 (txt, pdf)",
-          ].map((t) => (
-            <Pressable
-              key={t}
-              style={styles.item}
-              onPress={() => {
-                if (t === "말투 커스터마이징") {
-                  router.push("/speechstyle?from=settings");
-                }
-              }}
-            >
-              {({ pressed }) => (
-                <Text style={[styles.itemText, pressed && { opacity: 0.5 }]}>
-                  {t}
-                </Text>
-              )}
-            </Pressable>
-          ))}
+          ].map((t) => {
+            let onPress;
+            if (t === "휴지통") {
+              onPress = () => router.push("/settings/waste");
+            } else if (t === "말투 커스터마이징") {
+              onPress = () => router.push("/speechstyle?from=settings");
+            } else if (t === "기본 키워드 설정") {
+              onPress = () => router.push("/settings/defaultkeywords");
+            } else if (t === "내보내기 (txt, pdf)") {
+              onPress = () => router.push("/settings/export");
+            }
+
+            return (
+              <Pressable key={t} style={styles.item} onPress={onPress}>
+                {({ pressed }) => (
+                  <Text style={[styles.itemText, pressed && { opacity: 0.5 }]}>
+                    {t}
+                  </Text>
+                )}
+              </Pressable>
+            );
+          })}
         </View>
 
         {/* 계정 관리 */}
