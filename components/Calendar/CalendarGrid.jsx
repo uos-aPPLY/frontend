@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Image,
   Dimensions,
+  PanResponder,
 } from "react-native";
 import {
   startOfMonth,
@@ -33,8 +34,30 @@ const screenWidth = Dimensions.get("window").width;
 const DAY_ITEM_SIZE = (screenWidth - 60) / 7;
 const screenHeight = Dimensions.get("window").height;
 
-export default function CalendarGrid({ currentMonth, diariesByDate }) {
+export default function CalendarGrid({
+  currentMonth,
+  diariesByDate,
+  onPrev,
+  onNext,
+}) {
   const router = useRouter();
+
+  const panResponder = React.useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, { dx, dy }) =>
+          Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10,
+        onPanResponderRelease: (_, { dx }) => {
+          if (dx > 50) {
+            onPrev?.();
+          } else if (dx < -50) {
+            onNext?.();
+          }
+        },
+      }),
+    [onPrev, onNext]
+  );
+
   const [fontsCaveatLoaded] = useCaveatFonts({
     Caveat_600SemiBold,
   });
@@ -63,7 +86,10 @@ export default function CalendarGrid({ currentMonth, diariesByDate }) {
   const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return (
-    <View style={[styles.container, { minHeight: screenHeight * 0.44 }]}>
+    <View
+      {...panResponder.panHandlers}
+      style={[styles.container, { minHeight: screenHeight * 0.44 }]}
+    >
       <View style={styles.weekDaysRow}>
         {daysOfWeek.map((day) => (
           <Text key={day} style={styles.weekDayText}>
