@@ -1,3 +1,4 @@
+// app/diary/[date].js
 import { useEffect, useState } from "react";
 import {
   View,
@@ -18,7 +19,8 @@ import HeaderDate from "../../components/Header/HeaderDate";
 const screenWidth = Dimensions.get("window").width;
 
 export default function DiaryPage() {
-  const { date } = useLocalSearchParams();
+  const { date: dateParam } = useLocalSearchParams();
+  const date = dateParam;
   const { token } = useAuth();
   const nav = useRouter();
 
@@ -30,22 +32,28 @@ export default function DiaryPage() {
       try {
         const res = await fetch(
           `${Constants.expoConfig.extra.BACKEND_URL}/api/diaries/by-date?date=${date}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
-        const data = await res.json();
-        setDiary(data);
+        if (!res.ok) {
+          setDiary(undefined);
+        } else {
+          const text = await res.text();
+          if (!text) {
+            setDiary(undefined);
+          } else {
+            const data = JSON.parse(text);
+            setDiary(data);
+          }
+        }
       } catch (error) {
         console.error("📛 다이어리 로딩 실패", error);
-        setDiary(undefined); // 실패
+        setDiary(undefined);
       } finally {
-        setLoading(false); // ✅ 로딩 완료
+        setLoading(false);
       }
     };
-
-    fetchDiary();
-  }, [date]);
+    if (date && token) fetchDiary();
+  }, [date, token]);
 
   if (loading) {
     return (

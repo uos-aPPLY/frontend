@@ -27,7 +27,7 @@ export default function Terms() {
         const list = await fetchTerms();
         setTerms(list);
       } catch (e) {
-        Alert.alert("약관 로드 오류", e.message);
+        // Alert.alert("약관 로드 오류", e.message);
       } finally {
         setLoading(false);
       }

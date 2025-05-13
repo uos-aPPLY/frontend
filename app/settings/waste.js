@@ -76,14 +76,25 @@ export default function WastePage() {
         });
       }
     } else if (confirmAction === "restore") {
-      await Promise.all(
-        Array.from(selectedIds).map((id) =>
-          fetch(`${BACKEND_URL}/api/diaries/trash/${id}/restore`, {
-            method: "PATCH",
-            headers: { Authorization: `Bearer ${token}` },
-          })
-        )
-      );
+      if (selectedIds.size > 0) {
+        await Promise.all(
+          Array.from(selectedIds).map((id) =>
+            fetch(`${BACKEND_URL}/api/diaries/trash/${id}/restore`, {
+              method: "PATCH",
+              headers: { Authorization: `Bearer ${token}` },
+            })
+          )
+        );
+      } else {
+        await Promise.all(
+          diaries.map((item) =>
+            fetch(`${BACKEND_URL}/api/diaries/trash/${item.id}/restore`, {
+              method: "PATCH",
+              headers: { Authorization: `Bearer ${token}` },
+            })
+          )
+        );
+      }
     }
     setSelectionMode(false);
     setSelectedIds(new Set());

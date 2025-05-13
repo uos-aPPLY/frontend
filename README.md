@@ -34,6 +34,8 @@ npx expo install react-native-gesture-handler
 npx expo install react-native-reanimated
 npx expo install expo-splash-screen
 npx expo install react-native-webview
+npm install fast-uri
+npx expo install date-fns-tz
 ```
 
 ## Prettier 설정

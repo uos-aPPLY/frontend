@@ -1,5 +1,5 @@
 // components/Calendar/CalendarGrid.jsx
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -32,6 +32,14 @@ import { useRouter } from "expo-router";
 const screenWidth = Dimensions.get("window").width;
 const DAY_ITEM_SIZE = (screenWidth - 60) / 7;
 const screenHeight = Dimensions.get("window").height;
+const TIMEZONE = "Asia/Seoul";
+
+const toSeoulDate = (date) =>
+  new Date(
+    date.toLocaleString("sv", {
+      timeZone: TIMEZONE,
+    })
+  );
 
 export default function CalendarGrid({
   currentMonth,
@@ -40,6 +48,7 @@ export default function CalendarGrid({
   onNext,
 }) {
   const router = useRouter();
+  const [selectedDate, setSelectedDate] = useState(null);
 
   const panResponder = React.useMemo(
     () =>
@@ -67,13 +76,15 @@ export default function CalendarGrid({
     return <View />;
   }
 
-  const today = new Date();
-  const todayStr = format(today, "yyyy-MM-dd");
+  const todaySeoul = toSeoulDate(new Date());
+  const todayStr = format(todaySeoul, "yyyy-MM-dd");
   const todayHasDiary = Boolean(diariesByDate[todayStr]);
 
   const generateCalendar = () => {
-    const start = startOfWeek(startOfMonth(currentMonth));
-    const end = endOfWeek(endOfMonth(currentMonth));
+    const monthStart = toSeoulDate(startOfMonth(currentMonth));
+    const monthEnd = toSeoulDate(endOfMonth(currentMonth));
+    const start = startOfWeek(monthStart);
+    const end = endOfWeek(monthEnd);
     const allDays = eachDayOfInterval({ start, end });
     const rows = [];
     for (let i = 0; i < allDays.length; i += 7) {
@@ -100,26 +111,45 @@ export default function CalendarGrid({
       {generateCalendar().map((week, wi) => (
         <View key={wi} style={styles.weekRow}>
           {week.map((day, di) => {
-            const dateStr = format(day, "yyyy-MM-dd");
+            const daySeoul = toSeoulDate(day);
+            const dateStr = format(daySeoul, "yyyy-MM-dd");
             const hasPhoto = Boolean(diariesByDate[dateStr]);
-            const isCurrentMonth = isSameMonth(day, currentMonth);
-            const isToday = isSameDay(day, today);
-            const isFuture =
-              day >
-              new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            const isCurrentMonth = isSameMonth(daySeoul, currentMonth);
+            const isToday = dateStr === todayStr;
+            const isFuture = daySeoul > todaySeoul;
+            const isPast = !isFuture && !isToday;
+            const isPastNoPhoto = isPast && !hasPhoto;
             const opacityStyle = isFuture ? { opacity: 0.3 } : null;
+
+            const handlePress = () => {
+              if (hasPhoto) {
+                router.push({
+                  pathname: "/diary/[date]",
+                  params: { date: dateStr },
+                });
+              } else if (isPastNoPhoto) {
+                if (selectedDate === dateStr) {
+                  setSelectedDate(null);
+                  router.push({
+                    pathname: "/create",
+                    params: { date: dateStr, from: "calendar" },
+                  });
+                } else {
+                  setSelectedDate(dateStr);
+                }
+              } else if (isToday && !todayHasDiary) {
+                router.push({
+                  pathname: "/create",
+                  params: { date: dateStr, from: "calendar" },
+                });
+              }
+            };
 
             return (
               <TouchableOpacity
                 key={di}
                 style={[styles.dayContainer, opacityStyle]}
-                onPress={() => {
-                  if (hasPhoto) {
-                    router.push(`/diary/${dateStr}`);
-                  } else {
-                    router.push(`/create?date=${dateStr}&from=calendar`);
-                  }
-                }}
+                onPress={handlePress}
                 disabled={!isCurrentMonth}
               >
                 {isToday && !todayHasDiary ? (
@@ -132,18 +162,23 @@ export default function CalendarGrid({
                     source={{ uri: diariesByDate[dateStr] }}
                     style={styles.dayImage}
                   />
+                ) : selectedDate === dateStr ? (
+                  <Image
+                    source={require("../../assets/icons/grayplusicon.png")}
+                    style={styles.plusIcon}
+                  />
                 ) : (
                   <View style={styles.dayPlaceholder} />
                 )}
 
-                {!(isToday && !todayHasDiary) && (
+                {selectedDate !== dateStr && !(isToday && !todayHasDiary) && (
                   <Text
                     style={[
                       styles.dayText,
                       !isCurrentMonth && styles.inactiveDayText,
                     ]}
                   >
-                    {day.getDate()}
+                    {format(daySeoul, "d")}
                   </Text>
                 )}
               </TouchableOpacity>
