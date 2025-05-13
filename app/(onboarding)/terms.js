@@ -8,6 +8,7 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import Checkbox from "expo-checkbox";
 import { useRouter } from "expo-router";
@@ -18,6 +19,7 @@ export default function Terms() {
   const { fetchTerms, submitAgreements, signOut } = useAuth();
   const [terms, setTerms] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -36,6 +38,10 @@ export default function Terms() {
     setTerms((prev) =>
       prev.map((t) => (t.id === id ? { ...t, agreed: !t.agreed } : t))
     );
+
+  const toggleExpand = (id) => {
+    setExpandedId((prev) => (prev === id ? null : id));
+  };
 
   const allRequiredAgreed = terms
     .filter((t) => t.required)
@@ -60,20 +66,39 @@ export default function Terms() {
 
   if (loading) return null;
 
-  const renderRow = (t) => (
-    <View key={t.id} style={styles.item}>
-      <Checkbox
-        value={t.agreed}
-        onValueChange={() => toggle(t.id)}
-        style={styles.checkbox}
-        color={t.agreed ? "rgba(214, 128, 137, 0.7)" : "#D9D9D9"}
-      />
-      <Text style={styles.itemText}>
-        {t.required ? "[필수] " : "[선택] "}
-        {t.title}
-      </Text>
-    </View>
-  );
+  const renderRow = (t) => {
+    const isExpanded = expandedId === t.id;
+    return (
+      <View key={t.id} style={styles.rowContainer}>
+        <View style={styles.itemRow}>
+          <Checkbox
+            value={t.agreed}
+            onValueChange={() => toggle(t.id)}
+            style={styles.checkbox}
+            color={t.agreed ? "rgba(214, 128, 137, 0.7)" : "#D9D9D9"}
+          />
+          <Text style={styles.itemText}>
+            {t.required ? "[필수] " : "[선택] "}
+            {t.title}
+          </Text>
+          <TouchableOpacity
+            onPress={() => toggleExpand(t.id)}
+            style={styles.arrowButton}
+          >
+            <Image
+              source={require("../../assets/icons/forwardicon.png")}
+              style={[styles.arrowIcon, isExpanded && styles.arrowUp]}
+            />
+          </TouchableOpacity>
+        </View>
+        {isExpanded && (
+          <View style={styles.contentContainer}>
+            <Text style={styles.contentText}>{t.content}</Text>
+          </View>
+        )}
+      </View>
+    );
+  };
 
   const goBack = async () => {
     await signOut();
@@ -136,7 +161,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: "absolute",
-    top: 60,
+    top: 80,
     left: 30,
     padding: 8,
   },
@@ -188,5 +213,25 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "600",
+  },
+  rowContainer: { marginBottom: 20 },
+  itemRow: { flexDirection: "row", alignItems: "center" },
+  arrowButton: { marginLeft: "auto", padding: 8 },
+  arrowIcon: {
+    width: 16,
+    height: 16,
+    tintColor: "#A78C7B",
+    resizeMode: "contain",
+  },
+  arrowUp: { transform: [{ rotate: "90deg" }] },
+  contentContainer: {
+    padding: 8,
+    backgroundColor: "#FFF8F5",
+    borderRadius: 8,
+  },
+  contentText: {
+    fontSize: 14,
+    color: "#333",
+    lineHeight: 22,
   },
 });
