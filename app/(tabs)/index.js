@@ -1,11 +1,15 @@
 import { useRouter } from "expo-router";
-import { StyleSheet, View, Text } from "react-native";
+import { StyleSheet, View, Text, Alert } from "react-native";
 import HeaderDefault from "../../components/Header/HeaderDefault";
 import IconButton from "../../components/IconButton";
 import { useDiary } from "../../contexts/DiaryContext";
+import Constants from "expo-constants";
+import * as SecureStore from "expo-secure-store";
+import { format } from "date-fns";
 
 export default function Home() {
   const nav = useRouter();
+  const { selectedDate, setSelectedDate } = useDiary();
 
   const messages = [
     "지금 이 순간이 내일의 추억이 되도록, \n사진 한 장을 남겨보세요.",
@@ -17,9 +21,41 @@ export default function Home() {
     "과거와 미래가 만나는 그곳, \n사진 속에서 이야기해요.",
   ];
 
-  const today = new Date().getDay();
-  const message = messages[today];
-  const { selectedDate, setSelectedDate } = useDiary();
+  const today = new Date();
+  const message = messages[today.getDay()];
+
+  const handlePress = async () => {
+    const todayStr = format(today, "yyyy-MM-dd");
+    const token = await SecureStore.getItemAsync("accessToken");
+    const BACKEND_URL = Constants.expoConfig.extra.BACKEND_URL;
+
+    try {
+      const res = await fetch(
+        `${BACKEND_URL}/api/diaries/by-date?date=${todayStr}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json && json.id) {
+          // ✅ 일기 이미 존재함
+          nav.push("/calendar");
+          return;
+        }
+      }
+
+      // ✅ 일기 없음 → 작성 페이지로
+      setSelectedDate(today);
+      nav.push("/create");
+    } catch (error) {
+      console.error("🧨 홈 버튼 오류", error);
+      Alert.alert("오류", "네트워크 오류가 발생했어요.");
+    }
+  };
 
   return (
     <>
@@ -31,10 +67,7 @@ export default function Home() {
             source={require("../../assets/icons/bigpinkplusicon.png")}
             hsize={50}
             wsize={50}
-            onPress={() => {
-              setSelectedDate(new Date());
-              nav.push("/create");
-            }}
+            onPress={handlePress}
           />
         </View>
       </View>
@@ -59,8 +92,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     alignItems: "center",
     justifyContent: "center",
-
-    // 그림자
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

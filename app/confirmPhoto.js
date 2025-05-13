@@ -156,7 +156,7 @@ export default function confirmPhoto() {
             setPhotoList(photoList);
             setSelected(selected);
             setMode("write");
-            nav.push("/loading");
+            nav.push("/write");
           }}
         >
           <Text style={styles.buttonText}>직접 쓰기</Text>

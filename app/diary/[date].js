@@ -7,6 +7,7 @@ import {
   ScrollView,
   Image,
   Dimensions,
+  FlatList,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Constants from "expo-constants";
@@ -84,17 +85,26 @@ export default function DiaryPage() {
       <HeaderDate date={date} onBack={() => nav.push("/calendar")} />
 
       <View style={styles.imageWrapper}>
-        <Image
-          source={{ uri: diary.representativePhotoUrl }}
-          style={styles.image}
+        <FlatList
+          data={diary.photos}
+          keyExtractor={(item, index) =>
+            item.id?.toString() ?? index.toString()
+          }
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          renderItem={({ item }) => (
+            <Image source={{ uri: item.photoUrl }} style={styles.image} />
+          )}
         />
+
         <View style={styles.pageIndicator}>
-          {diary.photos?.map((_, index) => (
+          {diary.photos?.map((photo, index) => (
             <View
               key={index}
               style={[
                 styles.dot,
-                diary.photos[index].photoUrl === diary.representativePhotoUrl &&
+                photo.photoUrl === diary.representativePhotoUrl &&
                   styles.dotActive,
               ]}
             />
@@ -143,7 +153,10 @@ const styles = StyleSheet.create({
     width: screenWidth * 0.85,
     aspectRatio: 1,
     borderRadius: 20,
+    resizeMode: "cover",
+    marginHorizontal: (screenWidth * 0.15) / 2, // 중앙 정렬
   },
+
   pageIndicator: {
     flexDirection: "row",
     justifyContent: "center",
