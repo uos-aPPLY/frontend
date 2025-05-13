@@ -1,4 +1,5 @@
-import { useState, useEffect, use } from "react";
+// app/create.js
+import { useState, useEffect } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -7,11 +8,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  onPress,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as ImageManipulator from "expo-image-manipulator";
+import { format } from "date-fns";
 
 import HeaderDate from "../components/Header/HeaderDate";
 import IconButton from "../components/IconButton";
@@ -25,8 +26,7 @@ import { clearAllTempPhotos } from "../utils/clearTempPhotos";
 
 export default function CreatePage() {
   const nav = useRouter();
-  const params = useLocalSearchParams();
-  const from = params.from || "calendar";
+  const { date: dateParam, from = "calendar" } = useLocalSearchParams();
   const {
     text,
     setText,
@@ -35,10 +35,12 @@ export default function CreatePage() {
     selectedDate,
     setSelectedDate,
   } = useDiary();
-  const date = selectedDate.toISOString().split("T")[0];
   const [isPickerVisible, setIsPickerVisible] = useState(false);
   const { token } = useAuth();
-  console.log("토큰:", token);
+  const seoulNow = new Date(
+    new Date().toLocaleString("sv", { timeZone: "Asia/Seoul" })
+  );
+  const date = dateParam || format(seoulNow, "yyyy-MM-dd");
 
   const openGallery = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
