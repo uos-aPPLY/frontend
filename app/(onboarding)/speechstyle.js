@@ -52,7 +52,7 @@ export default function SpeechStyle() {
 
   const goBack = () => {
     if (from === "settings") {
-      router.replace("/settings");
+      router.back();
     } else {
       router.replace("/nickname");
     }
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
   },
   header: { marginBottom: 20 },
-  backButton: { position: "absolute", top: 60, left: 30, padding: 8 },
+  backButton: { position: "absolute", top: 80, left: 30, padding: 8 },
   backicon: { width: 12, height: 22 },
   title: {
     fontSize: 24,

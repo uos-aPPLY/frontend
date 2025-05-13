@@ -74,6 +74,7 @@ const styles = StyleSheet.create({
     resizeMode: "contain",
   },
   dateWrapper: {
+    flex: 1,
     flexDirection: "column",
     justifyContent: "center",
   },
