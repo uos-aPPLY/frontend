@@ -1,5 +1,5 @@
 // app/diaries/[month].js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -21,14 +21,30 @@ const { BACKEND_URL } = Constants.expoConfig.extra;
 export default function DiaryList() {
   const router = useRouter();
   const { month } = useLocalSearchParams();
+
+  useEffect(() => {
+    if (!month) {
+      router.replace("/calendar");
+    }
+  }, [month, router]);
+
+  // month 로딩 전 또는 잘못된 값일 땐 로딩 표시
+  if (!month) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
   const [diaries, setDiaries] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const monthDate = React.useMemo(
-    () => parse(month, "yyyy-MM", new Date()),
-    [month]
-  );
-  const displayMonth = React.useMemo(
+  const monthDate = useMemo(() => {
+    const parsed = parse(month, "yyyy-MM", new Date());
+    return isNaN(parsed) ? new Date() : parsed;
+  }, [month]);
+
+  const displayMonth = useMemo(
     () => format(monthDate, "yyyy년 M월"),
     [monthDate]
   );
