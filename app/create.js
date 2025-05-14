@@ -37,6 +37,7 @@ export default function CreatePage() {
     setSelectedDate,
   } = useDiary();
   const [isPickerVisible, setIsPickerVisible] = useState(false);
+  const { resetDiary } = useDiary();
 
   useEffect(() => {
     if (dateParam) {
@@ -72,9 +73,7 @@ export default function CreatePage() {
         <HeaderDate
           date={date}
           onBack={() => {
-            setText("");
-            setSelectedCharacter(characterList[0]);
-            setSelectedDate(null);
+            resetDiary();
             nav.push("/calendar");
           }}
           hasText={text.trim().length > 0}

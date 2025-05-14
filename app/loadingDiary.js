@@ -64,7 +64,7 @@ export default function LoadingDiary() {
         console.log("📝 응답 받은 일기 데이터:", json);
 
         const date = json.diaryDate;
-        router.replace(`/diaries/${date}`);
+        router.replace(`/diary/${date}`);
       } catch (err) {
         console.error("일기 생성 실패", err);
         router.replace("/home");

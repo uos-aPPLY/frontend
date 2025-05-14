@@ -8,6 +8,12 @@ export function DiaryProvider({ children }) {
   const [selectedCharacter, setSelectedCharacter] = useState(characterList[0]);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
+  const resetDiary = () => {
+    setText("");
+    setSelectedCharacter(characterList[0]);
+    setSelectedDate(new Date()); // null 대신 초기화된 날짜
+  };
+
   return (
     <DiaryContext.Provider
       value={{
@@ -17,6 +23,7 @@ export function DiaryProvider({ children }) {
         setSelectedCharacter,
         selectedDate,
         setSelectedDate,
+        resetDiary,
       }}
     >
       {children}
