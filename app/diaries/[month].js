@@ -84,10 +84,7 @@ export default function DiaryList() {
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => router.push(`/diary/${item.diaryDate}`)}
-          >
+          <View style={styles.card}>
             <View style={styles.imageWrapper}>
               <Image
                 source={{ uri: item.representativePhotoUrl }}
@@ -105,7 +102,7 @@ export default function DiaryList() {
                 )}
               </Text>
             </View>
-          </TouchableOpacity>
+          </View>
         )}
         ListEmptyComponent={() => (
           <Text style={styles.emptyText}>작성된 일기가 없습니다.</Text>

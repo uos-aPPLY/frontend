@@ -28,6 +28,7 @@ import {
   Inter_600SemiBold,
 } from "@expo-google-fonts/inter";
 import { useRouter } from "expo-router";
+import { useDiary } from "../../contexts/DiaryContext";
 
 const screenWidth = Dimensions.get("window").width;
 const DAY_ITEM_SIZE = (screenWidth - 60) / 7;
@@ -48,7 +49,7 @@ export default function CalendarGrid({
   onNext,
 }) {
   const router = useRouter();
-  const [selectedDate, setSelectedDate] = useState(null);
+  const { selectedDate, setSelectedDate } = useDiary();
 
   const panResponder = React.useMemo(
     () =>
@@ -123,25 +124,17 @@ export default function CalendarGrid({
 
             const handlePress = () => {
               if (hasPhoto) {
-                router.push({
-                  pathname: "/diary/[date]",
-                  params: { date: dateStr },
-                });
+                router.push(`/diary/${dateStr}`);
               } else if (isPastNoPhoto) {
                 if (selectedDate === dateStr) {
-                  setSelectedDate(null);
-                  router.push({
-                    pathname: "/create",
-                    params: { date: dateStr, from: "calendar" },
-                  });
+                  setSelectedDate(dateStr);
+                  router.push(`/create?date=${dateStr}&from=calendar`);
                 } else {
                   setSelectedDate(dateStr);
                 }
               } else if (isToday && !todayHasDiary) {
-                router.push({
-                  pathname: "/create",
-                  params: { date: dateStr, from: "calendar" },
-                });
+                console.log("📅 오늘 클릭됨");
+                router.push(`/create?date=${dateStr}&from=calendar`);
               }
             };
 

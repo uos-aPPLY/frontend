@@ -1,8 +1,8 @@
-import { Image, Pressable, StyleSheet } from "react-native";
+import { Image, TouchableOpacity, StyleSheet } from "react-native";
 
 const IconButton = ({ source, onPress, wsize = 24, hsize = 24, style }) => {
   return (
-    <Pressable
+    <TouchableOpacity
       onPress={onPress}
       style={[styles.button, { width: wsize, height: hsize }, style]}
     >
@@ -11,7 +11,7 @@ const IconButton = ({ source, onPress, wsize = 24, hsize = 24, style }) => {
         style={{ width: wsize, height: hsize }}
         resizeMode="contain"
       />
-    </Pressable>
+    </TouchableOpacity>
   );
 };
 

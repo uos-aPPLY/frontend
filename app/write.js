@@ -22,6 +22,7 @@ import { usePhoto } from "../contexts/PhotoContext";
 import { deletePhotoById } from "../utils/clearTempPhotos";
 import { useAuth } from "../contexts/AuthContext";
 import Constants from "expo-constants";
+import EditImageSlider from "../components/EditImageSlider";
 import { openGalleryAndAdd } from "../utils/openGalleryAndAdd";
 
 const screenWidth = Dimensions.get("window").width;
@@ -44,7 +45,11 @@ export default function WritePage() {
   const [tempPhotos, setTempPhotos] = useState([]);
   const { photoList, setPhotoList, mainPhotoId, setMainPhotoId } = usePhoto();
   const photosToShow = photoList.length > 0 ? photoList : tempPhotos;
-  const date = selectedDate?.toISOString().split("T")[0];
+  const date =
+    selectedDate instanceof Date
+      ? selectedDate.toISOString().split("T")[0]
+      : "";
+
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const photosToRender = [...photosToShow];
@@ -191,99 +196,15 @@ export default function WritePage() {
             contentContainerStyle={styles.scrollContainer}
             keyboardShouldPersistTaps="handled"
           >
-            <View style={styles.imageWrapper}>
-              <View style={styles.pageIndicator}>
-                {photosToShow.map((photo, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    onPress={() => {
-                      flatListRef.current?.scrollToIndex({
-                        index,
-                        animated: true,
-                      });
-                      setCurrentIndex(index); // 인디케이터 UI 업데이트
-                    }}
-                    style={styles.indicatorItem}
-                  >
-                    {currentIndex === index ? (
-                      <Image
-                        source={{ uri: photo.photoUrl }}
-                        style={styles.thumbnailImage}
-                      />
-                    ) : (
-                      <View style={styles.dot} />
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <FlatList
-                extraData={mainPhotoId}
-                ref={flatListRef}
-                data={photosToRender}
-                keyExtractor={(item, index) =>
-                  item.id?.toString() ?? index.toString()
-                }
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.flatListContainer} // ✅ 추가
-                onMomentumScrollEnd={(e) => {
-                  const index = Math.round(
-                    e.nativeEvent.contentOffset.x / screenWidth
-                  );
-                  setCurrentIndex(index);
-                }}
-                renderItem={({ item }) => {
-                  if (item.type === "add") {
-                    return (
-                      <View style={styles.cardContainer}>
-                        <View style={styles.addCard}>
-                          <IconButton
-                            source={require("../assets/icons/bigpinkplusicon.png")}
-                            wsize={50}
-                            hsize={50}
-                            onPress={handleAddPhoto}
-                          />
-                        </View>
-                      </View>
-                    );
-                  }
-
-                  return (
-                    <View style={styles.cardContainer}>
-                      <View style={styles.shadowCard}>
-                        <Image
-                          source={{ uri: item.photoUrl }}
-                          style={styles.image}
-                        />
-                        <TouchableOpacity
-                          style={[
-                            styles.badgeOverlay,
-                            String(item.id) === String(mainPhotoId)
-                              ? styles.badgeActive
-                              : styles.badgeInactive,
-                          ]}
-                          onPress={() => setMainPhotoId(String(item.id))}
-                        >
-                          <Text style={styles.badgeText}>대표 사진</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                          style={styles.closeWrapper}
-                          onPress={() => handleHidePhoto(item.id)}
-                        >
-                          <Image
-                            source={require("../assets/icons/xicon.png")}
-                            style={styles.closeIconImg}
-                          />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  );
-                }}
-              />
-            </View>
+            <EditImageSlider
+              photos={photosToRender}
+              mainPhotoId={mainPhotoId}
+              setMainPhotoId={setMainPhotoId}
+              onDeletePhoto={handleHidePhoto}
+              onAddPhoto={handleAddPhoto}
+              currentIndex={currentIndex}
+              setCurrentIndex={setCurrentIndex}
+            />
 
             <View style={styles.characterPicker}>
               <View style={{ width: 24, height: 24 }} />
@@ -337,6 +258,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     height: 22,
+    marginTop: 5,
   },
 
   indicatorItem: {
@@ -349,10 +271,6 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: "#D9D9D9",
-  },
-
-  dotActive: {
-    backgroundColor: "#A78C7B",
   },
 
   thumbnailImage: {
@@ -450,7 +368,6 @@ const styles = StyleSheet.create({
     paddingTop: 15,
   },
   characterPicker: {
-    paddingTop: 10,
     paddingBottom: 10,
     justifyContent: "space-between",
     alignItems: "center",

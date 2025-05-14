@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "center",
     backgroundColor: "#fff",
-    borderRadius: 16,
+    borderRadius: 30,
     padding: 20,
   },
   characterIcon: {
