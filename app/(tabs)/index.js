@@ -26,12 +26,13 @@ export default function Home() {
 
   const handlePress = async () => {
     const todayStr = format(today, "yyyy-MM-dd");
+    console.log("📸 홈 버튼 클릭", todayStr);
     const token = await SecureStore.getItemAsync("accessToken");
     const BACKEND_URL = Constants.expoConfig.extra.BACKEND_URL;
 
     try {
       const res = await fetch(
-        `${BACKEND_URL}/api/diaries/by-date?date=${todayStr}`,
+        `${BACKEND_URL}/api/diary/by-date?date=${todayStr}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -49,8 +50,8 @@ export default function Home() {
       }
 
       // ✅ 일기 없음 → 작성 페이지로
-      setSelectedDate(today);
-      nav.push("/create");
+      setSelectedDate(todayStr);
+      nav.push(`/create?date=${todayStr}&from=calendar`);
     } catch (error) {
       console.error("🧨 홈 버튼 오류", error);
       Alert.alert("오류", "네트워크 오류가 발생했어요.");

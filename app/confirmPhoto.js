@@ -15,6 +15,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { usePhoto } from "../contexts/PhotoContext";
 import { formatGridData } from "../utils/formatGridData";
 import Constants from "expo-constants";
+import { useDiary } from "../contexts/DiaryContext";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -25,6 +26,7 @@ export default function confirmPhoto() {
   const { photoList, setPhotoList, selected, setSelected, setMode, reset } =
     usePhoto();
   const { token } = useAuth();
+  const { setSelectedDate } = useDiary();
 
   const toggleSelect = (photo) => {
     const exists = selected.find((p) => p.id === photo.id);

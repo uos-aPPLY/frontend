@@ -23,6 +23,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { uploadPhotos } from "../utils/uploadPhotos";
 import { clearAllTempPhotos } from "../utils/clearTempPhotos";
 import { openGalleryAndUpload } from "../utils/openGalleryAndUpload";
+import CharacterPickerOverlay from "../components/CharacterPickerOverlay";
 
 export default function CreatePage() {
   const nav = useRouter();
@@ -35,13 +36,25 @@ export default function CreatePage() {
     selectedDate,
     setSelectedDate,
   } = useDiary();
-
-  const date = selectedDate ? selectedDate.toISOString().split("T")[0] : ""; // 또는 디폴트 날짜 "2025-01-01" 등
   const [isPickerVisible, setIsPickerVisible] = useState(false);
+
+  useEffect(() => {
+    if (dateParam) {
+      setSelectedDate(new Date(dateParam)); // 📌 이거 추가!
+    }
+  }, [dateParam]);
+
+  let date = "";
+
+  if (selectedDate instanceof Date && !isNaN(selectedDate)) {
+    date = selectedDate.toISOString().split("T")[0];
+  } else if (typeof selectedDate === "string") {
+    date = selectedDate; // 이미 yyyy-MM-dd 일 수도 있음
+  } else {
+    date = ""; // fallback
+  }
+
   const { token } = useAuth();
-  const seoulNow = new Date(
-    new Date().toLocaleString("sv", { timeZone: "Asia/Seoul" })
-  );
 
   useEffect(() => {
     if (token) {
@@ -82,13 +95,15 @@ export default function CreatePage() {
               </View>
             </View>
 
-            <View style={styles.characterPicker}>
+            <View style={styles.characterRow}>
+              <View style={{ width: 24 }} />
               <IconButton
                 source={selectedCharacter.source}
                 wsize={40}
                 hsize={40}
                 onPress={() => setIsPickerVisible(!isPickerVisible)}
               />
+              <View style={{ width: 24 }} />
             </View>
 
             <View style={styles.low}>
@@ -145,15 +160,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#FCF9F4",
     paddingTop: 20,
   },
-  characterPicker: {
+  characterRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 35,
     padding: 10,
-    justifyContent: "center",
-    alignItems: "center",
   },
+
   low: {
     paddingHorizontal: 30,
     flex: 1,
-    marginBottom: 30,
+    marginBottom: 40,
   },
   scrollContainer: {
     flexGrow: 1,
