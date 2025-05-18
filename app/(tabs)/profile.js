@@ -61,12 +61,6 @@ export default function ProfilePage() {
           headers: { Authorization: `Bearer ${token}` },
         });
         const favJson = await favRes.json();
-        const favCover = favJson[0]?.representativePhotoUrl;
-        const favAlbum = {
-          id: "favorite",
-          name: "좋아요",
-          coverUrl: favCover,
-        };
 
         const allRes = await fetch(`${BACKEND_URL}/api/albums`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -77,8 +71,15 @@ export default function ProfilePage() {
           name: a.name,
           coverUrl: a.coverImageUrl,
         }));
-
-        setAlbums([favAlbum, ...otherAlbums]);
+        let albumsList = otherAlbums;
+        if (Array.isArray(favJson) && favJson.length > 0) {
+          const favCover = favJson[0].representativePhotoUrl;
+          albumsList = [
+            { id: "favorite", name: "좋아요", coverUrl: favCover },
+            ...otherAlbums,
+          ];
+        }
+        setAlbums(albumsList);
       } catch (e) {
         console.error(e);
       } finally {
