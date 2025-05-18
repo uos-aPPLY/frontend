@@ -21,7 +21,7 @@ const {
   NAVER_CLIENT_KEY,
   NAVER_CLIENT_SECRET,
   NAVER_APP_NAME,
-  NAVER_SERVICE_URL_SCHEME_IOS,
+  NAVER_SERVICE_URL_SCHEME,
 } = Constants.expoConfig.extra;
 
 export default function Login() {
@@ -38,7 +38,7 @@ export default function Login() {
           appName: NAVER_APP_NAME,
           consumerKey: NAVER_CLIENT_KEY,
           consumerSecret: NAVER_CLIENT_SECRET,
-          serviceUrlSchemeIOS: NAVER_SERVICE_URL_SCHEME_IOS,
+          serviceUrlSchemeIOS: NAVER_SERVICE_URL_SCHEME,
           disableNaverAppAuthIOS: true,
         });
         console.log("Naver SDK initialized");
@@ -93,6 +93,7 @@ export default function Login() {
       const kakaoResult = await KakaoLogin.login({
         redirectUri: kakaoRedirectUri,
       });
+      console.log(kakaoResult);
       const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

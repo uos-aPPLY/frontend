@@ -6,6 +6,11 @@
 # Expo Go 로그인
 npx expo login
 
+# iOS, Android 빌드
+npx expo prebuild
+npx expo run:ios
+npx expo run:android
+
 # 실행
 npx expo start
 npx expo start --dev-client -c
