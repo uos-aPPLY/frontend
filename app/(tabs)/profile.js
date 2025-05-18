@@ -185,6 +185,13 @@ export default function ProfilePage() {
             <Text style={styles.cardText}>{item.name}</Text>
           </TouchableOpacity>
         )}
+        ListEmptyComponent={() => (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>
+              등록된 앨범이 없습니다. 일기를 추가해주세요!
+            </Text>
+          </View>
+        )}
       />
       <TextEditorModal
         visible={isModalVisible}
@@ -320,6 +327,16 @@ const styles = StyleSheet.create({
   cardText: {
     marginTop: 6,
     fontSize: 14,
+    color: "#AC8B78",
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 50,
+  },
+  emptyText: {
+    fontSize: 16,
     color: "#AC8B78",
   },
 });
