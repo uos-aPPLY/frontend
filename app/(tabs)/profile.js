@@ -188,7 +188,8 @@ export default function ProfilePage() {
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>
-              등록된 앨범이 없습니다. 일기를 추가해주세요!
+              좋아요 앨범과 위치 기반 앨범이 자동으로 생성됩니다.{"\n"}일기를
+              추가해주세요!
             </Text>
           </View>
         )}
@@ -333,10 +334,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 50,
+    marginTop: 40,
   },
   emptyText: {
     fontSize: 16,
     color: "#AC8B78",
+    textAlign: "center",
+    lineHeight: 30,
   },
 });
