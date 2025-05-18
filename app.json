@@ -29,7 +29,19 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "diarypic",
+              "host": "oauth"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -39,37 +51,40 @@
       "NAVER_CLIENT_KEY": "atRAYVo5eD6F4allALAO",
       "NAVER_CLIENT_SECRET": "focDCksfty",
       "NAVER_APP_NAME": "DiaryPic",
-      "NAVER_SERVICE_URL_SCHEME_IOS": "com.apply.diarypic",
+      "NAVER_SERVICE_URL_SCHEME": "com.apply.diarypic",
       "router": {},
       "eas": {
         "projectId": "98161b2c-c0b4-419d-ac4d-e76300ee8121"
       }
     },
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "2.0.21",
+            "compileSdkVersion": 35,
+            "buildToolsVersion": "35.0.0",
+            "usesCleartextTraffic": true,
+            "extraMavenRepos": [
+              "https://devrepo.kakao.com/nexus/content/groups/public/"
+            ]
+          }
+        }
+      ],
       "expo-router",
       "expo-dev-client",
       [
         "@react-native-seoul/kakao-login",
         {
-          "kakaoAppKey": "ff26e5dd397aa1e1d9927f1e0531548d"
+          "kakaoAppKey": "ff26e5dd397aa1e1d9927f1e0531548d",
+          "kotlinVersion": "2.0.21"
         }
       ],
       [
         "@react-native-seoul/naver-login",
         {
           "urlScheme": "com.apply.diarypic"
-        }
-      ],
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "compileSdkVersion": 34,
-            "targetSdkVersion": 34,
-            "extraMavenRepos": [
-              "https://devrepo.kakao.com/nexus/content/groups/public/"
-            ]
-          }
         }
       ],
       "expo-font",
