@@ -7,6 +7,9 @@ import { ActivityIndicator, View } from "react-native";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { DiaryProvider } from "../contexts/DiaryContext";
 import { PhotoProvider } from "../contexts/PhotoContext";
+import * as SplashScreen from "expo-splash-screen";
+
+SplashScreen.preventAutoHideAsync();
 
 function RootLayoutNav() {
   const { user, loading, checkRequiredAgreed } = useAuth();
@@ -15,9 +18,12 @@ function RootLayoutNav() {
   const openSegment = segments[0] ?? "";
 
   useEffect(() => {
-    if (loading) return;
-
     const redirectByTerms = async () => {
+      if (loading) return;
+
+      // 인증 로딩 완료 시 스플래시 숨기기
+      await SplashScreen.hideAsync();
+
       // 1) 비로그인 시
       if (
         !user &&
@@ -45,7 +51,6 @@ function RootLayoutNav() {
         (openSegment === "" || openSegment === "login")
       ) {
         router.replace("/home");
-        return;
       }
     };
 
