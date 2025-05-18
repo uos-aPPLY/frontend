@@ -15,6 +15,7 @@ import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import TextEditorModal from "../../components/Modal/TextEditorModal";
+import ConfirmModal from "../../components/Modal/ConfirmModal";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 const { width } = Dimensions.get("window");
@@ -31,6 +32,8 @@ export default function ProfilePage() {
     month: 0,
   });
   const [isModalVisible, setModalVisible] = useState(false);
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+  const [albumToDelete, setAlbumToDelete] = useState(null);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -171,6 +174,10 @@ export default function ProfilePage() {
                 params: { name: item.name },
               })
             }
+            onLongPress={() => {
+              setAlbumToDelete(item);
+              setConfirmModalVisible(true);
+            }}
           >
             <View style={styles.imageWrapper}>
               <Image source={{ uri: item.coverUrl }} style={styles.cardImage} />
@@ -185,6 +192,32 @@ export default function ProfilePage() {
         onSave={handleSaveNickname}
         onCancel={() => setModalVisible(false)}
         hintText="최대 10자까지 작성 가능해요."
+      />
+      <ConfirmModal
+        visible={confirmModalVisible}
+        title="앨범 삭제"
+        message={`${albumToDelete?.name} 앨범을 삭제하시겠습니까?`}
+        cancelText="취소"
+        confirmText="삭제"
+        onCancel={() => {
+          setConfirmModalVisible(false);
+          setAlbumToDelete(null);
+        }}
+        onConfirm={async () => {
+          try {
+            const token = await SecureStore.getItemAsync("accessToken");
+            await fetch(`${BACKEND_URL}/api/albums/${albumToDelete.id}`, {
+              method: "DELETE",
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            setAlbums((prev) => prev.filter((a) => a.id !== albumToDelete.id));
+          } catch (e) {
+            console.error(e);
+          } finally {
+            setConfirmModalVisible(false);
+            setAlbumToDelete(null);
+          }
+        }}
       />
     </View>
   );
