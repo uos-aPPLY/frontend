@@ -1,5 +1,5 @@
 // components/Calendar/CalendarGrid.jsx
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import {
   View,
   Text,
@@ -29,6 +29,8 @@ import {
 } from "@expo-google-fonts/inter";
 import { useRouter } from "expo-router";
 import { useDiary } from "../../contexts/DiaryContext";
+import { CalendarViewContext } from "../../contexts/CalendarViewContext";
+import characterList from "../../assets/characterList";
 
 const screenWidth = Dimensions.get("window").width;
 const DAY_ITEM_SIZE = (screenWidth - 60) / 7;
@@ -50,11 +52,14 @@ export default function CalendarGrid({
 }) {
   const router = useRouter();
   const { selectedDate, setSelectedDate } = useDiary();
+  const { showEmotion } = useContext(CalendarViewContext);
 
   const panResponder = React.useMemo(
     () =>
       PanResponder.create({
         onMoveShouldSetPanResponder: (_, { dx, dy }) =>
+          Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10,
+        onMoveShouldSetPanResponderCapture: (_, { dx, dy }) =>
           Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10,
         onPanResponderRelease: (_, { dx }) => {
           if (dx > 50) {
@@ -114,18 +119,27 @@ export default function CalendarGrid({
           {week.map((day, di) => {
             const daySeoul = toSeoulDate(day);
             const dateStr = format(daySeoul, "yyyy-MM-dd");
-            const hasPhoto = Boolean(diariesByDate[dateStr]);
+            const entry = diariesByDate[dateStr] || null;
+            const hasDiary = Boolean(entry);
             const isCurrentMonth = isSameMonth(daySeoul, currentMonth);
             const isToday = dateStr === todayStr;
             const isFuture = daySeoul > todaySeoul;
             const isPast = !isFuture && !isToday;
-            const isPastNoPhoto = isPast && !hasPhoto;
+            const isPastNoDiary = isPast && !hasDiary;
             const opacityStyle = isFuture ? { opacity: 0.3 } : null;
 
+            let emotionSource = null;
+            if (showEmotion && hasDiary && entry.emotionIcon) {
+              const found = characterList.find(
+                (c) => c.name === entry.emotionIcon
+              );
+              emotionSource = found?.source ?? null;
+            }
+
             const handlePress = () => {
-              if (hasPhoto) {
+              if (hasDiary) {
                 router.push(`/diary/${dateStr}`);
-              } else if (isPastNoPhoto) {
+              } else if (isPastNoDiary) {
                 if (selectedDate === dateStr) {
                   setSelectedDate(dateStr);
                   router.push(`/create?date=${dateStr}&from=calendar`);
@@ -133,7 +147,6 @@ export default function CalendarGrid({
                   setSelectedDate(dateStr);
                 }
               } else if (isToday && !todayHasDiary) {
-                console.log("📅 오늘 클릭됨");
                 router.push(`/create?date=${dateStr}&from=calendar`);
               }
             };
@@ -145,14 +158,16 @@ export default function CalendarGrid({
                 onPress={handlePress}
                 disabled={!isCurrentMonth}
               >
-                {isToday && !todayHasDiary ? (
+                {showEmotion && emotionSource ? (
+                  <Image source={emotionSource} style={styles.dayEmotionIcon} />
+                ) : isToday && !todayHasDiary ? (
                   <Image
                     source={require("../../assets/icons/bigpinkplusicon.png")}
                     style={styles.plusIcon}
                   />
-                ) : hasPhoto ? (
+                ) : hasDiary ? (
                   <Image
-                    source={{ uri: diariesByDate[dateStr] }}
+                    source={{ uri: entry.representativePhotoUrl }}
                     style={styles.dayImage}
                   />
                 ) : selectedDate === dateStr ? (
@@ -164,16 +179,18 @@ export default function CalendarGrid({
                   <View style={styles.dayPlaceholder} />
                 )}
 
-                {selectedDate !== dateStr && !(isToday && !todayHasDiary) && (
-                  <Text
-                    style={[
-                      styles.dayText,
-                      !isCurrentMonth && styles.inactiveDayText,
-                    ]}
-                  >
-                    {format(daySeoul, "d")}
-                  </Text>
-                )}
+                {(!showEmotion || !hasDiary) &&
+                  selectedDate !== dateStr &&
+                  !(isToday && !todayHasDiary) && (
+                    <Text
+                      style={[
+                        styles.dayText,
+                        !isCurrentMonth && styles.inactiveDayText,
+                      ]}
+                    >
+                      {format(daySeoul, "d")}
+                    </Text>
+                  )}
               </TouchableOpacity>
             );
           })}
@@ -220,6 +237,11 @@ const styles = StyleSheet.create({
     height: DAY_ITEM_SIZE,
     alignItems: "center",
     justifyContent: "center",
+  },
+  dayEmotionIcon: {
+    width: DAY_ITEM_SIZE * 0.85,
+    height: DAY_ITEM_SIZE * 0.85,
+    position: "contain",
   },
   dayImage: {
     width: DAY_ITEM_SIZE * 0.9,

@@ -8,6 +8,7 @@ import { addMonths, subMonths } from "date-fns";
 import HeaderCalender from "../../components/Header/HeaderCalendar";
 import MonthNavigator from "../../components/Calendar/MonthNavigator";
 import CalendarGrid from "../../components/Calendar/CalendarGrid";
+import { CalendarViewContext } from "../../contexts/CalendarViewContext";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
@@ -15,6 +16,7 @@ export default function Calendar({ onDatePress }) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [diariesByDate, setDiariesByDate] = useState({});
   const [loading, setLoading] = useState(true);
+  const [showEmotion, setShowEmotion] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -26,7 +28,7 @@ export default function Calendar({ onDatePress }) {
         const json = await res.json();
         const map = {};
         json.content.forEach((item) => {
-          map[item.diaryDate] = item.representativePhotoUrl;
+          map[item.diaryDate] = item;
         });
         setDiariesByDate(map);
       } catch (e) {
@@ -42,26 +44,29 @@ export default function Calendar({ onDatePress }) {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.headerWrapper}>
-        <HeaderCalender />
-      </View>
-      <View style={styles.calendarContainer}>
-        <MonthNavigator
-          currentMonth={currentMonth}
-          onPrev={() => setCurrentMonth(subMonths(currentMonth, 1))}
-          onNext={() => setCurrentMonth(addMonths(currentMonth, 1))}
-        />
-
-        <View style={styles.gridWrapper}>
-          <CalendarGrid
-            currentMonth={currentMonth}
-            diariesByDate={diariesByDate}
-            onDatePress={onDatePress}
-          />
+    <CalendarViewContext.Provider value={{ showEmotion, setShowEmotion }}>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.headerWrapper}>
+          <HeaderCalender />
         </View>
-      </View>
-    </SafeAreaView>
+        <View style={styles.calendarContainer}>
+          <MonthNavigator
+            currentMonth={currentMonth}
+            onPrev={() => setCurrentMonth(subMonths(currentMonth, 1))}
+            onNext={() => setCurrentMonth(addMonths(currentMonth, 1))}
+          />
+
+          <View style={styles.gridWrapper}>
+            <CalendarGrid
+              currentMonth={currentMonth}
+              diariesByDate={diariesByDate}
+              onPrev={() => setCurrentMonth(subMonths(currentMonth, 1))}
+              onNext={() => setCurrentMonth(addMonths(currentMonth, 1))}
+            />
+          </View>
+        </View>
+      </SafeAreaView>
+    </CalendarViewContext.Provider>
   );
 }
 
