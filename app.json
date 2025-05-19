@@ -47,7 +47,7 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "BACKEND_URL": "http://localhost:8080",
+      "BACKEND_URL": "https://diarypic.com",
       "NAVER_CLIENT_KEY": "atRAYVo5eD6F4allALAO",
       "NAVER_CLIENT_SECRET": "focDCksfty",
       "NAVER_APP_NAME": "DiaryPic",

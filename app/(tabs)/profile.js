@@ -15,6 +15,7 @@ import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import TextEditorModal from "../../components/Modal/TextEditorModal";
+import ConfirmModal from "../../components/Modal/ConfirmModal";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 const { width } = Dimensions.get("window");
@@ -31,6 +32,8 @@ export default function ProfilePage() {
     month: 0,
   });
   const [isModalVisible, setModalVisible] = useState(false);
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+  const [albumToDelete, setAlbumToDelete] = useState(null);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -61,12 +64,6 @@ export default function ProfilePage() {
           headers: { Authorization: `Bearer ${token}` },
         });
         const favJson = await favRes.json();
-        const favCover = favJson[0]?.representativePhotoUrl;
-        const favAlbum = {
-          id: "favorite",
-          name: "좋아요",
-          coverUrl: favCover,
-        };
 
         const allRes = await fetch(`${BACKEND_URL}/api/albums`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -77,8 +74,15 @@ export default function ProfilePage() {
           name: a.name,
           coverUrl: a.coverImageUrl,
         }));
-
-        setAlbums([favAlbum, ...otherAlbums]);
+        let albumsList = otherAlbums;
+        if (Array.isArray(favJson) && favJson.length > 0) {
+          const favCover = favJson[0].representativePhotoUrl;
+          albumsList = [
+            { id: "favorite", name: "좋아요", coverUrl: favCover },
+            ...otherAlbums,
+          ];
+        }
+        setAlbums(albumsList);
       } catch (e) {
         console.error(e);
       } finally {
@@ -170,12 +174,24 @@ export default function ProfilePage() {
                 params: { name: item.name },
               })
             }
+            onLongPress={() => {
+              setAlbumToDelete(item);
+              setConfirmModalVisible(true);
+            }}
           >
             <View style={styles.imageWrapper}>
               <Image source={{ uri: item.coverUrl }} style={styles.cardImage} />
             </View>
             <Text style={styles.cardText}>{item.name}</Text>
           </TouchableOpacity>
+        )}
+        ListEmptyComponent={() => (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>
+              좋아요 앨범과 위치 기반 앨범이 자동으로 생성됩니다.{"\n"}일기를
+              추가해주세요!
+            </Text>
+          </View>
         )}
       />
       <TextEditorModal
@@ -184,6 +200,32 @@ export default function ProfilePage() {
         onSave={handleSaveNickname}
         onCancel={() => setModalVisible(false)}
         hintText="최대 10자까지 작성 가능해요."
+      />
+      <ConfirmModal
+        visible={confirmModalVisible}
+        title="앨범 삭제"
+        message={`${albumToDelete?.name} 앨범을 삭제하시겠습니까?`}
+        cancelText="취소"
+        confirmText="삭제"
+        onCancel={() => {
+          setConfirmModalVisible(false);
+          setAlbumToDelete(null);
+        }}
+        onConfirm={async () => {
+          try {
+            const token = await SecureStore.getItemAsync("accessToken");
+            await fetch(`${BACKEND_URL}/api/albums/${albumToDelete.id}`, {
+              method: "DELETE",
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            setAlbums((prev) => prev.filter((a) => a.id !== albumToDelete.id));
+          } catch (e) {
+            console.error(e);
+          } finally {
+            setConfirmModalVisible(false);
+            setAlbumToDelete(null);
+          }
+        }}
       />
     </View>
   );
@@ -287,5 +329,17 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontSize: 14,
     color: "#AC8B78",
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: "#AC8B78",
+    textAlign: "center",
+    lineHeight: 30,
   },
 });
