@@ -26,6 +26,7 @@ export default function HelpPage() {
         />
       </TouchableOpacity>
       <WebView
+        style={styles.webview}
         source={{
           uri: "https://tough-trick-2e0.notion.site/1f22150012138047ab7fd687aa02031e?pvs=4",
         }}
@@ -41,12 +42,15 @@ export default function HelpPage() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FCF9F4", paddingTop: 26 },
+  container: { flex: 1, backgroundColor: "#FCF9F4" },
   loading: { flex: 1, justifyContent: "center", alignItems: "center" },
+  webview: {
+    flex: 1,
+  },
   backButton: {
     position: "absolute",
-    top: 80,
-    left: 30,
+    top: 70,
+    left: 50,
     padding: 8,
     zIndex: 1,
   },
