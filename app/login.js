@@ -53,7 +53,7 @@ export default function Login() {
   const handleNaverLogin = async () => {
     try {
       const { successResponse, failureResponse } = await NaverLogin.login();
-      console.log("Naver Access Token: ", successResponse);
+      console.log("Naver Token: ", successResponse);
       if (failureResponse) {
         if (!failureResponse.isCancel) {
           Alert.alert("네이버 로그인 오류", failureResponse.message);
@@ -96,7 +96,7 @@ export default function Login() {
       const kakaoResult = await KakaoLogin.login({
         redirectUri: kakaoRedirectUri,
       });
-      console.log(kakaoResult);
+      console.log("Kakao Token: ", kakaoResult);
       const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

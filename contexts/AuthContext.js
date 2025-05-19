@@ -17,6 +17,8 @@ const SEC_KEYS = {
   REFRESH_TOKEN: "refreshToken",
 };
 
+const originalFetch = global.fetch;
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
@@ -48,7 +50,7 @@ export function AuthProvider({ children }) {
       SEC_KEYS.REFRESH_TOKEN
     );
     if (!storedRefresh) throw new Error("No refresh token stored");
-    const res = await fetch(`${BACKEND_URL}/api/auth/refresh`, {
+    const res = await originalFetch(`${BACKEND_URL}/api/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken: storedRefresh }),
@@ -67,18 +69,38 @@ export function AuthProvider({ children }) {
       );
     }
     setToken(newToken);
+    console.log("Refreshed new token: ", newToken);
     return newToken;
   };
 
   // 401 이 뜨면 한 번만 _refreshAccessToken 후 재시도
   const authFetch = async (input, init = {}) => {
-    let res = await fetch(input, {
+    const url = typeof input === "string" ? input : input.url;
+    const skipRefreshPaths = [
+      "/api/auth/login",
+      "/api/auth/refresh",
+      "/api/terms",
+      "/api/terms/agreements/check-required",
+    ];
+    if (skipRefreshPaths.some((path) => url.endsWith(path))) {
+      return originalFetch(input, {
+        ...init,
+        headers: {
+          ...(init.headers || {}),
+          Authorization: token ? `Bearer ${token}` : undefined,
+        },
+      });
+    }
+    let res = await originalFetch(input, {
       ...init,
-      headers: { ...(init.headers || {}), Authorization: `Bearer ${token}` },
+      headers: {
+        ...(init.headers || {}),
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
     });
     if (res.status === 401) {
       const newToken = await _refreshAccessToken();
-      res = await fetch(input, {
+      res = await originalFetch(input, {
         ...init,
         headers: {
           ...(init.headers || {}),
@@ -91,12 +113,12 @@ export function AuthProvider({ children }) {
 
   // 프로필 조회에도 동일 로직 적용
   const _fetchProfile = async (t) => {
-    let res = await fetch(`${BACKEND_URL}/api/users/me`, {
+    let res = await originalFetch(`${BACKEND_URL}/api/users/me`, {
       headers: { Authorization: `Bearer ${t}` },
     });
     if (res.status === 401) {
       const newToken = await _refreshAccessToken();
-      res = await fetch(`${BACKEND_URL}/api/users/me`, {
+      res = await originalFetch(`${BACKEND_URL}/api/users/me`, {
         headers: { Authorization: `Bearer ${newToken}` },
       });
     }
@@ -124,6 +146,13 @@ export function AuthProvider({ children }) {
     setUser(profile);
     return profile;
   };
+
+  useEffect(() => {
+    global.fetch = authFetch;
+    return () => {
+      global.fetch = originalFetch;
+    };
+  }, [authFetch]);
 
   const fetchTerms = async () => {
     const res = await authFetch(`${BACKEND_URL}/api/terms`);
