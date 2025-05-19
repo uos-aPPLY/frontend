@@ -1,5 +1,5 @@
 // components/Header/HeaderCalendar.jsx
-import React, { useEffect } from "react";
+import React, { useEffect, useContext } from "react";
 import { View, Image, TouchableOpacity, StyleSheet, Text } from "react-native";
 import { useFonts, Caveat_600SemiBold } from "@expo-google-fonts/caveat";
 import { format } from "date-fns";
@@ -7,11 +7,13 @@ import { useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import IconButton from "../IconButton";
 import ToggleSwitch from "../ToggleSwitch";
+import { CalendarViewContext } from "../../contexts/CalendarViewContext";
 
 SplashScreen.preventAutoHideAsync();
 
 export default function Header() {
   const nav = useRouter();
+  const { showEmotion, setShowEmotion } = useContext(CalendarViewContext);
 
   const [fontsLoaded] = useFonts({
     Caveat_600SemiBold,
@@ -45,11 +47,19 @@ export default function Header() {
       </View>
 
       <View style={styles.right}>
-        <ToggleSwitch
-          onImage={require("../../assets/icons/righton.png")}
-          offImage={require("../../assets/icons/leftoff.png")}
-          style={styles.toggleImage}
-        />
+        <TouchableOpacity
+          onPress={() => setShowEmotion((prev) => !prev)}
+          style={styles.toggleWrapper}
+        >
+          <Image
+            source={
+              showEmotion
+                ? require("../../assets/icons/righton.png")
+                : require("../../assets/icons/leftoff.png")
+            }
+            style={styles.toggleImage}
+          />
+        </TouchableOpacity>
         <IconButton
           source={require("../../assets/icons/brownsearchicon.png")}
           hsize={22}
@@ -99,7 +109,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-end",
-    gap: 25,
+    gap: 20,
+  },
+  toggleWrapper: {
+    padding: 5,
+    justifyContent: "center",
+    alignItems: "center",
   },
   toggleImage: {
     width: 30,

@@ -1,3 +1,4 @@
+// assets/characterList.jsx
 export default [
   { name: "happy", source: require("./character/char1.png") },
   { name: "smile", source: require("./character/char2.png") },
