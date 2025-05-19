@@ -10,7 +10,7 @@ import { useRouter } from "expo-router";
 
 SplashScreen.preventAutoHideAsync();
 
-const HeaderSearch = () => {
+const HeaderDefault = () => {
   const nav = useRouter();
 
   const [fontsLoaded] = useFonts({
@@ -52,7 +52,7 @@ const HeaderSearch = () => {
   );
 };
 
-export default HeaderSearch;
+export default HeaderDefault;
 
 const styles = StyleSheet.create({
   all: {

@@ -30,6 +30,8 @@ export const openGalleryAndUpload = async (token, navigate) => {
     }
 
     try {
+      navigate("/loadingPicture");
+
       const originalAssets = result.assets;
 
       const resizedAssets = await Promise.all(

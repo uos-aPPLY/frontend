@@ -1,7 +1,52 @@
-import { Image, StyleSheet, TextInput, View } from "react-native";
+import { useEffect, useState } from "react";
+import {
+  Image,
+  StyleSheet,
+  TextInput,
+  View,
+  Text,
+  ActivityIndicator,
+} from "react-native";
 import IconButton from "../IconButton";
+import Constants from "expo-constants";
 
-const HeaderSearch = ({ value, onChangeText, onBack }) => {
+const { BACKEND_URL } = Constants.expoConfig.extra;
+
+const HeaderSearch = ({ onBack, onResult }) => {
+  const [keyword, setKeyword] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+
+  useEffect(() => {
+    const fetchSearchResults = async () => {
+      if (keyword.length < 2) {
+        onResult([]); // 두 글자 이하일 때 결과 비우기
+        return;
+      }
+
+      try {
+        setIsSearching(true);
+        const res = await fetch(
+          `${BACKEND_URL}/api/diaries/search?keyword=${encodeURIComponent(
+            keyword
+          )}`
+        );
+        const data = await res.json();
+        onResult(data); // 결과를 부모에게 전달
+      } catch (error) {
+        console.error("검색 오류", error);
+        onResult([]);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    const delayDebounce = setTimeout(() => {
+      fetchSearchResults();
+    }, 300);
+
+    return () => clearTimeout(delayDebounce);
+  }, [keyword]);
+
   return (
     <View style={styles.all}>
       <View style={styles.container}>
@@ -11,11 +56,14 @@ const HeaderSearch = ({ value, onChangeText, onBack }) => {
             style={styles.searchIcon}
           />
           <TextInput
-            value={value}
-            onChangeText={onChangeText}
+            value={keyword}
+            onChangeText={setKeyword}
             style={styles.input}
             cursorColor="#AC8B78"
+            placeholder="검색어 입력 (2글자 이상)"
+            placeholderTextColor="#AC8B78"
           />
+          {isSearching && <ActivityIndicator size="small" color="#D68089" />}
         </View>
         <View style={{ marginLeft: 15 }}>
           <IconButton
