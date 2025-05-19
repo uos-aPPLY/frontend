@@ -59,6 +59,8 @@ export default function CalendarGrid({
       PanResponder.create({
         onMoveShouldSetPanResponder: (_, { dx, dy }) =>
           Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10,
+        onMoveShouldSetPanResponderCapture: (_, { dx, dy }) =>
+          Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10,
         onPanResponderRelease: (_, { dx }) => {
           if (dx > 50) {
             onPrev?.();

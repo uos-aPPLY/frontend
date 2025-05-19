@@ -60,7 +60,8 @@ export default function Calendar({ onDatePress }) {
             <CalendarGrid
               currentMonth={currentMonth}
               diariesByDate={diariesByDate}
-              onDatePress={onDatePress}
+              onPrev={() => setCurrentMonth(subMonths(currentMonth, 1))}
+              onNext={() => setCurrentMonth(addMonths(currentMonth, 1))}
             />
           </View>
         </View>
