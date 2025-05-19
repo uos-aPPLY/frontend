@@ -16,12 +16,14 @@ import IconButton from "../components/IconButton";
 import { usePhoto } from "../contexts/PhotoContext";
 import { useAuth } from "../contexts/AuthContext";
 import Constants from "expo-constants";
+import { useDiary } from "../contexts/DiaryContext";
 
 const screenWidth = Dimensions.get("window").width;
 
 export default function GeneratePage() {
   const flatListRef = useRef(null);
   const { token } = useAuth();
+  const { resetDiary } = useDiary();
   const { BACKEND_URL } = Constants.expoConfig.extra;
 
   const nav = useRouter();
@@ -61,7 +63,8 @@ export default function GeneratePage() {
   }));
 
   const handleComplete = () => {
-    // TODO: 필요한 데이터(photos, keywords, mainPhotoId 등)를 쿼리스트링이나 state로 전달
+    resetDiary();
+
     nav.push({
       pathname: "/loadingDiary",
       params: {

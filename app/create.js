@@ -24,6 +24,7 @@ import { uploadPhotos } from "../utils/uploadPhotos";
 import { clearAllTempPhotos } from "../utils/clearTempPhotos";
 import { openGalleryAndUpload } from "../utils/openGalleryAndUpload";
 import CharacterPickerOverlay from "../components/CharacterPickerOverlay";
+import Constants from "expo-constants";
 
 export default function CreatePage() {
   const nav = useRouter();
@@ -38,6 +39,41 @@ export default function CreatePage() {
   } = useDiary();
   const [isPickerVisible, setIsPickerVisible] = useState(false);
   const { resetDiary } = useDiary();
+  const { BACKEND_URL } = Constants.expoConfig.extra;
+
+  const createDiary = async () => {
+    try {
+      const payload = {
+        diaryDate: date,
+        content: text,
+        emotionIcon: selectedCharacter.name,
+        photoIds: null, // ✅ 사진 없음
+        representativePhotoId: null, // ✅ 대표 사진 없음
+      };
+
+      const res = await fetch(`${BACKEND_URL}/api/diaries`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        console.error("❌ 일기 저장 실패:", result);
+        return;
+      }
+
+      console.log("✅ 저장 성공:", result);
+      resetDiary(); // 상태 초기화
+      nav.push("/calendar");
+    } catch (err) {
+      console.error("❌ 저장 중 에러:", err);
+    }
+  };
 
   useEffect(() => {
     if (dateParam) {
@@ -77,6 +113,7 @@ export default function CreatePage() {
             nav.push("/calendar");
           }}
           hasText={text.trim().length > 0}
+          onSave={createDiary}
         />
         <View style={styles.middle}>
           <ScrollView
