@@ -61,26 +61,29 @@ export default function Login() {
         return;
       }
 
-      const { accessToken } = successResponse;
+      const { accessToken: naverToken } = successResponse;
       const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider: "naver", accessToken }),
+        body: JSON.stringify({ provider: "naver", accessToken: naverToken }),
       });
       if (!res.ok) throw new Error(await res.text());
 
-      const { accessToken: backendAccessToken } = await res.json();
-      console.log("Backend Token: ", backendAccessToken);
+      const {
+        accessToken: backendAccessToken,
+        refreshToken: backendRefreshToken,
+      } = await res.json();
+      console.log("Backend access token: ", backendAccessToken);
+      console.log("Backend refresh token: ", backendRefreshToken);
 
-      await saveToken(backendAccessToken);
+      await saveToken({
+        accessToken: backendAccessToken,
+        refreshToken: backendRefreshToken,
+      });
 
       const requiredAgreed = await checkRequiredAgreed();
-      console.log(requiredAgreed);
-      if (requiredAgreed) {
-        router.replace("/home");
-      } else {
-        router.replace("/terms");
-      }
+      console.log("약관 동의 상태: ", requiredAgreed);
+      router.replace(requiredAgreed ? "/home" : "/terms");
     } catch (e) {
       console.error("네이버 로그인 처리 오류:", e);
       Alert.alert("네이버 로그인 실패", e.message ?? "알 수 없는 오류");
@@ -106,19 +109,21 @@ export default function Login() {
         const errText = await res.text();
         throw new Error(`Backend login failed: ${errText}`);
       }
-      const { accessToken: backendAccessToken } = await res.json();
-      console.log("Backend login response:", {
-        backendAccessToken,
-      });
-      await saveToken(backendAccessToken);
-      const requiredAgreed = await checkRequiredAgreed();
-      console.log("requiredAgreed:", requiredAgreed);
+      const {
+        accessToken: backendAccessToken,
+        refreshToken: backendRefreshToken,
+      } = await res.json();
+      console.log("Backend access token: ", backendAccessToken);
+      console.log("Backend refresh token: ", backendRefreshToken);
 
-      if (requiredAgreed) {
-        router.replace("/home");
-      } else {
-        router.replace("/terms");
-      }
+      await saveToken({
+        accessToken: backendAccessToken,
+        refreshToken: backendRefreshToken,
+      });
+
+      const requiredAgreed = await checkRequiredAgreed();
+      console.log("약관 동의 상태: ", requiredAgreed);
+      router.replace(requiredAgreed ? "/home" : "/terms");
     } catch (error) {
       console.log("Login Fail:", error);
     }
