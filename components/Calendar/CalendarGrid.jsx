@@ -149,8 +149,12 @@ export default function CalendarGrid({
                 } else {
                   setSelectedDate(dateStr);
                 }
-              } else if (isToday && !todayHasDiary) {
-                router.push(`/create?date=${dateStr}&from=calendar`);
+              } else if (isToday) {
+                if (todayHasDiary) {
+                  router.push(`/diary/${dateStr}`);
+                } else {
+                  router.push(`/create?date=${dateStr}&from=calendar`);
+                }
               }
             };
 

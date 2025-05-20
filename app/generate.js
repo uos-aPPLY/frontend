@@ -297,6 +297,7 @@ export default function GeneratePage() {
                     placeholder="새 키워드"
                     style={styles.keywordInputInline}
                     onSubmitEditing={handleKeywordSubmit}
+                    onBlur={handleKeywordSubmit}
                     autoFocus
                     returnKeyType="done"
                   />
@@ -428,7 +429,7 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "center",
     marginTop: 16,
-    gap: 6,
+    gap: 8,
     paddingHorizontal: 45,
   },
   keywordTag: {
@@ -456,7 +457,6 @@ const styles = StyleSheet.create({
     color: "#3f3f3f",
   },
   keywordInputInline: {
-    paddingVertical: 6,
     paddingHorizontal: 12,
     backgroundColor: "#fff",
     borderRadius: 16,
@@ -464,7 +464,10 @@ const styles = StyleSheet.create({
     borderColor: "#ddd",
     fontSize: 13,
     color: "#3f3f3f",
-    minWidth: 60,
+    textAlignVertical: "center",
+    includeFontPadding: false,
+    height: 30,
+    lineHeight: 16,
   },
   selectedKeywordTag: {
     backgroundColor: "#D68089",
@@ -472,6 +475,7 @@ const styles = StyleSheet.create({
   },
   selectedKeywordText: {
     color: "#fff",
+    fontSize: 13,
   },
 
   bottomRow: {
