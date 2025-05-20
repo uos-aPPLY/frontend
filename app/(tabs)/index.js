@@ -23,39 +23,61 @@ export default function Home() {
 
   const today = new Date();
   const message = messages[today.getDay()];
+  const todayStr = format(today, "yyyy-MM-dd");
+  const BACKEND_URL = Constants.expoConfig.extra.BACKEND_URL;
+
+  const fetchDiaryByDate = async (token) => {
+    const url = `${BACKEND_URL}/api/diaries/by-date?date=${todayStr}`;
+    const headers = {
+      Authorization: `Bearer ${token}`,
+    };
+
+    console.log("📤 요청 URL:", url);
+    console.log("📤 요청 헤더:", headers);
+
+    const response = await fetch(url, { headers });
+
+    // 응답 상태 및 본문도 확인
+    console.log("📡 응답 상태 코드:", response.status);
+    const text = await response.text();
+    console.log("📄 응답 본문:", text);
+
+    // 다시 파싱해서 리턴
+    try {
+      return {
+        status: response.status,
+        json: JSON.parse(text),
+      };
+    } catch (e) {
+      console.error("❌ JSON 파싱 실패:", e);
+      return {
+        status: response.status,
+        json: null,
+      };
+    }
+  };
 
   const handlePress = async () => {
-    const todayStr = format(today, "yyyy-MM-dd");
     console.log("📸 홈 버튼 클릭", todayStr);
-    const token = await SecureStore.getItemAsync("accessToken");
-    const BACKEND_URL = Constants.expoConfig.extra.BACKEND_URL;
+    let token = await SecureStore.getItemAsync("accessToken");
+    let res = await fetchDiaryByDate(token);
 
-    try {
-      const res = await fetch(
-        `${BACKEND_URL}/api/diary/by-date?date=${todayStr}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (res.ok) {
-        const json = await res.json();
-        if (json && json.id) {
-          // ✅ 일기 이미 존재함
-          nav.push("/calendar");
-          return;
-        }
-      }
-
-      // ✅ 일기 없음 → 작성 페이지로
+    if (res.status === 204) {
+      console.log("⛔️ 일기 없음 → 작성 페이지로");
       setSelectedDate(todayStr);
       nav.push(`/create?date=${todayStr}&from=calendar`);
-    } catch (error) {
-      console.error("🧨 홈 버튼 오류", error);
-      Alert.alert("오류", "네트워크 오류가 발생했어요.");
+      return;
     }
+
+    if (res.status === 200 && res.json && typeof res.json.id === "number") {
+      console.log("✅ 일기 있음 → 캘린더 이동");
+      nav.push("/calendar");
+      return;
+    }
+
+    console.log("⚠️ 알 수 없는 응답 → 작성 페이지 이동");
+    setSelectedDate(todayStr);
+    nav.push(`/create?date=${todayStr}&from=calendar`);
   };
 
   return (
