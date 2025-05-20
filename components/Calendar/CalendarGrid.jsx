@@ -16,9 +16,9 @@ import {
   endOfWeek,
   eachDayOfInterval,
   isSameMonth,
-  isSameDay,
   format,
 } from "date-fns";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   useFonts as useCaveatFonts,
   Caveat_600SemiBold,
@@ -136,6 +136,9 @@ export default function CalendarGrid({
               emotionSource = found?.source ?? null;
             }
 
+            const hasRepresentativePhoto =
+              hasDiary && entry.representativePhotoUrl;
+
             const handlePress = () => {
               if (hasDiary) {
                 router.push(`/diary/${dateStr}`);
@@ -160,16 +163,26 @@ export default function CalendarGrid({
               >
                 {showEmotion && emotionSource ? (
                   <Image source={emotionSource} style={styles.dayEmotionIcon} />
-                ) : isToday && !todayHasDiary ? (
+                ) : isToday && !todayHasDiary && selectedDate !== dateStr ? (
                   <Image
                     source={require("../../assets/icons/bigpinkplusicon.png")}
                     style={styles.plusIcon}
                   />
                 ) : hasDiary ? (
-                  <Image
-                    source={{ uri: entry.representativePhotoUrl }}
-                    style={styles.dayImage}
-                  />
+                  hasRepresentativePhoto ? (
+                    <Image
+                      source={{ uri: entry.representativePhotoUrl }}
+                      style={styles.dayImage}
+                    />
+                  ) : (
+                    <LinearGradient
+                      colors={["#dad4ec", "#dad4ec", "#f3e7e9"]}
+                      locations={[0, 0.01, 1]}
+                      start={{ x: 0, y: 1 }}
+                      end={{ x: 0, y: 0 }}
+                      style={styles.dayStandardBackground}
+                    />
+                  )
                 ) : selectedDate === dateStr ? (
                   <Image
                     source={require("../../assets/icons/grayplusicon.png")}
@@ -185,6 +198,7 @@ export default function CalendarGrid({
                     <Text
                       style={[
                         styles.dayText,
+
                         !isCurrentMonth && styles.inactiveDayText,
                       ]}
                     >
@@ -254,6 +268,12 @@ const styles = StyleSheet.create({
     height: DAY_ITEM_SIZE * 0.9,
     borderRadius: (DAY_ITEM_SIZE * 0.9) / 2,
     backgroundColor: "transparent",
+    position: "absolute",
+  },
+  dayStandardBackground: {
+    width: DAY_ITEM_SIZE * 0.9,
+    height: DAY_ITEM_SIZE * 0.9,
+    borderRadius: (DAY_ITEM_SIZE * 0.9) / 2,
     position: "absolute",
   },
   dayText: {
