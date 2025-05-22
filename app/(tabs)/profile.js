@@ -16,6 +16,7 @@ import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import TextEditorModal from "../../components/Modal/TextEditorModal";
 import ConfirmModal from "../../components/Modal/ConfirmModal";
+import { LinearGradient } from "expo-linear-gradient";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 const { width } = Dimensions.get("window");
@@ -180,7 +181,20 @@ export default function ProfilePage() {
             }}
           >
             <View style={styles.imageWrapper}>
-              <Image source={{ uri: item.coverUrl }} style={styles.cardImage} />
+              {item.coverUrl ? (
+                <Image
+                  source={{ uri: item.coverUrl }}
+                  style={styles.cardImage}
+                />
+              ) : (
+                <LinearGradient
+                  colors={["#dad4ec", "#dad4ec", "#f3e7e9"]}
+                  locations={[0, 0.01, 1]}
+                  start={{ x: 0, y: 1 }}
+                  end={{ x: 0, y: 0 }}
+                  style={styles.cardImage}
+                />
+              )}
             </View>
             <Text style={styles.cardText}>{item.name}</Text>
           </TouchableOpacity>

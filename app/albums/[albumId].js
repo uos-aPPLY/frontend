@@ -14,6 +14,7 @@ import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { parse, format } from "date-fns";
+import { LinearGradient } from "expo-linear-gradient";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
@@ -78,10 +79,20 @@ export default function AlbumDiaryList() {
             onPress={() => router.push(`/diary/${item.diaryDate}`)}
           >
             <View style={styles.imageWrapper}>
-              <Image
-                source={{ uri: item.representativePhotoUrl }}
-                style={styles.cardImage}
-              />
+              {item.representativePhotoUrl ? (
+                <Image
+                  source={{ uri: item.representativePhotoUrl }}
+                  style={styles.cardImage}
+                />
+              ) : (
+                <LinearGradient
+                  colors={["#dad4ec", "#dad4ec", "#f3e7e9"]}
+                  locations={[0, 0.01, 1]}
+                  start={{ x: 0, y: 1 }}
+                  end={{ x: 0, y: 0 }}
+                  style={styles.dayStandardBackground}
+                />
+              )}
             </View>
             <View style={styles.cardTextContainer}>
               <Text style={styles.cardContent} numberOfLines={3}>
@@ -169,5 +180,8 @@ const styles = StyleSheet.create({
     marginTop: 50,
     fontSize: 16,
     color: "#999",
+  },
+  dayStandardBackground: {
+    flex: 1,
   },
 });
