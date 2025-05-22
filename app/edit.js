@@ -111,7 +111,12 @@ export default function EditPage() {
       <View style={styles.container}>
         <HeaderDate
           date={diary.diaryDate}
-          onBack={() => nav.back()}
+          onBack={() =>
+            nav.replace({
+              pathname: "/diary/[date]",
+              params: { date: diary.diaryDate },
+            })
+          }
           hasText={text.trim().length > 0}
           onSave={handleSave}
         />
@@ -140,9 +145,14 @@ export default function EditPage() {
                 source={require("../assets/icons/aipencilicon.png")}
                 wsize={24}
                 hsize={24}
-                onPress={() => {
-                  console.log("AI 자동 생성 클릭됨"); // 원하는 기능으로 연결
-                }}
+                onPress={() =>
+                  nav.push({
+                    pathname: "/editWithAi",
+                    params: {
+                      date: diary.diaryDate, // 예: "2025-05-20"
+                    },
+                  })
+                } // 원하는 기능으로 연결
               />
               <IconButton
                 source={require("../assets/icons/pictureinfoicon.png")}

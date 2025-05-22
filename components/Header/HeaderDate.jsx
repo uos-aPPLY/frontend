@@ -1,5 +1,7 @@
 import { View, Text, StyleSheet } from "react-native";
 import IconButton from "../IconButton";
+import { useEffect } from "react";
+import { useDiary } from "../../contexts/DiaryContext";
 
 const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -15,6 +17,20 @@ function formatDateWithDay(dateString) {
 
 export default function HeaderDate({ date, onBack, hasText = false, onSave }) {
   const formatted = formatDateWithDay(date);
+  const { setSelectedDate } = useDiary();
+
+  useEffect(() => {
+    if (date) {
+      const parsed = new Date(date);
+      if (!isNaN(parsed)) {
+        console.log(
+          "📌 HeaderDate에서 selectedDate 설정:",
+          parsed.toISOString()
+        );
+        setSelectedDate(parsed);
+      }
+    }
+  }, [date]);
 
   return (
     <View style={styles.header}>

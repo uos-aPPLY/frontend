@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: transparent;
+        overflow: hidden;
+      }
+      #editor {
+        background-color: transparent;
+        padding-right: 25px;
+        padding-left: 25px;
+        padding-top: 15px;
+        padding-bottom: 15px;
+        border-radius: 30px;
+        color: #a78c7b;
+        font-size: 16px;
+        line-height: 26px;
+      }
+      mark {
+        background-color: #ffd6d6;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="editor" contenteditable="true">로딩 중...</div>
+
+    <script>
+      function toggleMark() {
+        const selection = window.getSelection();
+        if (
+          !selection ||
+          selection.rangeCount === 0 ||
+          !selection.toString().trim()
+        )
+          return;
+
+        const selectedText = selection.toString();
+        const mark = selection.anchorNode?.parentElement?.closest("mark");
+
+        if (mark) {
+          const unmarked = document.createTextNode(mark.textContent);
+          mark.replaceWith(unmarked);
+          selection.removeAllRanges();
+          return;
+        }
+
+        const range = selection.getRangeAt(0);
+        const span = document.createElement("mark");
+        span.textContent = selectedText;
+        range.deleteContents();
+        range.insertNode(span);
+        selection.removeAllRanges();
+
+        window.ReactNativeWebView.postMessage(
+          JSON.stringify({
+            action: "SELECTED",
+            text: span.textContent,
+          })
+        );
+      }
+
+      function getMarkedText() {
+        const editor = document.getElementById("editor");
+        let text = editor.innerHTML;
+        text = text.replace(
+          /<mark>(.*?)<\/mark>/g,
+          "<edit token>$1</edit token>"
+        );
+        return text;
+      }
+
+      document.addEventListener("message", function (event) {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.content) {
+            document.getElementById("editor").innerHTML = data.content;
+          }
+        } catch (e) {
+          console.error("📛 메시지 파싱 실패", e);
+        }
+      });
+
+      window.addEventListener("message", function (event) {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.content) {
+            document.getElementById("editor").innerHTML = data.content;
+          }
+        } catch (e) {
+          console.error("📛 메시지 파싱 실패 (iOS)", e);
+        }
+      });
+
+      window.getMarkedText = getMarkedText;
+      window.toggleMark = toggleMark;
+    </script>
+  </body>
+</html>
