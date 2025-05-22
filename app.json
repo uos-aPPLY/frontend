@@ -2,7 +2,7 @@
   "expo": {
     "name": "diarypic",
     "slug": "diarypic",
-    "scheme": ["diarypic", "diarypic.app", "com.apply.diarypic"],
+    "scheme": ["diarypic"],
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -29,19 +29,7 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      },
-      "intentFilters": [
-        {
-          "action": "VIEW",
-          "data": [
-            {
-              "scheme": "diarypic",
-              "host": "oauth"
-            }
-          ],
-          "category": ["BROWSABLE", "DEFAULT"]
-        }
-      ]
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -73,7 +61,6 @@
         }
       ],
       "expo-router",
-      "expo-dev-client",
       [
         "@react-native-seoul/kakao-login",
         {
@@ -87,6 +74,7 @@
           "urlScheme": "com.apply.diarypic"
         }
       ],
+      "expo-dev-client",
       "expo-font",
       "expo-secure-store",
       "expo-web-browser"
