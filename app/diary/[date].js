@@ -23,6 +23,7 @@ import viewIcon from "../../assets/icons/viewicon.png";
 import oneViewIcon from "../../assets/icons/oneviewicon.png";
 import ConfirmModal from "../../components/Modal/ConfirmModal";
 import { usePhoto } from "../../contexts/PhotoContext";
+import { useDiary } from "../../contexts/DiaryContext";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -33,6 +34,7 @@ export default function DiaryPage() {
   const { date: dateParam } = useLocalSearchParams();
   const date = dateParam;
   const parsedDate = parseISO(date);
+  const { resetDiary } = useDiary();
 
   const [diary, setDiary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -167,6 +169,12 @@ export default function DiaryPage() {
     return (
       <View style={styles.loader}>
         <Text style={styles.loadingText}>해당 날짜에 일기가 없습니다.</Text>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => nav.push("/calendar")}
+        >
+          <Text style={styles.backButtonText}>캘린더로 돌아가기</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -177,7 +185,10 @@ export default function DiaryPage() {
     <View style={styles.container}>
       <HeaderDateAndTrash
         date={parsedDate}
-        onBack={() => nav.push("/calendar")}
+        onBack={() => {
+          resetDiary();
+          nav.push("/calendar");
+        }}
         onTrashPress={() => setShowConfirmModal(true)}
       />
 
@@ -328,6 +339,7 @@ const styles = StyleSheet.create({
     resizeMode: "cover",
     marginHorizontal: 30,
   },
+
   pageIndicator: {
     flexDirection: "row",
     justifyContent: "center",
@@ -398,5 +410,17 @@ const styles = StyleSheet.create({
     marginHorizontal: 30,
     minHeight: 360,
     marginBottom: 40,
+  },
+  backButton: {
+    marginTop: 20,
+    backgroundColor: "#D68089",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+  },
+  backButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "bold",
   },
 });

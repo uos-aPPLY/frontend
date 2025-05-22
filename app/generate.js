@@ -23,8 +23,12 @@ const screenWidth = Dimensions.get("window").width;
 export default function GeneratePage() {
   const flatListRef = useRef(null);
   const { token } = useAuth();
-  const { resetDiary } = useDiary();
   const { BACKEND_URL } = Constants.expoConfig.extra;
+  const { selectedDate } = useDiary();
+
+  useEffect(() => {
+    console.log("📅 GeneratePage에서 selectedDate:", selectedDate);
+  }, [selectedDate]);
 
   const nav = useRouter();
   const { photos: rawPhotos = "{}" } = useLocalSearchParams();
@@ -63,8 +67,6 @@ export default function GeneratePage() {
   }));
 
   const handleComplete = () => {
-    resetDiary();
-
     nav.push({
       pathname: "/loadingDiary",
       params: {

@@ -37,6 +37,7 @@ export default function LoadingDiary() {
   }));
 
   useEffect(() => {
+    console.log("📅 선택된 날짜 (selectedDate):", selectedDate);
     const diaryDate =
       typeof selectedDate === "string"
         ? selectedDate
@@ -60,13 +61,14 @@ export default function LoadingDiary() {
           },
           body: JSON.stringify(body),
         });
-        const json = await res.json();
+        const text = await res.text();
+
         console.log("📝 응답 받은 일기 데이터:", json);
 
         const date = json.diaryDate;
         router.replace(`/diary/${date}`);
-      } catch (err) {
-        console.error("일기 생성 실패", err);
+      } catch (e) {
+        console.error("📛 JSON 파싱 실패:", e, text);
         router.replace("/home");
       }
     };

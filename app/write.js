@@ -31,6 +31,7 @@ const MAX_PHOTO_COUNT = 9;
 export default function WritePage() {
   const flatListRef = useRef(null);
   const nav = useRouter();
+
   const {
     text,
     setText,
@@ -38,6 +39,7 @@ export default function WritePage() {
     setSelectedCharacter,
     selectedDate,
     setSelectedDate,
+    resetDiary,
   } = useDiary();
   const { token } = useAuth();
   const { BACKEND_URL } = Constants.expoConfig.extra;
@@ -182,13 +184,14 @@ export default function WritePage() {
         <HeaderDate
           date={date}
           onBack={() => {
-            setText("");
-            setSelectedCharacter(characterList[0]);
-            setSelectedDate(null);
+            resetDiary();
             nav.push("/calendar");
           }}
           hasText={text.trim().length > 0}
-          onSave={createDiary}
+          onSave={() => {
+            resetDiary();
+            createDiary();
+          }}
         />
 
         <View style={styles.middle}>

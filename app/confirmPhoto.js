@@ -26,7 +26,7 @@ export default function confirmPhoto() {
   const { photoList, setPhotoList, selected, setSelected, setMode, reset } =
     usePhoto();
   const { token } = useAuth();
-  const { setSelectedDate } = useDiary();
+  const { selectedDate } = useDiary();
 
   const toggleSelect = (photo) => {
     const exists = selected.find((p) => p.id === photo.id);
@@ -41,6 +41,9 @@ export default function confirmPhoto() {
   useEffect(() => {
     console.log("✅ selected 변경됨:", selected);
   }, [selected]);
+  useEffect(() => {
+    console.log("📅 confirmPhoto에서 selectedDate:", selectedDate);
+  }, [selectedDate]);
 
   useEffect(() => {
     const fetchPhotos = async () => {

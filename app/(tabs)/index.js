@@ -1,15 +1,14 @@
 import { useRouter } from "expo-router";
-import { StyleSheet, View, Text, Alert } from "react-native";
+import { StyleSheet, View, Text } from "react-native";
 import HeaderDefault from "../../components/Header/HeaderDefault";
 import IconButton from "../../components/IconButton";
 import { useDiary } from "../../contexts/DiaryContext";
 import Constants from "expo-constants";
-import * as SecureStore from "expo-secure-store";
 import { format } from "date-fns";
 
 export default function Home() {
   const nav = useRouter();
-  const { selectedDate, setSelectedDate } = useDiary();
+  const { setSelectedDate } = useDiary();
 
   const messages = [
     "지금 이 순간이 내일의 추억이 되도록, \n사진 한 장을 남겨보세요.",
@@ -22,27 +21,18 @@ export default function Home() {
   ];
 
   const today = new Date();
-  const message = messages[today.getDay()];
   const todayStr = format(today, "yyyy-MM-dd");
+  const message = messages[today.getDay()];
   const BACKEND_URL = Constants.expoConfig.extra.BACKEND_URL;
 
-  const fetchDiaryByDate = async (token) => {
+  const fetchDiaryByDate = async () => {
     const url = `${BACKEND_URL}/api/diaries/by-date?date=${todayStr}`;
-    const headers = {
-      Authorization: `Bearer ${token}`,
-    };
+    const response = await fetch(url); // 전역 fetch를 통해 자동 토큰 갱신
 
-    console.log("📤 요청 URL:", url);
-    console.log("📤 요청 헤더:", headers);
-
-    const response = await fetch(url, { headers });
-
-    // 응답 상태 및 본문도 확인
     console.log("📡 응답 상태 코드:", response.status);
     const text = await response.text();
     console.log("📄 응답 본문:", text);
 
-    // 다시 파싱해서 리턴
     try {
       return {
         status: response.status,
@@ -59,17 +49,16 @@ export default function Home() {
 
   const handlePress = async () => {
     console.log("📸 홈 버튼 클릭", todayStr);
-    let token = await SecureStore.getItemAsync("accessToken");
-    let res = await fetchDiaryByDate(token);
+    const res = await fetchDiaryByDate();
 
-    if (res.status === 204) {
+    if (res.status === 204 || !res.json) {
       console.log("⛔️ 일기 없음 → 작성 페이지로");
       setSelectedDate(todayStr);
       nav.push(`/create?date=${todayStr}&from=calendar`);
       return;
     }
 
-    if (res.status === 200 && res.json && typeof res.json.id === "number") {
+    if (res.status === 200 && typeof res.json.id === "number") {
       console.log("✅ 일기 있음 → 캘린더 이동");
       nav.push("/calendar");
       return;
