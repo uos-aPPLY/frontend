@@ -80,7 +80,6 @@ export function AuthProvider({ children }) {
       "/api/auth/login",
       "/api/auth/refresh",
       "/api/terms",
-      "/api/terms/agreements/check-required",
     ];
     if (skipRefreshPaths.some((path) => url.endsWith(path))) {
       return originalFetch(input, {

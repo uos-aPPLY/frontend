@@ -1,5 +1,5 @@
 // app/diaries/[month].js
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -15,36 +15,21 @@ import Constants from "expo-constants";
 import { useLocalSearchParams } from "expo-router";
 import { useRouter } from "expo-router";
 import { parse, format } from "date-fns";
+import { LinearGradient } from "expo-linear-gradient";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
 export default function DiaryList() {
   const router = useRouter();
   const { month } = useLocalSearchParams();
-
-  useEffect(() => {
-    if (!month) {
-      router.replace("/calendar");
-    }
-  }, [month, router]);
-
-  // month 로딩 전 또는 잘못된 값일 땐 로딩 표시
-  if (!month) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
   const [diaries, setDiaries] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const monthDate = useMemo(() => {
-    const parsed = parse(month, "yyyy-MM", new Date());
-    return isNaN(parsed) ? new Date() : parsed;
-  }, [month]);
-
-  const displayMonth = useMemo(
+  const monthDate = React.useMemo(
+    () => parse(month, "yyyy-MM", new Date()),
+    [month]
+  );
+  const displayMonth = React.useMemo(
     () => format(monthDate, "yyyy년 M월"),
     [monthDate]
   );
@@ -100,12 +85,25 @@ export default function DiaryList() {
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
-          <View style={styles.card}>
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => router.push(`/diary/${item.diaryDate}`)}
+          >
             <View style={styles.imageWrapper}>
-              <Image
-                source={{ uri: item.representativePhotoUrl }}
-                style={styles.cardImage}
-              />
+              {item.representativePhotoUrl ? (
+                <Image
+                  source={{ uri: item.representativePhotoUrl }}
+                  style={styles.cardImage}
+                />
+              ) : (
+                <LinearGradient
+                  colors={["#dad4ec", "#dad4ec", "#f3e7e9"]}
+                  locations={[0, 0.01, 1]}
+                  start={{ x: 0, y: 1 }}
+                  end={{ x: 0, y: 0 }}
+                  style={styles.dayStandardBackground}
+                />
+              )}
             </View>
             <View style={styles.cardTextContainer}>
               <Text style={styles.cardContent} numberOfLines={3}>
@@ -118,7 +116,7 @@ export default function DiaryList() {
                 )}
               </Text>
             </View>
-          </View>
+          </TouchableOpacity>
         )}
         ListEmptyComponent={() => (
           <Text style={styles.emptyText}>작성된 일기가 없습니다.</Text>
@@ -217,5 +215,8 @@ const styles = StyleSheet.create({
     marginTop: 50,
     fontSize: 16,
     color: "#999",
+  },
+  dayStandardBackground: {
+    flex: 1,
   },
 });

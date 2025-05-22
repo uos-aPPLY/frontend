@@ -8,6 +8,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  Platform,
 } from "react-native";
 import * as KakaoLogin from "@react-native-seoul/kakao-login";
 import NaverLogin from "@react-native-seoul/naver-login";
@@ -93,39 +94,30 @@ export default function Login() {
   // Kakao Login Handler
   const handleKakaoLogin = async () => {
     try {
-      const kakaoResult = await KakaoLogin.login({
-        redirectUri: kakaoRedirectUri,
-      });
-      console.log("Kakao Token: ", kakaoResult);
+      // iOS 시뮬레이터는 KakaoTalk 앱이 없으므로 계정 로그인으로 바로 진입
+      const token =
+        Platform.OS === "ios"
+          ? await KakaoLogin.loginWithKakaoAccount()
+          : await KakaoLogin.login(); // 안드로이드는 그대로 사용
+      console.log(token);
       const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           provider: "kakao",
-          accessToken: kakaoResult.accessToken,
+          accessToken: token.accessToken,
         }),
       });
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`Backend login failed: ${errText}`);
-      }
-      const {
-        accessToken: backendAccessToken,
-        refreshToken: backendRefreshToken,
-      } = await res.json();
-      console.log("Backend access token: ", backendAccessToken);
-      console.log("Backend refresh token: ", backendRefreshToken);
+      if (!res.ok) throw new Error(await res.text());
 
-      await saveToken({
-        accessToken: backendAccessToken,
-        refreshToken: backendRefreshToken,
-      });
+      const { accessToken, refreshToken } = await res.json();
+      await saveToken({ accessToken, refreshToken });
 
       const requiredAgreed = await checkRequiredAgreed();
-      console.log("약관 동의 상태: ", requiredAgreed);
       router.replace(requiredAgreed ? "/home" : "/terms");
-    } catch (error) {
-      console.log("Login Fail:", error);
+    } catch (e) {
+      console.error("Kakao login error", e);
+      Alert.alert("카카오 로그인 실패", e.message ?? "알 수 없는 오류");
     }
   };
 
