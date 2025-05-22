@@ -174,10 +174,13 @@ export default function CalendarGrid({
                   />
                 ) : hasDiary ? (
                   hasRepresentativePhoto ? (
-                    <Image
-                      source={{ uri: entry.representativePhotoUrl }}
-                      style={styles.dayImage}
-                    />
+                    <View style={styles.dayImageWrapper}>
+                      <Image
+                        source={{ uri: entry.representativePhotoUrl }}
+                        style={styles.dayImage}
+                      />
+                      <View style={styles.dayImageOverlay} />
+                    </View>
                   ) : (
                     <LinearGradient
                       colors={["#dad4ec", "#dad4ec", "#f3e7e9"]}
@@ -290,5 +293,20 @@ const styles = StyleSheet.create({
   plusIcon: {
     width: DAY_ITEM_SIZE * 0.9,
     height: DAY_ITEM_SIZE * 0.9,
+  },
+  dayImageWrapper: {
+    width: DAY_ITEM_SIZE * 0.9,
+    height: DAY_ITEM_SIZE * 0.9,
+    borderRadius: (DAY_ITEM_SIZE * 0.9) / 2,
+    position: "absolute",
+    overflow: "hidden",
+  },
+  dayImageOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.2)",
   },
 });
