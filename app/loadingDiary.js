@@ -61,7 +61,7 @@ export default function LoadingDiary() {
           },
           body: JSON.stringify(body),
         });
-        const text = await res.text();
+        const json = await res.json();
 
         console.log("📝 응답 받은 일기 데이터:", json);
 
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    paddingTop: 10,
+    paddingTop: 75,
     paddingLeft: 10,
     zIndex: 1,
   },
