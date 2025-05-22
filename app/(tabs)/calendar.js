@@ -26,6 +26,7 @@ export default function Calendar({ onDatePress }) {
   // ✅ fetchDiaries 함수 분리
   const fetchDiaries = useCallback(async () => {
     try {
+      if (withLoading) setLoading(true);
       const token = await SecureStore.getItemAsync("accessToken");
       const res = await fetch(`${BACKEND_URL}/api/diaries`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -43,19 +44,18 @@ export default function Calendar({ onDatePress }) {
     }
   }, []);
 
-  // ✅ 초기 로딩
   useEffect(() => {
-    fetchDiaries();
+    ffetchDiaries(true);
   }, [fetchDiaries]);
 
   useFocusEffect(
     useCallback(() => {
       console.log("📌 캘린더 탭 진입 → fetchDiaries 실행");
-      fetchDiaries();
+      fetchDiaries(false);
 
       const intervalId = setInterval(() => {
         console.log("⏱ 30초마다 캘린더 새로고침 실행");
-        fetchDiaries();
+        fetchDiaries(false);
       }, 10000);
 
       return () => {
