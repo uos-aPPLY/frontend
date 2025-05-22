@@ -1,5 +1,5 @@
 // app/diaries/[month].js
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -21,30 +21,14 @@ const { BACKEND_URL } = Constants.expoConfig.extra;
 export default function DiaryList() {
   const router = useRouter();
   const { month } = useLocalSearchParams();
-
-  useEffect(() => {
-    if (!month) {
-      router.replace("/calendar");
-    }
-  }, [month, router]);
-
-  // month 로딩 전 또는 잘못된 값일 땐 로딩 표시
-  if (!month) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
   const [diaries, setDiaries] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const monthDate = useMemo(() => {
-    const parsed = parse(month, "yyyy-MM", new Date());
-    return isNaN(parsed) ? new Date() : parsed;
-  }, [month]);
-
-  const displayMonth = useMemo(
+  const monthDate = React.useMemo(
+    () => parse(month, "yyyy-MM", new Date()),
+    [month]
+  );
+  const displayMonth = React.useMemo(
     () => format(monthDate, "yyyy년 M월"),
     [monthDate]
   );
@@ -100,7 +84,10 @@ export default function DiaryList() {
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
-          <View style={styles.card}>
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => router.push(`/diary/${item.diaryDate}`)}
+          >
             <View style={styles.imageWrapper}>
               <Image
                 source={{ uri: item.representativePhotoUrl }}
@@ -118,7 +105,7 @@ export default function DiaryList() {
                 )}
               </Text>
             </View>
-          </View>
+          </TouchableOpacity>
         )}
         ListEmptyComponent={() => (
           <Text style={styles.emptyText}>작성된 일기가 없습니다.</Text>
