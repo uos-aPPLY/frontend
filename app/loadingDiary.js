@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   View,
   ActivityIndicator,
@@ -11,6 +11,7 @@ import Constants from "expo-constants";
 import { useAuth } from "../contexts/AuthContext";
 import { useDiary } from "../contexts/DiaryContext";
 import IconButton from "../components/IconButton";
+import { DeviceEventEmitter } from "react-native";
 
 export default function LoadingDiary() {
   const router = useRouter();
@@ -18,6 +19,8 @@ export default function LoadingDiary() {
   const { selectedDate } = useDiary();
   const { BACKEND_URL } = Constants.expoConfig.extra;
   const nav = useRouter();
+
+  const isMounted = useRef(true);
 
   const {
     photos = "[]",
@@ -35,6 +38,12 @@ export default function LoadingDiary() {
       .map((kw) => kw.replace(/^#/, "")) // "#" 제거
       .join(","),
   }));
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false; // 언마운트 시 플래그 변경
+    };
+  }, []);
 
   useEffect(() => {
     console.log("📅 선택된 날짜 (selectedDate):", selectedDate);
@@ -66,7 +75,10 @@ export default function LoadingDiary() {
         console.log("📝 응답 받은 일기 데이터:", json);
 
         const date = json.diaryDate;
-        router.replace(`/diary/${date}`);
+        if (isMounted.current) {
+          DeviceEventEmitter.emit("refreshCalendar");
+          router.replace(`/diary/${date}`);
+        }
       } catch (e) {
         console.error("📛 JSON 파싱 실패:", e, text);
         router.replace("/home");
