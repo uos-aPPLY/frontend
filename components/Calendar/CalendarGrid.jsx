@@ -257,9 +257,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   dayEmotionIcon: {
-    width: DAY_ITEM_SIZE * 0.85,
-    height: DAY_ITEM_SIZE * 0.85,
-    position: "contain",
+    width: DAY_ITEM_SIZE * 0.9,
+    height: DAY_ITEM_SIZE * 0.88,
   },
   dayImage: {
     width: DAY_ITEM_SIZE * 0.9,
