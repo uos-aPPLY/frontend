@@ -23,8 +23,8 @@ export default function Calendar({ onDatePress }) {
   const [loading, setLoading] = useState(true);
   const [showEmotion, setShowEmotion] = useState(false);
 
-  // ✅ fetchDiaries 함수 분리
-  const fetchDiaries = useCallback(async () => {
+  // ✅ fetchDiaries 함수 분리 (withLoading 옵션 추가)
+  const fetchDiaries = useCallback(async (withLoading = false) => {
     try {
       if (withLoading) setLoading(true);
       const token = await SecureStore.getItemAsync("accessToken");
@@ -38,25 +38,27 @@ export default function Calendar({ onDatePress }) {
       });
       setDiariesByDate(map);
     } catch (e) {
-      console.error(e);
+      console.error("❌ fetchDiaries 에러:", e);
     } finally {
-      setLoading(false);
+      if (withLoading) setLoading(false);
     }
   }, []);
 
+  // ✅ 앱 최초 로딩 시 1회
   useEffect(() => {
-    ffetchDiaries(true);
+    fetchDiaries(true);
   }, [fetchDiaries]);
 
+  // ✅ 캘린더 화면에 포커스될 때마다 새로고침 + 30초 주기 인터벌 실행
   useFocusEffect(
     useCallback(() => {
       console.log("📌 캘린더 탭 진입 → fetchDiaries 실행");
-      fetchDiaries(false);
+      fetchDiaries(false); // 진입 시 1회
 
       const intervalId = setInterval(() => {
         console.log("⏱ 30초마다 캘린더 새로고침 실행");
-        fetchDiaries(false);
-      }, 10000);
+        fetchDiaries(false); // 조용한 자동 새로고침
+      }, 30000);
 
       return () => {
         console.log("👋 캘린더 탭 이탈 → 인터벌 제거");
@@ -65,12 +67,13 @@ export default function Calendar({ onDatePress }) {
     }, [fetchDiaries])
   );
 
+  // ✅ 새 일기 생성 이벤트 수신 시 새로고침
   useEffect(() => {
     const subscription = DeviceEventEmitter.addListener(
       "refreshCalendar",
       () => {
         console.log("📅 새 일기 생성됨 → 캘린더 새로고침");
-        fetchDiaries();
+        fetchDiaries(false);
       }
     );
 
@@ -95,7 +98,6 @@ export default function Calendar({ onDatePress }) {
             onPrev={() => setCurrentMonth(subMonths(currentMonth, 1))}
             onNext={() => setCurrentMonth(addMonths(currentMonth, 1))}
           />
-
           <View style={styles.gridWrapper}>
             <CalendarGrid
               currentMonth={currentMonth}
