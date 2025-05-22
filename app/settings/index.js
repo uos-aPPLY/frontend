@@ -83,12 +83,7 @@ export default function SettingsPage() {
         {/* 데이터 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>데이터</Text>
-          {[
-            "휴지통",
-            "말투 커스터마이징",
-            "기본 키워드 설정",
-            "내보내기 (txt, pdf)",
-          ].map((t) => {
+          {["휴지통", "말투 커스터마이징", "기본 키워드 설정"].map((t) => {
             let onPress;
             if (t === "휴지통") {
               onPress = () => router.push("/settings/waste");
@@ -96,8 +91,6 @@ export default function SettingsPage() {
               onPress = () => router.push("/speechstyle?from=settings");
             } else if (t === "기본 키워드 설정") {
               onPress = () => router.push("/settings/defaultkeywords");
-            } else if (t === "내보내기 (txt, pdf)") {
-              onPress = () => router.push("/settings/export");
             }
 
             return (
