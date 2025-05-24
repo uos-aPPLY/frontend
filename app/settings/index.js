@@ -110,6 +110,16 @@ export default function SettingsPage() {
           <Text style={styles.sectionTitle}>계정 관리</Text>
           <Pressable
             style={styles.item}
+            onPress={() => router.push("/settings/subscriptions")}
+          >
+            {({ pressed }) => (
+              <Text style={[styles.itemText, pressed && { opacity: 0.5 }]}>
+                구독 내역
+              </Text>
+            )}
+          </Pressable>
+          <Pressable
+            style={styles.item}
             onPress={() => setLogoutModalVisible(true)}
           >
             {({ pressed }) => (
