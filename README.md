@@ -41,6 +41,7 @@ npx expo install expo-splash-screen
 npx expo install react-native-webview
 npm install fast-uri
 npx expo install expo-linear-gradient
+npx expo install expo-haptics
 ```
 
 ## Prettier 설정

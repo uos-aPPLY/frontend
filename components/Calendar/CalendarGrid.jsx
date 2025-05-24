@@ -205,7 +205,6 @@ export default function CalendarGrid({
                     <Text
                       style={[
                         styles.dayText,
-
                         !isCurrentMonth && styles.inactiveDayText,
                       ]}
                     >
@@ -284,11 +283,11 @@ const styles = StyleSheet.create({
   },
   dayText: {
     fontSize: 18,
-    color: "rgba(214, 128, 137, 0.7)",
+    color: "#D68089",
     fontFamily: "Inter_600SemiBold",
   },
   inactiveDayText: {
-    color: "#F3D9DC",
+    color: "rgba(214, 128, 137, 0.5)",
   },
   plusIcon: {
     width: DAY_ITEM_SIZE * 0.9,
