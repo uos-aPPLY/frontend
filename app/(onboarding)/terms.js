@@ -10,9 +10,9 @@ import {
   TouchableOpacity,
   Alert,
 } from "react-native";
-import Checkbox from "expo-checkbox";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../contexts/AuthContext";
+import CheckBox from "../../components/CheckBox";
 
 export default function Terms() {
   const router = useRouter();
@@ -71,12 +71,7 @@ export default function Terms() {
     return (
       <View key={t.id} style={styles.rowContainer}>
         <View style={styles.itemRow}>
-          <Checkbox
-            value={t.agreed}
-            onValueChange={() => toggle(t.id)}
-            style={styles.checkbox}
-            color={t.agreed ? "rgba(214, 128, 137, 0.7)" : "#D9D9D9"}
-          />
+          <CheckBox value={t.agreed} onValueChange={() => toggle(t.id)} />
           <Text style={styles.itemText}>
             {t.required ? "[필수] " : "[선택] "}
             {t.title}
@@ -120,13 +115,8 @@ export default function Terms() {
       <Text style={styles.header}>서비스 이용 약관에{"\n"}동의해주세요.</Text>
 
       <View style={styles.item}>
-        <Checkbox
-          value={allChecked}
-          onValueChange={toggleAll}
-          style={styles.checkbox}
-          color={allChecked ? "rgba(214, 128, 137, 0.7)" : "#D9D9D9"}
-        />
-        <Text style={styles.itemText}>전체 동의</Text>
+        <CheckBox value={allChecked} onValueChange={toggleAll} size={30} />
+        <Text style={styles.itemTextAll}>전체 동의</Text>
       </View>
 
       <View style={styles.separator} />
@@ -183,13 +173,8 @@ const styles = StyleSheet.create({
   },
   textContainer: { flex: 1 },
   item: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
-  checkbox: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    marginRight: 18,
-  },
-  itemText: { fontSize: 18, color: "#333", paddingBottom: 2 },
+  itemText: { fontSize: 18, color: "#000000", paddingBottom: 2, marginLeft: 2 },
+  itemTextAll: { fontSize: 20, color: "#000000", paddingBottom: 2 },
   separator: {
     height: 1,
     backgroundColor: "#C7C7CC",
