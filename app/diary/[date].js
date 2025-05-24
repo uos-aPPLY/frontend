@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Dimensions,
   FlatList,
   TouchableOpacity,
+  DeviceEventEmitter,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Constants from "expo-constants";
@@ -47,6 +48,44 @@ export default function DiaryPage() {
   const characterObj = diary
     ? characterList.find((c) => c.name === diary.emotionIcon)
     : null;
+
+  const confirmDiaryStatus = useCallback(async (diaryId, currentStatus) => {
+    if (currentStatus === "confirmed" || !diaryId) {
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `${Constants.expoConfig.extra.BACKEND_URL}/api/diaries/${diaryId}/confirm`,
+        {
+          method: "PATCH",
+        }
+      );
+      if (res.ok) {
+        console.log(
+          `Diary ${diaryId} status confirmed successfully via /confirm endpoint.`
+        );
+        setDiary((prevDiary) => {
+          if (prevDiary && prevDiary.id === diaryId) {
+            return { ...prevDiary, status: "confirmed" };
+          }
+          return prevDiary;
+        });
+        DeviceEventEmitter.emit("refreshCalendar");
+      } else {
+        const errorText = await res.text();
+        console.warn(
+          `Failed to confirm diary ${diaryId} status via /confirm: ${res.status}`,
+          errorText
+        );
+      }
+    } catch (error) {
+      console.error(
+        `Error confirming diary ${diaryId} status via /confirm:`,
+        error
+      );
+    }
+  }, []);
 
   const toggleFavorite = async () => {
     if (!diary || !token) return;
@@ -145,6 +184,10 @@ export default function DiaryPage() {
         if (found) {
           setMainPhotoId(String(found.id));
         }
+
+        if (data && data.id && typeof data.status !== "undefined") {
+          await confirmDiaryStatus(data.id, data.status);
+        }
       } catch (error) {
         console.error("📛 다이어리 로딩 실패", error);
         setDiary(undefined);
@@ -154,7 +197,7 @@ export default function DiaryPage() {
     };
 
     if (date && token) fetchDiary();
-  }, [date, token]);
+  }, [date, token, setMainPhotoId, confirmDiaryStatus]);
 
   if (loading) {
     return (
