@@ -138,7 +138,7 @@ export default function SettingsPage() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FCF9F4", paddingTop: 26 },
   header: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 30,
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 40,

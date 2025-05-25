@@ -8,6 +8,7 @@ export function DiaryProvider({ children }) {
   const [selectedCharacter, setSelectedCharacter] = useState(characterList[0]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [diaryId, setDiaryId] = useState(null);
+  const [diaryMapById, setDiaryMapById] = useState({});
 
   const resetDiary = () => {
     setText("");
@@ -28,6 +29,8 @@ export function DiaryProvider({ children }) {
         resetDiary,
         diaryId,
         setDiaryId,
+        diaryMapById,
+        setDiaryMapById,
       }}
     >
       {children}

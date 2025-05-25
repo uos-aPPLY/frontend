@@ -12,11 +12,12 @@ import HeaderDate from "../components/Header/HeaderDate";
 import IconButton from "../components/IconButton";
 import TextBox from "../components/TextBox";
 import characterList from "../assets/characterList";
-import { useAuth } from "../contexts/AuthContext";
-import Constants from "expo-constants";
-import EditImageSlider from "../components/EditImageSlider";
 import { usePhoto } from "../contexts/PhotoContext";
 import CharacterPickerOverlay from "../components/CharacterPickerOverlay";
+import EditImageSlider from "../components/EditImageSlider";
+import { useDiary } from "../contexts/DiaryContext";
+import { useAuth } from "../contexts/AuthContext";
+import { openGalleryAndAdd } from "../utils/openGalleryAndAdd";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -24,8 +25,9 @@ export default function EditPage() {
   const { token } = useAuth();
   const nav = useRouter();
   const { id } = useLocalSearchParams(); // diaryId
+  const { diaryMapById } = useDiary();
+  const diary = diaryMapById?.[id];
 
-  const [diary, setDiary] = useState(null);
   const [text, setText] = useState("");
   const [selectedCharacter, setSelectedCharacter] = useState(characterList[0]);
   const [photos, setPhotos] = useState([]);
@@ -33,26 +35,21 @@ export default function EditPage() {
   const { mainPhotoId, setMainPhotoId } = usePhoto();
   const [isPickerVisible, setIsPickerVisible] = useState(false);
 
-  const fetchDiary = async () => {
-    try {
-      const res = await fetch(
-        `${Constants.expoConfig.extra.BACKEND_URL}/api/diaries/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      const data = await res.json();
-      setDiary(data);
-      setText(data.content);
+  useEffect(() => {
+    if (diary) {
+      setText(diary.content);
       setSelectedCharacter(
-        characterList.find((c) => c.name === data.emotionIcon) ||
+        characterList.find((c) => c.name === diary.emotionIcon) ||
           characterList[0]
       );
-      setPhotos(data.photos || []);
-    } catch (err) {
-      console.error("❌ 일기 불러오기 실패:", err);
+      setPhotos(diary.photos || []);
     }
-  };
+  }, [diary]);
+
+  const photosToRender = [...photos];
+  if (photosToRender.length < 9) {
+    photosToRender.push({ id: "add", type: "add" });
+  }
 
   const handleSave = async () => {
     const payload = {
@@ -64,7 +61,7 @@ export default function EditPage() {
 
     try {
       const res = await fetch(
-        `${Constants.expoConfig.extra.BACKEND_URL}/api/diaries/${id}`,
+        `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/diaries/${id}`,
         {
           method: "PATCH",
           headers: {
@@ -88,21 +85,39 @@ export default function EditPage() {
     }
   };
 
-  const handleDeletePhoto = (id) => {
-    const updated = photos.filter((p) => p.id !== id);
+  const handleDeletePhoto = (photoId) => {
+    const updated = photos.filter((p) => p.id !== photoId);
     setPhotos(updated);
-    if (String(id) === String(mainPhotoId)) {
+    if (String(photoId) === String(mainPhotoId)) {
       setMainPhotoId(updated.length > 0 ? String(updated[0].id) : null);
     }
   };
 
-  const handleAddPhoto = () => {
-    console.log("사진 추가는 아직 미구현입니다.");
-  };
+  const handleAddPhoto = async () => {
+    try {
+      const addedAssets = await openGalleryAndAdd(token);
+      if (!addedAssets || addedAssets.length === 0) return;
 
-  useEffect(() => {
-    if (id && token) fetchDiary();
-  }, [id, token]);
+      const newPhotos = addedAssets.map((asset) => ({
+        id: asset.id,
+        photoUrl: asset.photoUrl,
+      }));
+
+      const updatedPhotos = [...photos, ...newPhotos];
+      setPhotos(updatedPhotos);
+
+      if (
+        !mainPhotoId ||
+        !updatedPhotos.some((p) => String(p.id) === String(mainPhotoId))
+      ) {
+        setMainPhotoId(String(newPhotos[0].id));
+      }
+
+      console.log("📸 사진 추가 완료:", newPhotos.length, "장");
+    } catch (err) {
+      console.error("❌ 사진 추가 중 오류:", err);
+    }
+  };
 
   if (!diary) return null;
 
@@ -126,7 +141,7 @@ export default function EditPage() {
 
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <EditImageSlider
-            photos={[...photos]}
+            photos={photosToRender}
             mainPhotoId={mainPhotoId}
             setMainPhotoId={setMainPhotoId}
             onDeletePhoto={handleDeletePhoto}
@@ -139,7 +154,7 @@ export default function EditPage() {
             <View style={{ width: 58 }} />
             <IconButton
               source={selectedCharacter.source}
-              wsize={40}
+              wsize={42}
               hsize={40}
               onPress={() => setIsPickerVisible(!isPickerVisible)}
             />
@@ -151,11 +166,9 @@ export default function EditPage() {
                 onPress={() =>
                   nav.push({
                     pathname: "/editWithAi",
-                    params: {
-                      date: diary.diaryDate, // 예: "2025-05-20"
-                    },
+                    params: { date: diary.diaryDate },
                   })
-                } // 원하는 기능으로 연결
+                }
               />
               <IconButton
                 source={require("../assets/icons/pictureinfoicon.png")}

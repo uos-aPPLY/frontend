@@ -2,6 +2,7 @@ import { View, Text, StyleSheet } from "react-native";
 import IconButton from "../IconButton";
 import { useEffect } from "react";
 import { useDiary } from "../../contexts/DiaryContext";
+import { isSameDay } from "date-fns"; // ✅ 추가
 
 const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -17,20 +18,23 @@ function formatDateWithDay(dateString) {
 
 export default function HeaderDate({ date, onBack, hasText = false, onSave }) {
   const formatted = formatDateWithDay(date);
-  const { setSelectedDate } = useDiary();
+  const { selectedDate, setSelectedDate } = useDiary(); // ✅ selectedDate 추가
 
   useEffect(() => {
     if (date) {
       const parsed = new Date(date);
       if (!isNaN(parsed)) {
-        console.log(
-          "📌 HeaderDate에서 selectedDate 설정:",
-          parsed.toISOString()
-        );
-        setSelectedDate(parsed);
+        // ✅ 동일 날짜면 무시
+        if (!selectedDate || !isSameDay(parsed, selectedDate)) {
+          console.log(
+            "📌 HeaderDate에서 selectedDate 설정:",
+            parsed.toISOString()
+          );
+          setSelectedDate(parsed);
+        }
       }
     }
-  }, [date]);
+  }, [date, selectedDate]);
 
   return (
     <View style={styles.header}>

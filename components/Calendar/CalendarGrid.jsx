@@ -29,8 +29,10 @@ import {
 } from "@expo-google-fonts/inter";
 import { useRouter } from "expo-router";
 import { useDiary } from "../../contexts/DiaryContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { CalendarViewContext } from "../../contexts/CalendarViewContext";
 import characterList from "../../assets/characterList";
+import Constants from "expo-constants";
 
 const screenWidth = Dimensions.get("window").width;
 const DAY_ITEM_SIZE = (screenWidth - 60) / 7;
@@ -51,6 +53,7 @@ export default function CalendarGrid({
   onNext,
 }) {
   const router = useRouter();
+  const { token } = useAuth();
   const { selectedDate, setSelectedDate } = useDiary();
   const { showEmotion } = useContext(CalendarViewContext);
 
@@ -142,22 +145,39 @@ export default function CalendarGrid({
             const isUnconfirmedWithPhoto =
               hasRepresentativePhoto && entry.status === "unconfirmed";
 
-            const handlePress = () => {
-              if (hasDiary) {
-                router.push(`/diary/${dateStr}`);
-              } else if (isPastNoDiary) {
-                if (selectedDate === dateStr) {
-                  setSelectedDate(dateStr);
-                  router.push(`/create?date=${dateStr}&from=calendar`);
-                } else {
-                  setSelectedDate(dateStr);
+            const handlePress = async () => {
+              setSelectedDate(dateStr);
+
+              if (!isCurrentMonth || isFuture) return;
+
+              try {
+                const res = await fetch(
+                  `${Constants.expoConfig.extra.BACKEND_URL}/api/diaries/status?date=${dateStr}`,
+                  {
+                    headers: {
+                      Authorization: `Bearer ${token}`,
+                    },
+                  }
+                );
+
+                const json = await res.json();
+                console.log("📆 상태 확인:", json);
+
+                switch (json.status) {
+                  case "none":
+                    router.push(`/create?date=${dateStr}&from=calendar`);
+                    break;
+                  case "generating":
+                    router.push(`/loadingDiary?date=${dateStr}`);
+                    break;
+                  case "exists":
+                    router.push(`/diary/${dateStr}`);
+                    break;
+                  default:
+                    console.warn("❓ 알 수 없는 상태:", json?.status);
                 }
-              } else if (isToday) {
-                if (todayHasDiary) {
-                  router.push(`/diary/${dateStr}`);
-                } else {
-                  router.push(`/create?date=${dateStr}&from=calendar`);
-                }
+              } catch (err) {
+                console.error("❌ 상태 조회 실패:", err);
               }
             };
 

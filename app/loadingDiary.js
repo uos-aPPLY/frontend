@@ -1,99 +1,195 @@
-import { useEffect, useRef } from "react";
-import {
-  View,
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  SafeAreaView,
-} from "react-native";
+import { useEffect, useRef, useCallback } from "react";
+import { View, ActivityIndicator, StyleSheet, Text } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import Constants from "expo-constants";
 import { useAuth } from "../contexts/AuthContext";
 import { useDiary } from "../contexts/DiaryContext";
 import IconButton from "../components/IconButton";
 import { DeviceEventEmitter } from "react-native";
+import { useFocusEffect } from "@react-navigation/native"; // ✅ 포커스 관리
 
 export default function LoadingDiary() {
   const router = useRouter();
+  const nav = useRouter();
   const { token } = useAuth();
   const { selectedDate } = useDiary();
   const { BACKEND_URL } = Constants.expoConfig.extra;
-  const nav = useRouter();
 
-  const isMounted = useRef(true);
+  const isMounted = useRef(false);
+  const pollingRef = useRef(null);
 
   const {
+    date: dateParam,
     photos = "[]",
     keywords = "{}",
     mainPhotoId,
   } = useLocalSearchParams();
 
-  const visiblePhotos = JSON.parse(photos);
-  const keywordMap = JSON.parse(keywords);
+  const diaryDate =
+    typeof dateParam === "string"
+      ? dateParam
+      : typeof selectedDate === "string"
+      ? selectedDate
+      : selectedDate?.toISOString().split("T")[0];
+
+  const visiblePhotos = JSON.parse(photos || "[]");
+  const keywordMap = JSON.parse(keywords || "{}");
 
   const finalizedPhotos = visiblePhotos.map((photo, index) => ({
     photoId: photo.id,
     sequence: index,
     keyword: (keywordMap[photo.id] ?? [])
-      .map((kw) => kw.replace(/^#/, "")) // "#" 제거
+      .map((kw) => kw.replace(/^#/, ""))
       .join(","),
   }));
 
-  useEffect(() => {
-    return () => {
-      isMounted.current = false; // 언마운트 시 플래그 변경
-    };
-  }, []);
-
-  useEffect(() => {
-    console.log("📅 선택된 날짜 (selectedDate):", selectedDate);
-    const diaryDate =
-      typeof selectedDate === "string"
-        ? selectedDate
-        : selectedDate?.toISOString().split("T")[0];
-
-    const createDiary = async () => {
-      try {
-        const body = {
-          diaryDate,
-          representativePhotoId: mainPhotoId,
-          finalizedPhotos,
-        };
-
-        console.log("📦 요청 바디 확인:", JSON.stringify(body, null, 2));
-
-        const res = await fetch(`${BACKEND_URL}/api/diaries/auto`, {
-          method: "POST",
+  const confirmDiary = async (diaryId, diaryDate) => {
+    try {
+      const confirmRes = await fetch(
+        `${BACKEND_URL}/api/diaries/${diaryId}/confirm`,
+        {
+          method: "PATCH",
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify(body),
-        });
-        const json = await res.json();
-
-        console.log("📝 응답 받은 일기 데이터:", json);
-
-        const date = json.diaryDate;
-        if (isMounted.current) {
-          DeviceEventEmitter.emit("refreshCalendar");
-          router.replace(`/diary/${date}`);
         }
-      } catch (e) {
-        console.error("📛 JSON 파싱 실패:", e, text);
+      );
+
+      if (confirmRes.ok) {
+        console.log("✅ confirm 성공");
+        DeviceEventEmitter.emit("refreshCalendar");
+        router.replace(`/diary/${diaryDate}`);
+        return true;
+      } else {
+        console.warn("❌ confirm 실패", confirmRes.status);
+      }
+    } catch (err) {
+      console.error("❗confirm 요청 실패:", err);
+    }
+    return false;
+  };
+
+  const pollDiaryStatus = async (dateToPoll) => {
+    const maxRetries = 50;
+    let attempts = 0;
+
+    while (attempts < maxRetries && isMounted.current) {
+      try {
+        const res = await fetch(
+          `${BACKEND_URL}/api/diaries/by-date?date=${dateToPoll}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = await res.json();
+        console.log("📡 현재 다이어리 상태:", data?.status);
+
+        if (data?.status === "confirmed") {
+          DeviceEventEmitter.emit("refreshCalendar");
+          router.replace(`/diary/${dateToPoll}`);
+          return;
+        } else if (data?.status === "unconfirmed" && data?.id) {
+          const confirmed = await confirmDiary(data.id, data.diaryDate);
+          if (confirmed) return;
+        }
+
+        await new Promise((r) => setTimeout(r, 5000));
+      } catch (err) {
+        console.error("🔁 다이어리 상태 polling 에러:", err);
+      }
+
+      attempts++;
+    }
+
+    if (isMounted.current) {
+      console.warn("⚠️ Polling 실패: 홈으로 이동");
+      router.replace("/home");
+    } else {
+      console.log("⛔️ 포커스 사라짐 - 홈 이동 생략");
+    }
+  };
+
+  const runCreateOrPoll = useCallback(async () => {
+    const shouldCreate =
+      photos &&
+      keywords &&
+      mainPhotoId !== null &&
+      typeof diaryDate === "string";
+
+    if (!token || !diaryDate) {
+      console.warn("🚫 유효하지 않은 diaryDate 또는 토큰 누락");
+      return;
+    }
+
+    if (!shouldCreate || visiblePhotos.length === 0) {
+      console.log("📌 생성 없이 상태만 polling");
+      pollingRef.current = pollDiaryStatus(diaryDate);
+      return;
+    }
+
+    try {
+      const body = {
+        diaryDate,
+        representativePhotoId: mainPhotoId,
+        finalizedPhotos,
+      };
+
+      console.log("📤 일기 생성 요청:", body);
+
+      const res = await fetch(`${BACKEND_URL}/api/diaries/auto`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      const json = await res.json();
+      if (!isMounted.current) return;
+
+      if (json?.status === "confirmed") {
+        DeviceEventEmitter.emit("refreshCalendar");
+        router.replace(`/diary/${json.diaryDate}`);
+      } else if (json?.status === "generating") {
+        console.log("🕒 생성 중... polling 시작");
+        pollingRef.current = pollDiaryStatus(json.diaryDate);
+      } else if (json?.status === "unconfirmed" && json?.id) {
+        const confirmed = await confirmDiary(json.id, json.diaryDate);
+        if (!confirmed) {
+          pollingRef.current = pollDiaryStatus(json.diaryDate);
+        }
+      } else {
+        console.warn("❗예상치 못한 상태:", json?.status);
         router.replace("/home");
       }
-    };
+    } catch (err) {
+      console.error("📛 일기 생성 실패:", err);
+      router.replace("/home");
+    }
+  }, [token, diaryDate]);
 
-    createDiary();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      isMounted.current = true;
+      runCreateOrPoll();
+
+      return () => {
+        console.log("🔙 뒤로감 또는 화면 이탈 - polling 중단");
+        isMounted.current = false;
+      };
+    }, [runCreateOrPoll])
+  );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <IconButton
           source={require("../assets/icons/backicon.png")}
-          wsize={22}
+          wsize={12}
           hsize={22}
           onPress={() => nav.push("/calendar")}
         />
@@ -103,17 +199,14 @@ export default function LoadingDiary() {
         <ActivityIndicator size="large" color="#D68089" />
         <Text style={styles.message}>AI가 당신의 하루를 기록 중이에요...</Text>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FCF9F4",
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  container: { flex: 1, backgroundColor: "#FCF9F4" },
+  header: { paddingTop: 75, paddingLeft: 30 },
+  loadingArea: { flex: 1, justifyContent: "center", alignItems: "center" },
   message: {
     marginTop: 16,
     fontSize: 15,
@@ -121,14 +214,5 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     textAlign: "center",
     lineHeight: 22,
-  },
-  header: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    paddingTop: 75,
-    paddingLeft: 10,
-    zIndex: 1,
   },
 });
