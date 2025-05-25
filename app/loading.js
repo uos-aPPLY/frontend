@@ -78,9 +78,10 @@ export default function LoadingPage() {
           onPress={() => nav.back()}
         />
       </View>
-
-      <ActivityIndicator size="large" color="#D68089" />
-      <Text style={styles.text}>AI가 베스트샷 선정 중 입니다...</Text>
+      <View style={styles.loadingArea}>
+        <ActivityIndicator size="large" color="#D68089" />
+        <Text style={styles.text}>AI가 베스트샷 선정 중 입니다...</Text>
+      </View>
     </View>
   );
 }
@@ -89,14 +90,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FCF9F4",
-    justifyContent: "center",
-    alignItems: "center",
   },
   header: {
-    position: "absolute",
-    top: 60,
-    left: 30,
-    zIndex: 10,
+    paddingTop: 75,
+    paddingLeft: 30,
+  },
+  loadingArea: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   text: {
     marginTop: 16,

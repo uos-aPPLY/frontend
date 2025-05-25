@@ -20,24 +20,23 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { parseISO } from "date-fns";
 import Constants from "expo-constants";
 import { useAuth } from "../contexts/AuthContext";
-import { usePhoto } from "../contexts/PhotoContext";
 import { useDiary } from "../contexts/DiaryContext";
-import HeaderDateAndTrash from "../components/Header/HeaderDateAndTrash";
+import HeaderDate from "../components/Header/HeaderDate";
 import characterList from "../assets/characterList";
 import IconButton from "../components/IconButton";
+import ImageSlider from "../components/ImageSlider";
 
 const screenWidth = Dimensions.get("window").width;
 
 export default function EditWithAIPage() {
   const nav = useRouter();
   const { token } = useAuth();
-  const { setMainPhotoId } = usePhoto();
   const { date: dateParam } = useLocalSearchParams();
   const date = dateParam;
   const parsedDate = parseISO(date);
-  const { resetDiary, diaryId } = useDiary();
+  const { setText, resetDiary, diaryId, diaryMapById } = useDiary();
+  const diary = diaryMapById[diaryId];
 
-  const [diary, setDiary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [webviewLoaded, setWebviewLoaded] = useState(false);
   const [requestText, setRequestText] = useState("");
@@ -47,30 +46,6 @@ export default function EditWithAIPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [webViewHeight, setWebViewHeight] = useState(360);
-
-  const fetchDiary = async () => {
-    try {
-      const res = await fetch(
-        `${Constants.expoConfig.extra.BACKEND_URL}/api/diaries/by-date?date=${date}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      const text = await res.text();
-      if (!res.ok || !text) return setDiary(undefined);
-      const data = JSON.parse(text);
-      setDiary(data);
-      const found = data.photos.find(
-        (p) => p.photoUrl === data.representativePhotoUrl
-      );
-      if (found) setMainPhotoId(String(found.id));
-    } catch (err) {
-      console.error("📛 다이어리 로딩 실패", err);
-      setDiary(undefined);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleMessage = async (event) => {
     try {
@@ -129,6 +104,20 @@ export default function EditWithAIPage() {
           params: { id: diaryId },
         });
       }
+
+      if (action === "SAVE_TEXT") {
+        if (!content) {
+          console.warn("⛔ 저장할 텍스트 없음");
+          return;
+        }
+        setText(content); // 📥 DiaryContext 전역 저장
+        console.log("✅ WebView 내용 저장 완료:", content);
+
+        nav.replace({
+          pathname: "/edit",
+          params: { id: diaryId },
+        });
+      }
     } catch (err) {
       console.warn("💥 웹뷰 메시지 파싱 실패", err);
     }
@@ -142,6 +131,16 @@ export default function EditWithAIPage() {
       }));
       true;
     `);
+  };
+
+  const handleSave = () => {
+    webviewRef.current?.injectJavaScript(`
+    window.ReactNativeWebView.postMessage(JSON.stringify({
+      action: "SAVE_TEXT",
+      content: window.getPlainText()
+    }));
+    true;
+  `);
   };
 
   const onWebViewLoadEnd = () => {
@@ -176,19 +175,25 @@ export default function EditWithAIPage() {
     };
   }, []);
 
-  useEffect(() => {
-    if (date && token) fetchDiary();
-  }, [date, token]);
-
-  if (loading)
+  if (!diaryId || !diary) {
     return (
-      <View style={styles.loadingContainer}>
+      <SafeAreaView style={styles.loadingContainer}>
+        <View style={styles.loadingHeader}>
+          <IconButton
+            source={require("../assets/icons/backicon.png")}
+            wsize={24}
+            hsize={24}
+            onPress={() => nav.back()}
+          />
+        </View>
+
         <ActivityIndicator size="large" color="#D68089" />
         <Text style={{ fontSize: 16, color: "#888", marginTop: 10 }}>
           일기를 불러오는 중입니다...
         </Text>
-      </View>
+      </SafeAreaView>
     );
+  }
 
   if (!diary)
     return (
@@ -218,36 +223,24 @@ export default function EditWithAIPage() {
             contentContainerStyle={styles.scrollContainer}
             keyboardShouldPersistTaps="handled"
           >
-            <HeaderDateAndTrash
+            <HeaderDate
               date={parsedDate}
+              hasText={true}
               onBack={() => {
-                resetDiary();
                 nav.replace({
                   pathname: "/edit",
                   params: { id: diaryId },
                 });
               }}
-              onTrashPress={() => {}}
+              onSave={handleSave}
             />
 
-            <FlatList
-              ref={flatListRef}
-              data={photosToShow}
-              keyExtractor={(item, index) =>
-                item.id?.toString() ?? index.toString()
-              }
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              onViewableItemsChanged={({ viewableItems }) => {
-                if (viewableItems.length > 0) {
-                  setCurrentIndex(viewableItems[0].index);
-                }
-              }}
-              viewabilityConfig={{ viewAreaCoveragePercentThreshold: 50 }}
-              renderItem={({ item }) => (
-                <Image source={{ uri: item.photoUrl }} style={styles.image} />
-              )}
+            <ImageSlider
+              photos={photosToShow}
+              isGridView={false}
+              currentIndex={currentIndex}
+              setCurrentIndex={setCurrentIndex}
+              flatListRef={flatListRef}
             />
 
             <View style={styles.middle}>
@@ -324,6 +317,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#FCF9F4",
+  },
+
+  loadingHeader: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    paddingTop: Platform.OS === "ios" ? 75 : 30,
+    paddingLeft: 30,
   },
   image: {
     width: screenWidth - 60,

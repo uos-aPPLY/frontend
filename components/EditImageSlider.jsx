@@ -26,30 +26,34 @@ export default function EditImageSlider({
   // ✅ 진짜 사진만 추림 (인디케이터 용도)
   const realPhotos = photos.filter((p) => p.type !== "add");
 
+  const isEmpty = photos.length === 1 && photos[0].type === "add";
+
   return (
     <View style={styles.wrapper}>
       {/* ✅ Indicator - 진짜 사진만 */}
-      <View style={styles.pageIndicator}>
-        {realPhotos.map((photo, index) => (
-          <TouchableOpacity
-            key={index}
-            onPress={() => {
-              flatListRef.current?.scrollToIndex({ index, animated: true });
-              setCurrentIndex(index);
-            }}
-            style={styles.indicatorItem}
-          >
-            {currentIndex === index ? (
-              <Image
-                source={{ uri: photo.photoUrl }}
-                style={styles.thumbnail}
-              />
-            ) : (
-              <View style={styles.dot} />
-            )}
-          </TouchableOpacity>
-        ))}
-      </View>
+      {realPhotos.length > 0 && (
+        <View style={styles.pageIndicator}>
+          {realPhotos.map((photo, index) => (
+            <TouchableOpacity
+              key={index}
+              onPress={() => {
+                flatListRef.current?.scrollToIndex({ index, animated: true });
+                setCurrentIndex(index);
+              }}
+              style={styles.indicatorItem}
+            >
+              {currentIndex === index ? (
+                <Image
+                  source={{ uri: photo.photoUrl }}
+                  style={styles.thumbnail}
+                />
+              ) : (
+                <View style={styles.dot} />
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
 
       {/* ✅ FlatList - 전체 사진 (add 포함) */}
       <FlatList
@@ -65,7 +69,12 @@ export default function EditImageSlider({
         }}
         renderItem={({ item }) =>
           item.type === "add" ? (
-            <View style={styles.cardContainer}>
+            <View
+              style={[
+                styles.cardContainer,
+                isEmpty && { marginTop: 30 }, // ✅ 사진이 없을 때만 위 여백 추가
+              ]}
+            >
               <View style={styles.addCard}>
                 <IconButton
                   source={require("../assets/icons/bigpinkplusicon.png")}
@@ -159,7 +168,6 @@ const styles = StyleSheet.create({
     resizeMode: "cover",
   },
   addCard: {
-    marginTop: 10,
     width: screenWidth - 60,
     aspectRatio: 1,
     backgroundColor: "#F1F2F1",

@@ -138,6 +138,11 @@
 
       window.getMarkedText = getMarkedText;
       window.toggleMark = toggleMark;
+
+      window.getPlainText = function () {
+        const editor = document.getElementById("editor");
+        return editor ? editor.innerText : "";
+      };
     </script>
   </body>
 </html>

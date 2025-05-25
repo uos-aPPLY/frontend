@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
   keywordTag: {
     paddingVertical: 6,
     paddingHorizontal: 12,
-    backgroundColor: "#fff",
+    backgroundColor: "#E8E6E3",
     borderRadius: 16,
     borderWidth: 1,
     borderColor: "#ddd",
@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
   addKeyword: {
     paddingVertical: 6,
     paddingHorizontal: 12,
-    backgroundColor: "#fff",
+    backgroundColor: "#E8E6E3",
     borderRadius: 16,
     borderWidth: 1,
     borderColor: "#ddd",

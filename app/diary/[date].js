@@ -16,6 +16,7 @@ import Constants from "expo-constants";
 import { useAuth } from "../../contexts/AuthContext";
 import IconButton from "../../components/IconButton";
 import HeaderDateAndTrash from "../../components/Header/HeaderDateAndTrash";
+import ImageSlider from "../../components/ImageSlider";
 import { parseISO } from "date-fns";
 import characterList from "../../assets/characterList";
 import fullHeartIcon from "../../assets/icons/fullhearticon.png";
@@ -35,7 +36,7 @@ export default function DiaryPage() {
   const { date: dateParam } = useLocalSearchParams();
   const date = dateParam;
   const parsedDate = parseISO(date);
-  const { resetDiary, setDiaryId } = useDiary();
+  const { resetDiary, setDiaryId, setDiaryMapById } = useDiary();
 
   const [diary, setDiary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -177,6 +178,10 @@ export default function DiaryPage() {
         console.log("📓 불러온 다이어리 데이터:", data);
         setDiary(data);
         setDiaryId(data.id);
+        setDiaryMapById((prev) => ({
+          ...prev,
+          [data.id]: data,
+        }));
 
         setPhotoList(data.photos || []);
         const found = data.photos.find(
@@ -239,73 +244,21 @@ export default function DiaryPage() {
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.imageWrapper}>
-          {isGridView ? (
-            <View style={styles.gridContainer}>
-              {formatPhotosInRows(photosToShow).map((row, rowIndex) => (
-                <View key={rowIndex} style={styles.gridRow}>
-                  {row.map((photo, colIndex) =>
-                    photo ? (
-                      <Image
-                        key={colIndex}
-                        source={{ uri: photo.photoUrl }}
-                        style={styles.gridImage}
-                      />
-                    ) : (
-                      <View key={colIndex} style={styles.gridImage} />
-                    )
-                  )}
-                </View>
-              ))}
+        {photosToShow.length > 0 ? (
+          <ImageSlider
+            photos={photosToShow}
+            isGridView={isGridView}
+            currentIndex={currentIndex}
+            setCurrentIndex={setCurrentIndex}
+            flatListRef={flatListRef}
+          />
+        ) : (
+          <View style={styles.shadowWrapper}>
+            <View style={styles.noPhotoWrapper}>
+              <Text style={styles.noPhotoText}>사진이 없어요.</Text>
             </View>
-          ) : (
-            <>
-              <View style={styles.pageIndicator}>
-                {photosToShow.map((photo, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    onPress={() => {
-                      flatListRef.current?.scrollToIndex({
-                        index,
-                        animated: true,
-                      });
-                      setCurrentIndex(index);
-                    }}
-                    style={styles.indicatorItem}
-                  >
-                    {currentIndex === index ? (
-                      <Image
-                        source={{ uri: photo.photoUrl }}
-                        style={styles.thumbnailImage}
-                      />
-                    ) : (
-                      <View style={styles.dot} />
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <FlatList
-                ref={flatListRef}
-                data={photosToShow}
-                keyExtractor={(item, index) =>
-                  item.id?.toString() ?? index.toString()
-                }
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                onViewableItemsChanged={({ viewableItems }) => {
-                  if (viewableItems.length > 0) {
-                    setCurrentIndex(viewableItems[0].index);
-                  }
-                }}
-                viewabilityConfig={{ viewAreaCoveragePercentThreshold: 50 }}
-                renderItem={({ item }) => (
-                  <Image source={{ uri: item.photoUrl }} style={styles.image} />
-                )}
-              />
-            </>
-          )}
-        </View>
+          </View>
+        )}
 
         <View style={styles.middle}>
           <View style={styles.iconRow}>
@@ -330,6 +283,9 @@ export default function DiaryPage() {
                 hsize={24}
                 wsize={24}
                 onPress={() => setIsGridView((prev) => !prev)}
+                disabled={
+                  photosToShow.length === 0 || photosToShow.length === 1
+                }
               />
               <IconButton
                 source={diary.isFavorited ? fullHeartIcon : emptyHeartIcon}
@@ -374,54 +330,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#A78C7B",
   },
-  imageWrapper: {
-    alignItems: "center",
-    marginTop: 5,
-  },
-  image: {
-    width: screenWidth - 60,
-    aspectRatio: 1,
-    borderRadius: 20,
-    resizeMode: "cover",
-    marginHorizontal: 30,
-  },
 
-  pageIndicator: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 10,
-    height: 22,
-    marginBottom: 10,
-  },
-  indicatorItem: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#D9D9D9",
-  },
-  thumbnailImage: {
-    width: 22,
-    height: 22,
-    borderRadius: 4,
-  },
-  gridContainer: {
-    paddingHorizontal: 30,
-    marginTop: 10,
-  },
-  gridRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  gridImage: {
-    width: (screenWidth - 60) / 3,
-    height: (screenWidth - 60) / 3,
-    backgroundColor: "#EEE",
-  },
   middle: {
     marginTop: 10,
     marginBottom: 10,
@@ -468,5 +377,29 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 14,
     fontWeight: "bold",
+  },
+  shadowWrapper: {
+    paddingTop: 30,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+    borderRadius: 30,
+    paddingHorizontal: 30,
+  },
+  noPhotoWrapper: {
+    width: "100%",
+    aspectRatio: 1,
+    backgroundColor: "#F1F2F1",
+    borderRadius: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    position: "relative",
+  },
+  noPhotoText: {
+    fontSize: 14,
+    color: "#A78C7B",
   },
 });
