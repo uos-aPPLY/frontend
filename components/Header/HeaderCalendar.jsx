@@ -6,7 +6,6 @@ import { format } from "date-fns";
 import { useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import IconButton from "../IconButton";
-import ToggleSwitch from "../ToggleSwitch";
 import { CalendarViewContext } from "../../contexts/CalendarViewContext";
 
 SplashScreen.preventAutoHideAsync();
@@ -82,6 +81,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 40,
     resizeMode: "contain",
+    marginTop: 8,
   },
   dateWrapper: {
     flex: 1,

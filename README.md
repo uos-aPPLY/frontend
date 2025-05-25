@@ -42,7 +42,7 @@ npx expo install react-native-webview
 npm install fast-uri
 npx expo install expo-linear-gradient
 npx expo install react-native-safe-area-context
-
+npx expo install expo-haptics
 ```
 
 ## Prettier 설정

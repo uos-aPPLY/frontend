@@ -1,11 +1,15 @@
+// app/(tabs)/calendar.js
 import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   ActivityIndicator,
   StyleSheet,
   DeviceEventEmitter,
+  ScrollView,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as Haptics from "expo-haptics";
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
 import { addMonths, subMonths } from "date-fns";
@@ -22,6 +26,7 @@ export default function Calendar({ onDatePress }) {
   const [diariesByDate, setDiariesByDate] = useState({});
   const [loading, setLoading] = useState(true);
   const [showEmotion, setShowEmotion] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // ✅ fetchDiaries 함수 분리 (withLoading 옵션 추가)
   const fetchDiaries = useCallback(async (withLoading = false) => {
@@ -82,31 +87,51 @@ export default function Calendar({ onDatePress }) {
     };
   }, [fetchDiaries]);
 
+  const onRefresh = useCallback(async () => {
+    try {
+      setRefreshing(true);
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      await fetchDiaries(false);
+      console.log("Refreshing Success!");
+    } catch (e) {
+      console.error("onRefresh 에러:", e);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchDiaries]);
+
   if (loading) {
     return <ActivityIndicator style={{ marginTop: 50 }} />;
   }
 
   return (
     <CalendarViewContext.Provider value={{ showEmotion, setShowEmotion }}>
-      <SafeAreaView style={styles.container}>
-        <View style={styles.headerWrapper}>
-          <HeaderCalender />
-        </View>
-        <View style={styles.calendarContainer}>
-          <MonthNavigator
-            currentMonth={currentMonth}
-            onPrev={() => setCurrentMonth(subMonths(currentMonth, 1))}
-            onNext={() => setCurrentMonth(addMonths(currentMonth, 1))}
-          />
-          <View style={styles.gridWrapper}>
-            <CalendarGrid
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
+          <View style={styles.headerWrapper}>
+            <HeaderCalender />
+          </View>
+          <View style={styles.calendarContainer}>
+            <MonthNavigator
               currentMonth={currentMonth}
-              diariesByDate={diariesByDate}
               onPrev={() => setCurrentMonth(subMonths(currentMonth, 1))}
               onNext={() => setCurrentMonth(addMonths(currentMonth, 1))}
             />
+            <View style={styles.gridWrapper}>
+              <CalendarGrid
+                currentMonth={currentMonth}
+                diariesByDate={diariesByDate}
+                onPrev={() => setCurrentMonth(subMonths(currentMonth, 1))}
+                onNext={() => setCurrentMonth(addMonths(currentMonth, 1))}
+              />
+            </View>
           </View>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </CalendarViewContext.Provider>
   );
@@ -117,6 +142,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FCF9F4",
   },
+  scrollContent: { flexGrow: 1 },
   headerWrapper: {
     paddingBottom: 50,
   },

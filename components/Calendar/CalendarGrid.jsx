@@ -139,6 +139,9 @@ export default function CalendarGrid({
             const hasRepresentativePhoto =
               hasDiary && entry.representativePhotoUrl;
 
+            const isUnconfirmedWithPhoto =
+              hasRepresentativePhoto && entry.status === "unconfirmed";
+
             const handlePress = () => {
               if (hasDiary) {
                 router.push(`/diary/${dateStr}`);
@@ -158,6 +161,11 @@ export default function CalendarGrid({
               }
             };
 
+            const shouldShowDateText =
+              (!showEmotion || !hasDiary) &&
+              selectedDate !== dateStr &&
+              !(isToday && !todayHasDiary);
+
             return (
               <TouchableOpacity
                 key={di}
@@ -174,21 +182,33 @@ export default function CalendarGrid({
                   />
                 ) : hasDiary ? (
                   hasRepresentativePhoto ? (
-                    <View style={styles.dayImageWrapper}>
-                      <Image
-                        source={{ uri: entry.representativePhotoUrl }}
-                        style={styles.dayImage}
-                      />
-                      <View style={styles.dayImageOverlay} />
-                    </View>
+                    isUnconfirmedWithPhoto ? (
+                      <LinearGradient
+                        colors={["#D68089", "#FFBB91"]}
+                        locations={[1, 0]}
+                        start={{ x: 0, y: 1 }}
+                        end={{ x: 0, y: 0 }}
+                        style={styles.gradientBorderWrapper}
+                      >
+                        <View style={styles.imageContainerForGradientBorder}>
+                          <Image
+                            source={{ uri: entry.representativePhotoUrl }}
+                            style={styles.imageItselfInGradient}
+                          />
+                          <View style={styles.overlayItselfInGradient} />
+                        </View>
+                      </LinearGradient>
+                    ) : (
+                      <View style={styles.dayImageWrapper}>
+                        <Image
+                          source={{ uri: entry.representativePhotoUrl }}
+                          style={styles.dayImage}
+                        />
+                        <View style={styles.dayImageOverlay} />
+                      </View>
+                    )
                   ) : (
-                    <LinearGradient
-                      colors={["#dad4ec", "#dad4ec", "#f3e7e9"]}
-                      locations={[0, 0.01, 1]}
-                      start={{ x: 0, y: 1 }}
-                      end={{ x: 0, y: 0 }}
-                      style={styles.dayStandardBackground}
-                    />
+                    <View style={styles.dayStandardBackground} />
                   )
                 ) : selectedDate === dateStr ? (
                   <Image
@@ -199,19 +219,18 @@ export default function CalendarGrid({
                   <View style={styles.dayPlaceholder} />
                 )}
 
-                {(!showEmotion || !hasDiary) &&
-                  selectedDate !== dateStr &&
-                  !(isToday && !todayHasDiary) && (
+                {shouldShowDateText && (
+                  <View style={styles.dayTextWrapper}>
                     <Text
                       style={[
-                        styles.dayText,
-
+                        styles.actualDayText, // Changed from styles.dayText
                         !isCurrentMonth && styles.inactiveDayText,
                       ]}
                     >
                       {format(daySeoul, "d")}
                     </Text>
-                  )}
+                  </View>
+                )}
               </TouchableOpacity>
             );
           })}
@@ -264,31 +283,37 @@ const styles = StyleSheet.create({
     height: DAY_ITEM_SIZE * 0.88,
   },
   dayImage: {
-    width: DAY_ITEM_SIZE * 0.9,
-    height: DAY_ITEM_SIZE * 0.9,
-    borderRadius: (DAY_ITEM_SIZE * 0.9) / 2,
-    position: "absolute",
+    width: "100%",
+    height: "100%",
   },
   dayPlaceholder: {
     width: DAY_ITEM_SIZE * 0.9,
     height: DAY_ITEM_SIZE * 0.9,
     borderRadius: (DAY_ITEM_SIZE * 0.9) / 2,
     backgroundColor: "transparent",
-    position: "absolute",
   },
   dayStandardBackground: {
     width: DAY_ITEM_SIZE * 0.9,
     height: DAY_ITEM_SIZE * 0.9,
     borderRadius: (DAY_ITEM_SIZE * 0.9) / 2,
-    position: "absolute",
+    backgroundColor: "rgba(255, 187, 145, 0.7)",
   },
-  dayText: {
+  dayTextWrapper: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  actualDayText: {
     fontSize: 18,
-    color: "rgba(214, 128, 137, 0.7)",
+    color: "#D68089",
     fontFamily: "Inter_600SemiBold",
   },
   inactiveDayText: {
-    color: "#F3D9DC",
+    color: "rgba(214, 128, 137, 0.5)",
   },
   plusIcon: {
     width: DAY_ITEM_SIZE * 0.9,
@@ -298,15 +323,34 @@ const styles = StyleSheet.create({
     width: DAY_ITEM_SIZE * 0.9,
     height: DAY_ITEM_SIZE * 0.9,
     borderRadius: (DAY_ITEM_SIZE * 0.9) / 2,
-    position: "absolute",
     overflow: "hidden",
+    justifyContent: "center",
+    alignItems: "center",
   },
   dayImageOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.2)",
+  },
+  gradientBorderWrapper: {
+    width: DAY_ITEM_SIZE * 0.9,
+    height: DAY_ITEM_SIZE * 0.9,
+    borderRadius: (DAY_ITEM_SIZE * 0.9) / 2,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 3,
+  },
+  imageContainerForGradientBorder: {
+    width: "100%",
+    height: "100%",
+    borderRadius: (DAY_ITEM_SIZE * 0.9) / 2 - 3,
+    overflow: "hidden",
+  },
+  imageItselfInGradient: {
+    width: "100%",
+    height: "100%",
+  },
+  overlayItselfInGradient: {
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.2)",
   },
 });

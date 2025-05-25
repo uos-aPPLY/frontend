@@ -13,8 +13,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as SecureStore from "expo-secure-store";
 import { useRouter } from "expo-router";
 import Constants from "expo-constants";
-import Checkbox from "expo-checkbox";
+import { LinearGradient } from "expo-linear-gradient";
 import ConfirmModal from "../../components/Modal/ConfirmModal";
+import CheckBox from "../../components/CheckBox";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
@@ -110,18 +111,27 @@ export default function WastePage() {
         activeOpacity={selectionMode ? 0.6 : 1}
       >
         {selectionMode && (
-          <Checkbox
+          <CheckBox
             style={styles.checkbox}
-            color={"rgba(214, 128, 137, 1)"}
             value={checked}
             onValueChange={() => toggleSelect(item.id)}
           />
         )}
         <View style={styles.imageWrapper}>
-          <Image
-            source={{ uri: item.representativePhotoUrl }}
-            style={styles.cardImage}
-          />
+          {item.representativePhotoUrl ? (
+            <Image
+              source={{ uri: item.representativePhotoUrl }}
+              style={styles.cardImage}
+            />
+          ) : (
+            <LinearGradient
+              colors={["#dad4ec", "#dad4ec", "#f3e7e9"]}
+              locations={[0, 0.01, 1]}
+              start={{ x: 0, y: 1 }}
+              end={{ x: 0, y: 0 }}
+              style={styles.gradientBackground}
+            />
+          )}
         </View>
         <View style={styles.cardTextContainer}>
           <Text style={styles.cardContent} numberOfLines={3}>
@@ -270,10 +280,6 @@ const styles = StyleSheet.create({
     top: 15,
     left: 15,
     zIndex: 1,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    marginRight: 18,
   },
   imageWrapper: {
     width: 120,
@@ -281,6 +287,9 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 30,
     borderBottomLeftRadius: 30,
     overflow: "hidden",
+  },
+  gradientBackground: {
+    flex: 1,
   },
   cardImage: { width: "100%", height: "100%", resizeMode: "cover" },
   cardTextContainer: { flex: 1, padding: 18, justifyContent: "space-between" },
