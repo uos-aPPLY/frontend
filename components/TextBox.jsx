@@ -15,16 +15,14 @@ export default function TextBox({ value, onChangeText, placeholder }) {
 
 const styles = StyleSheet.create({
   input: {
-    height: 360,
-    flex: 1,
     backgroundColor: "#fff",
-    borderRadius: 30,
-    lineHeight: 26,
-    paddingVertical: 15,
-    paddingHorizontal: 25,
+    color: "#A78C7B",
     fontSize: 16,
-    color: "#AC8B78",
-    textAlignVertical: "top",
-    outlineStyle: "none",
+    lineHeight: 26,
+    paddingVertical: 17,
+    paddingHorizontal: 25,
+    borderRadius: 30,
+    minHeight: 360,
+    marginBottom: 40,
   },
 });
