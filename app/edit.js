@@ -79,7 +79,10 @@ export default function EditPage() {
         return;
       }
       console.log("✅ 수정 성공");
-      nav.push("/calendar");
+      nav.replace({
+        pathname: "/diary/[date]",
+        params: { date: diary.diaryDate },
+      });
     } catch (err) {
       console.error("❌ 저장 중 에러:", err);
     }

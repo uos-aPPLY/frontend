@@ -61,9 +61,9 @@ export default function Calendar({ onDatePress }) {
       fetchDiaries(false); // 진입 시 1회
 
       const intervalId = setInterval(() => {
-        console.log("⏱ 30초마다 캘린더 새로고침 실행");
+        console.log("⏱ 10초마다 캘린더 새로고침 실행");
         fetchDiaries(false); // 조용한 자동 새로고침
-      }, 30000);
+      }, 10000);
 
       return () => {
         console.log("👋 캘린더 탭 이탈 → 인터벌 제거");

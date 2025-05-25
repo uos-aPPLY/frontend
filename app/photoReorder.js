@@ -1,5 +1,5 @@
 // app/PhotoReorder.js
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import {
   View,
   Text,
@@ -9,9 +9,10 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { ScaleDecorator } from "react-native-draggable-flatlist";
 import Constants from "expo-constants";
-import DraggableFlatList from "react-native-draggable-flatlist";
+import DraggableFlatList, {
+  ScaleDecorator,
+} from "react-native-draggable-flatlist";
 import { usePhoto } from "../contexts/PhotoContext";
 import IconButton from "../components/IconButton";
 import { useAuth } from "../contexts/AuthContext";
@@ -22,42 +23,33 @@ export default function PhotoReorder() {
   const router = useRouter();
   const { token } = useAuth();
   const { BACKEND_URL } = Constants.expoConfig.extra;
-  const [photos, setPhotos] = useState([]);
   const flatListRef = useRef(null);
-  const { photoList, setPhotoList } = usePhoto(); // ✅ usePhoto에서 가져오기
+  const { photoList, setPhotoList, setMainPhotoId } = usePhoto();
+
+  const [photos, setPhotos] = useState([]);
+  const [mainPhotoIdLocal, setMainPhotoIdLocal] = useState(null);
+  const [hiddenIds, setHiddenIds] = useState([]);
+
+  const visiblePhotos = useMemo(
+    () => photos.filter((photo) => !hiddenIds.includes(photo.id)),
+    [photos, hiddenIds]
+  );
 
   useEffect(() => {
     if (photoList.length > 0) {
-      // ✅ 이미 저장된 리스트 있으면 그대로 사용
       setPhotos(photoList);
-      return;
+      setMainPhotoIdLocal(photoList[0]?.id || null);
     }
-    const fetchPhotos = async () => {
-      try {
-        const res = await fetch(`${BACKEND_URL}/api/photos/selection/temp`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = await res.json();
-        console.log("✅ API 결과:", data);
-        setPhotos(data);
-      } catch (err) {
-        console.error("사진 불러오기 실패:", err);
-      }
-    };
-
-    if (token) fetchPhotos();
-  }, [token]);
+  }, [photoList]);
 
   const handleSaveOrder = () => {
-    console.log(
-      "📦 최종 순서:",
-      photos.map((p) => p.id)
-    );
+    setPhotoList(visiblePhotos); // ✅ 전역에 순서 저장
+    setMainPhotoId(mainPhotoIdLocal); // ✅ 전역에 대표사진 저장
+    router.back();
+  };
 
-    setPhotoList(photos); // ✅ 순서 저장
-    router.back(); // 이전 화면으로 이동
+  const handleHidePhoto = (id) => {
+    setHiddenIds((prev) => [...prev, id]);
   };
 
   return (
@@ -71,111 +63,157 @@ export default function PhotoReorder() {
           onPress={() => router.back()}
         />
         <Text style={styles.title}>사진 순서 수정</Text>
-        <View style={{ width: 22 }} /> {/* 오른쪽 여백 */}
+        <View style={{ width: 22 }} />
       </View>
 
-      {photos.length > 0 && (
-        <DraggableFlatList
-          ref={flatListRef}
-          data={photos}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item, drag, isActive }) => {
-            console.log("🧩 아이템 ID:", item.id, "전체 item:", item);
-            return (
-              <ScaleDecorator>
-                <View style={styles.cardWrapper}>
-                  <View style={styles.cardShadowWrapper}>
-                    <TouchableOpacity onPressIn={drag} activeOpacity={1}>
-                      <View style={[styles.card, isActive && { opacity: 0.7 }]}>
-                        <Image
-                          source={{ uri: item.photoUrl }}
-                          style={styles.cardImage}
-                        />
-                      </View>
+      {/* 사진 리스트 */}
+      <DraggableFlatList
+        ref={flatListRef}
+        data={visiblePhotos}
+        keyExtractor={(item) => item.id.toString()}
+        onDragEnd={({ data }) => setPhotos(data)}
+        renderItem={({ item, drag, isActive }) => (
+          <ScaleDecorator>
+            <View style={styles.cardWrapper}>
+              <View style={styles.cardShadowWrapper}>
+                <TouchableOpacity onPressIn={drag} activeOpacity={1}>
+                  <View style={[styles.card, isActive && { opacity: 0.8 }]}>
+                    <Image
+                      source={{ uri: item.photoUrl }}
+                      style={styles.cardImage}
+                    />
+
+                    {/* 대표 사진 표시 */}
+                    <TouchableOpacity
+                      style={[
+                        styles.badgeOverlay,
+                        item.id === mainPhotoIdLocal
+                          ? styles.badgeActive
+                          : styles.badgeInactive,
+                      ]}
+                      onPress={() => setMainPhotoIdLocal(item.id)}
+                    >
+                      <Text style={styles.badgeText}>대표 사진</Text>
+                    </TouchableOpacity>
+
+                    {/* 숨기기 버튼 */}
+                    <TouchableOpacity
+                      style={styles.closeWrapper}
+                      onPress={() => handleHidePhoto(item.id)}
+                    >
+                      <Image
+                        source={require("../assets/icons/xicon.png")}
+                        style={styles.closeIconImg}
+                      />
                     </TouchableOpacity>
                   </View>
-                </View>
-              </ScaleDecorator>
-            );
-          }}
-          onDragEnd={({ data }) => setPhotos(data)}
-          contentContainerStyle={styles.listContent}
-        />
-      )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScaleDecorator>
+        )}
+        contentContainerStyle={{ paddingBottom: 150 }}
+      />
+
       {/* 저장 버튼 */}
-      <TouchableOpacity style={styles.saveButton} onPress={handleSaveOrder}>
-        <Text style={styles.saveButtonText}>순서 저장</Text>
-      </TouchableOpacity>
+      <View style={styles.bottomRow}>
+        <TouchableOpacity style={styles.saveButton} onPress={handleSaveOrder}>
+          <Text style={styles.saveButtonText}>순서 저장</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FCF9F4",
-    paddingTop: 75,
-    paddingBottom: 50,
-  },
+  container: { flex: 1, backgroundColor: "#FCF9F4" },
   header: {
     paddingHorizontal: 30,
+    paddingTop: 70,
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 20,
     justifyContent: "space-between",
+    backgroundColor: "#FCF9F4",
   },
   title: {
     fontSize: 16,
     fontWeight: "bold",
     color: "#a78c7b",
   },
-  listContent: {
-    paddingHorizontal: 30,
-    paddingBottom: 100,
-    gap: 20,
-  },
-  card: {
-    width: "100%",
-    aspectRatio: 1,
-    backgroundColor: "#F1F2F1",
-    borderRadius: 30,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  image: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
-  },
   cardWrapper: {
-    width: "100%",
+    width: screenWidth,
+    alignItems: "center",
+    marginBottom: 30,
   },
   cardShadowWrapper: {
-    marginBottom: 10,
+    marginTop: 10,
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+    borderRadius: 30,
+  },
+  card: {
+    width: screenWidth * 0.8,
+    aspectRatio: 1,
+    borderRadius: 30,
+    overflow: "hidden",
+    position: "relative",
   },
   cardImage: {
     width: "100%",
     height: "100%",
     resizeMode: "cover",
   },
-
-  saveButton: {
+  badgeOverlay: {
+    position: "absolute",
+    top: 15,
+    left: 15,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 1,
+  },
+  badgeActive: {
+    backgroundColor: "#D68089",
+    borderColor: "#fff",
+  },
+  badgeInactive: {
+    backgroundColor: "rgba(0,0,0,0.2)",
+    borderColor: "#fff",
+  },
+  badgeText: {
+    fontSize: 12,
+    color: "#fff",
+  },
+  closeWrapper: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    padding: 10,
+  },
+  closeIconImg: {
+    width: 16,
+    height: 16,
+    tintColor: "#fff",
+  },
+  bottomRow: {
     position: "absolute",
     bottom: 40,
-    left: 30,
-    right: 30,
+    width: "100%",
+    paddingHorizontal: 30,
+  },
+  saveButton: {
     backgroundColor: "#D9A2A8",
-    borderRadius: 16,
     paddingVertical: 16,
+    borderRadius: 16,
     alignItems: "center",
   },
   saveButtonText: {
+    fontSize: 16,
     color: "#fff",
     fontWeight: "bold",
-    fontSize: 16,
   },
 });

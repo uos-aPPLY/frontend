@@ -14,26 +14,37 @@
         background-color: transparent;
         overflow: hidden;
       }
+
       #editor {
-        background-color: transparent;
-        padding-right: 25px;
-        padding-left: 25px;
-        padding-top: 15px;
-        padding-bottom: 15px;
-        border-radius: 30px;
+        padding: 20px 23px;
         color: #a78c7b;
         font-size: 16px;
         line-height: 26px;
+        border-radius: 30px;
+        background-color: transparent;
+        display: none;
+        overflow: hidden;
       }
+
       mark {
         background-color: #ffd6d6;
+      }
+
+      *:focus {
+        outline: none !important;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      ::selection {
+        background: transparent;
       }
     </style>
   </head>
   <body>
-    <div id="editor" contenteditable="true">로딩 중...</div>
+    <div id="editor" contenteditable="true"></div>
 
     <script>
+      let alreadySentHeight = false;
       function toggleMark() {
         const selection = window.getSelection();
         if (
@@ -43,47 +54,74 @@
         )
           return;
 
+        const range = selection.getRangeAt(0);
         const selectedText = selection.toString();
-        const mark = selection.anchorNode?.parentElement?.closest("mark");
 
-        if (mark) {
-          const unmarked = document.createTextNode(mark.textContent);
-          mark.replaceWith(unmarked);
+        const commonAncestor = range.commonAncestorContainer;
+        const container =
+          commonAncestor.nodeType === 1
+            ? commonAncestor
+            : commonAncestor.parentNode;
+
+        const marksInRange = Array.from(
+          container.querySelectorAll("mark")
+        ).filter((mark) => {
+          const markRange = document.createRange();
+          markRange.selectNodeContents(mark);
+          return (
+            range.compareBoundaryPoints(Range.END_TO_START, markRange) < 0 &&
+            range.compareBoundaryPoints(Range.START_TO_END, markRange) > 0
+          );
+        });
+
+        if (marksInRange.length > 0) {
+          marksInRange.forEach((markEl) => {
+            const textNode = document.createTextNode(markEl.textContent);
+            markEl.replaceWith(textNode);
+          });
+
           selection.removeAllRanges();
+          document.activeElement.blur();
           return;
         }
 
-        const range = selection.getRangeAt(0);
         const span = document.createElement("mark");
         span.textContent = selectedText;
         range.deleteContents();
         range.insertNode(span);
         selection.removeAllRanges();
 
-        window.ReactNativeWebView.postMessage(
-          JSON.stringify({
-            action: "SELECTED",
-            text: span.textContent,
-          })
+        window.ReactNativeWebView?.postMessage(
+          JSON.stringify({ action: "SELECTED", text: span.textContent })
         );
       }
 
       function getMarkedText() {
         const editor = document.getElementById("editor");
-        let text = editor.innerHTML;
-        text = text.replace(
+        return editor.innerHTML.replace(
           /<mark>(.*?)<\/mark>/g,
           "<edit token>$1</edit token>"
         );
-        return text;
+      }
+
+      function loadContent(content) {
+        const editor = document.getElementById("editor");
+        editor.style.display = "block";
+        editor.innerHTML = content;
+
+        // 🔥 WebView 높이 계산 후 전달
+        setTimeout(() => {
+          const height = editor.scrollHeight;
+          window.ReactNativeWebView?.postMessage(
+            JSON.stringify({ action: "HEIGHT", height })
+          );
+        }, 30);
       }
 
       document.addEventListener("message", function (event) {
         try {
           const data = JSON.parse(event.data);
-          if (data.content) {
-            document.getElementById("editor").innerHTML = data.content;
-          }
+          if (data.content) loadContent(data.content);
         } catch (e) {
           console.error("📛 메시지 파싱 실패", e);
         }
@@ -92,9 +130,7 @@
       window.addEventListener("message", function (event) {
         try {
           const data = JSON.parse(event.data);
-          if (data.content) {
-            document.getElementById("editor").innerHTML = data.content;
-          }
+          if (data.content) loadContent(data.content);
         } catch (e) {
           console.error("📛 메시지 파싱 실패 (iOS)", e);
         }

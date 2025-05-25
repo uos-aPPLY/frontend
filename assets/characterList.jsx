@@ -7,4 +7,6 @@ export default [
   { name: "sneaky", source: require("./character/char5.png") },
   { name: "annoyed", source: require("./character/char6.png") },
   { name: "proud", source: require("./character/char7.png") },
+  { name: "depression", source: require("./character/char8.png") },
+  { name: "love", source: require("./character/char9.png") },
 ];

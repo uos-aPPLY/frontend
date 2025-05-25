@@ -31,11 +31,11 @@ const screenWidth = Dimensions.get("window").width;
 export default function DiaryPage() {
   const nav = useRouter();
   const { token } = useAuth();
-  const { setMainPhotoId } = usePhoto();
+  const { setPhotoList, setMainPhotoId } = usePhoto();
   const { date: dateParam } = useLocalSearchParams();
   const date = dateParam;
   const parsedDate = parseISO(date);
-  const { resetDiary } = useDiary();
+  const { resetDiary, setDiaryId } = useDiary();
 
   const [diary, setDiary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -176,8 +176,9 @@ export default function DiaryPage() {
         const data = JSON.parse(text);
         console.log("📓 불러온 다이어리 데이터:", data);
         setDiary(data);
+        setDiaryId(data.id);
 
-        // ✅ 대표사진 ID 추출해서 전역 설정
+        setPhotoList(data.photos || []);
         const found = data.photos.find(
           (p) => p.photoUrl === data.representativePhotoUrl
         );
@@ -230,6 +231,8 @@ export default function DiaryPage() {
         date={parsedDate}
         onBack={() => {
           resetDiary();
+          setPhotoList([]);
+          setMainPhotoId(null);
           nav.push("/calendar");
         }}
         onTrashPress={() => setShowConfirmModal(true)}

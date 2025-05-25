@@ -7,9 +7,11 @@ export function DiaryProvider({ children }) {
   const [text, setText] = useState("");
   const [selectedCharacter, setSelectedCharacter] = useState(characterList[0]);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [diaryId, setDiaryId] = useState(null);
 
   const resetDiary = () => {
     setText("");
+    setDiaryId(null);
     setSelectedCharacter(characterList[0]);
     setSelectedDate(new Date()); // null 대신 초기화된 날짜
   };
@@ -24,6 +26,8 @@ export function DiaryProvider({ children }) {
         selectedDate,
         setSelectedDate,
         resetDiary,
+        diaryId,
+        setDiaryId,
       }}
     >
       {children}
