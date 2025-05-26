@@ -1,3 +1,4 @@
+import { InteractionManager } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { uploadPhotos } from "./uploadPhotos";
@@ -29,28 +30,28 @@ export const openGalleryAndUpload = async (token, navigate) => {
       return;
     }
 
-    try {
+    requestAnimationFrame(() => {
       navigate("/loadingPicture");
+    });
 
-      const originalAssets = result.assets;
-
-      const resizedAssets = await Promise.all(
-        originalAssets.map((asset) =>
-          ImageManipulator.manipulateAsync(
-            asset.uri,
-            [{ resize: { width: 400 } }],
-            {
-              compress: 0.5,
-              format: ImageManipulator.SaveFormat.JPEG,
-            }
+    InteractionManager.runAfterInteractions(async () => {
+      try {
+        const originalAssets = result.assets;
+        const resizedAssets = await Promise.all(
+          originalAssets.map((asset) =>
+            ImageManipulator.manipulateAsync(
+              asset.uri,
+              [{ resize: { width: 400 } }],
+              { compress: 0.5, format: ImageManipulator.SaveFormat.JPEG }
+            )
           )
-        )
-      );
+        );
 
-      await uploadPhotos(resizedAssets, token, originalAssets);
-      navigate("/confirmPhoto");
-    } catch (error) {
-      console.error("업로드 실패", error);
-    }
+        await uploadPhotos(resizedAssets, token, originalAssets);
+        navigate("/confirmPhoto");
+      } catch (error) {
+        console.error("업로드 실패", error);
+      }
+    });
   }
 };
