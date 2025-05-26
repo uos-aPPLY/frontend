@@ -1,5 +1,5 @@
 // app/login.js
-import React, { useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   SafeAreaView,
   Image,
@@ -9,11 +9,11 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import * as KakaoLogin from "@react-native-seoul/kakao-login";
 import NaverLogin from "@react-native-seoul/naver-login";
 import { useRouter } from "expo-router";
-import * as Linking from "expo-linking";
 import { useAuth } from "../contexts/AuthContext";
 import Constants from "expo-constants";
 
@@ -28,8 +28,7 @@ const {
 export default function Login() {
   const router = useRouter();
   const { saveToken, checkRequiredAgreed } = useAuth();
-
-  const kakaoRedirectUri = Linking.createURL("oauth", { scheme: "diarypic" });
+  const [loading, setLoading] = useState(false);
 
   // Naver SDK 초기화
   useEffect(() => {
@@ -52,6 +51,7 @@ export default function Login() {
 
   // Naver Login Handler
   const handleNaverLogin = async () => {
+    setLoading(true);
     try {
       const { successResponse, failureResponse } = await NaverLogin.login();
       console.log("Naver Token: ", successResponse);
@@ -88,17 +88,19 @@ export default function Login() {
     } catch (e) {
       console.error("네이버 로그인 처리 오류:", e);
       Alert.alert("네이버 로그인 실패", e.message ?? "알 수 없는 오류");
+    } finally {
+      setLoading(false);
     }
   };
 
   // Kakao Login Handler
   const handleKakaoLogin = async () => {
+    setLoading(true);
     try {
-      // iOS 시뮬레이터는 KakaoTalk 앱이 없으므로 계정 로그인으로 바로 진입
       const token =
         Platform.OS === "ios"
           ? await KakaoLogin.loginWithKakaoAccount()
-          : await KakaoLogin.login(); // 안드로이드는 그대로 사용
+          : await KakaoLogin.login();
       console.log(token);
       const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
         method: "POST",
@@ -118,11 +120,18 @@ export default function Login() {
     } catch (e) {
       console.error("Kakao login error", e);
       Alert.alert("카카오 로그인 실패", e.message ?? "알 수 없는 오류");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#A78C7B" />
+        </View>
+      )}
       <Image
         source={require("../assets/bangulicon.png")}
         style={styles.logo}
@@ -166,6 +175,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#fcf9f4",
     justifyContent: "center",
     alignItems: "center",
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
   },
   logo: {
     width: 120,
