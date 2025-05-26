@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "diarypic",
-    "slug": "diarypic-fe",
+    "name": "DiaryPic",
+    "slug": "diarypic",
     "scheme": ["diarypic"],
     "version": "1.0.0",
     "orientation": "portrait",
@@ -19,7 +19,8 @@
       "bundleIdentifier": "com.apply.diarypic",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "사진을 업로드하기 위해 앨범 접근 권한이 필요합니다.",
-        "NSCameraUsageDescription": "사진 촬영을 위해 카메라 접근 권한이 필요합니다."
+        "NSCameraUsageDescription": "사진 촬영을 위해 카메라 접근 권한이 필요합니다.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
