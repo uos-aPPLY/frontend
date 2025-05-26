@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
   },
   settingsIcon: {
     position: "absolute",
-    top: 60,
+    top: 75,
     right: 30,
     resizeMode: "contain",
     width: 24,

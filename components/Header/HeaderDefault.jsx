@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FCF9F4",
   },
   container: {
-    height: 130,
+    height: 140,
     width: "100%",
     backgroundColor: "#E3A7AD",
     paddingHorizontal: 30,
@@ -70,9 +70,10 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 20,
   },
   logo: {
-    fontSize: 20,
+    fontSize: 22,
     fontFamily: "HomemadeApple_400Regular",
     color: "#fff",
+    marginBottom: -8,
   },
   left: {
     flexDirection: "row",
@@ -80,8 +81,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   char2: {
-    width: 40,
-    height: 38,
+    width: 41,
+    height: 39,
     marginRight: 15,
+    marginLeft: 1,
+    marginTop: 8,
   },
 });
