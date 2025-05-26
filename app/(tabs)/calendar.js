@@ -99,9 +99,12 @@ export default function Calendar({ onDatePress }) {
       setRefreshing(false);
     }
   }, [fetchDiaries]);
-
   if (loading) {
-    return <ActivityIndicator style={{ marginTop: 50 }} />;
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
   }
 
   return (
@@ -140,6 +143,12 @@ export default function Calendar({ onDatePress }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#FCF9F4",
+  },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: "#FCF9F4",
   },
   scrollContent: { flexGrow: 1 },
