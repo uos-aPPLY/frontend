@@ -61,7 +61,7 @@ export default function Header() {
         </TouchableOpacity>
         <IconButton
           source={require("../../assets/icons/brownsearchicon.png")}
-          hsize={22}
+          hsize={23}
           wsize={22}
           onPress={() => {
             nav.push("/search?from=calendar");
@@ -74,14 +74,16 @@ export default function Header() {
 
 const styles = StyleSheet.create({
   container: {
+    width: "100%",
     flexDirection: "row",
     paddingHorizontal: 30,
+    paddingTop: 13,
   },
   char2: {
     width: 44,
     height: 40,
     resizeMode: "contain",
-    marginTop: 8,
+    marginTop: 5,
   },
   dateWrapper: {
     flex: 1,
@@ -103,7 +105,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     flex: 1,
-    gap: 20,
+    gap: 15,
   },
   right: {
     flexDirection: "row",
