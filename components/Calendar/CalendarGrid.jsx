@@ -11,6 +11,7 @@ import {
   Animated,
   Easing,
 } from "react-native";
+import Svg, { Circle } from "react-native-svg";
 import {
   startOfMonth,
   endOfMonth,
@@ -39,12 +40,66 @@ const DAY_ITEM_SIZE = (screenWidth - 60) / 7;
 const screenHeight = Dimensions.get("window").height;
 const TIMEZONE = "Asia/Seoul";
 
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
 const toSeoulDate = (date) =>
   new Date(
     date.toLocaleString("sv", {
       timeZone: TIMEZONE,
     })
   );
+
+const GeneratingProgressCircle = ({ size, duration, text }) => {
+  const progress = useRef(new Animated.Value(0)).current;
+  const STROKE_WIDTH = 3;
+  const radius = size / 2 - STROKE_WIDTH / 2;
+  const circumference = 2 * Math.PI * radius;
+
+  useEffect(() => {
+    progress.setValue(0);
+    Animated.timing(progress, {
+      toValue: 1,
+      duration: duration,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [duration, progress]);
+
+  const strokeDashoffset = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [circumference, circumference * 0.03],
+  });
+
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <AnimatedCircle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="#D68089" // 테두리 색상
+          strokeWidth={STROKE_WIDTH}
+          fill="transparent"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          rotation="-90" // 12시 방향에서 시작하도록 -90도 회전
+          originX={size / 2} // 회전 중심 X
+          originY={size / 2} // 회전 중심 Y
+        />
+      </Svg>
+      <Text style={[styles.generatingDayText, { position: "absolute" }]}>
+        {text}
+      </Text>
+    </View>
+  );
+};
 
 export default function CalendarGrid({
   currentMonth,
@@ -55,42 +110,6 @@ export default function CalendarGrid({
   const router = useRouter();
   const { selectedDate, setSelectedDate } = useDiary();
   const { showEmotion } = useContext(CalendarViewContext);
-
-  const spinAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(1)).current; // 스케일 애니메이션을 위한 Animated.Value
-
-  useEffect(() => {
-    // 회전 애니메이션
-    const spinAnimation = Animated.timing(spinAnim, {
-      toValue: 1,
-      duration: 1800, // 지속 시간 변경
-      easing: Easing.bezier(0.4, 0.0, 0.2, 1), // 부드러운 이징 함수로 변경
-      useNativeDriver: true,
-    });
-    Animated.loop(spinAnimation).start();
-
-    // 크기 변화 (pulsating) 애니메이션
-    const scaleAnimation = Animated.sequence([
-      Animated.timing(scaleAnim, {
-        toValue: 0.9, // 약간 작게
-        duration: 900,
-        easing: Easing.inOut(Easing.quad),
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1, // 원래 크기로
-        duration: 900,
-        easing: Easing.inOut(Easing.quad),
-        useNativeDriver: true,
-      }),
-    ]);
-    Animated.loop(scaleAnimation).start();
-  }, [spinAnim, scaleAnim]);
-
-  const spinInterpolate = spinAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0deg", "360deg"],
-  });
 
   const panResponder = React.useMemo(
     () =>
@@ -212,20 +231,11 @@ export default function CalendarGrid({
               >
                 {isGenerating ? (
                   <View style={styles.generatingWrapper}>
-                    <Animated.View
-                      style={[
-                        styles.generatingBorder,
-                        {
-                          transform: [
-                            { rotate: spinInterpolate },
-                            { scale: scaleAnim },
-                          ],
-                        },
-                      ]}
+                    <GeneratingProgressCircle
+                      size={DAY_ITEM_SIZE * 0.9}
+                      duration={25000}
+                      text={format(daySeoul, "d")}
                     />
-                    <Text style={styles.generatingDayText}>
-                      {format(daySeoul, "d")}
-                    </Text>
                   </View>
                 ) : showEmotion && emotionSource ? (
                   <Image source={emotionSource} style={styles.dayEmotionIcon} />
@@ -337,17 +347,6 @@ const styles = StyleSheet.create({
     height: DAY_ITEM_SIZE * 0.9,
     justifyContent: "center",
     alignItems: "center",
-  },
-  generatingBorder: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: DAY_ITEM_SIZE * 0.9,
-    height: DAY_ITEM_SIZE * 0.9,
-    borderWidth: 3,
-    borderColor: "#D68089",
-    borderTopColor: "transparent",
-    borderRadius: (DAY_ITEM_SIZE * 0.9) / 2,
   },
   generatingDayText: {
     fontSize: 18,

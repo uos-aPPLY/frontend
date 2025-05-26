@@ -43,6 +43,7 @@ npm install fast-uri
 npx expo install expo-linear-gradient
 npx expo install react-native-safe-area-context
 npx expo install expo-haptics
+npx expo install react-native-svg
 ```
 
 ## Prettier 설정
