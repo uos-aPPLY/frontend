@@ -9,6 +9,7 @@ import {
   ScrollView,
   Image,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import Constants from "expo-constants";
@@ -35,11 +36,41 @@ const templates = {
 export default function SpeechStyle() {
   const router = useRouter();
   const { from } = useLocalSearchParams();
+  const stylesArray = Object.keys(templates);
   const [selected, setSelected] = useState(null);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalText, setModalText] = useState(text);
+
+  useEffect(() => {
+    if (from === "settings") {
+      (async () => {
+        setLoading(true);
+        try {
+          const token = await SecureStore.getItemAsync("accessToken");
+          if (!token) throw new Error("인증 토큰이 없습니다.");
+
+          const res = await fetch(`${BACKEND_URL}/api/users/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (!res.ok) throw new Error("사용자 정보 조회 실패");
+
+          const user = await res.json();
+          const { writingStylePrompt, writingStyleNumber } = user;
+          const styleKey = stylesArray[writingStyleNumber];
+          if (styleKey) {
+            setSelected(styleKey);
+            setText(writingStylePrompt);
+          }
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setLoading(false);
+        }
+      })();
+    }
+  }, [from]);
 
   useEffect(() => {
     setModalText(text);
@@ -65,13 +96,14 @@ export default function SpeechStyle() {
       const token = await SecureStore.getItemAsync("accessToken");
       if (!token) throw new Error("인증 토큰이 없습니다.");
 
+      const writingStyleNumber = stylesArray.indexOf(selected);
       const response = await fetch(`${BACKEND_URL}/api/users/writing-style`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ prompt: text.trim() }),
+        body: JSON.stringify({ prompt: text.trim(), writingStyleNumber }),
       });
 
       if (!response.ok) {
@@ -92,8 +124,15 @@ export default function SpeechStyle() {
     }
   };
 
-  const stylesArray = Object.keys(templates);
   const isValid = selected !== null && !loading;
+
+  if (loading && from === "settings" && !selected) {
+    return (
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -181,6 +220,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#fcf9f4",
     paddingTop: 70,
     paddingHorizontal: 30,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fcf9f4",
   },
   header: { marginBottom: 20 },
   backButton: { position: "absolute", top: 80, left: 30, padding: 8 },
