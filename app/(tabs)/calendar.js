@@ -1,5 +1,5 @@
 // app/(tabs)/calendar.js
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   ActivityIndicator,
@@ -12,7 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
-import { addMonths, subMonths } from "date-fns";
+import { addMonths, subMonths, format } from "date-fns";
 import HeaderCalender from "../../components/Header/HeaderCalendar";
 import MonthNavigator from "../../components/Calendar/MonthNavigator";
 import CalendarGrid from "../../components/Calendar/CalendarGrid";
@@ -27,32 +27,43 @@ export default function Calendar({ onDatePress }) {
   const [loading, setLoading] = useState(true);
   const [showEmotion, setShowEmotion] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const isFirstLoad = useRef(true);
 
-  // ✅ fetchDiaries 함수 분리 (withLoading 옵션 추가)
-  const fetchDiaries = useCallback(async (withLoading = false) => {
-    try {
-      if (withLoading) setLoading(true);
-      const token = await SecureStore.getItemAsync("accessToken");
-      const res = await fetch(`${BACKEND_URL}/api/diaries`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const json = await res.json();
-      const map = {};
-      json.content.forEach((item) => {
-        map[item.diaryDate] = item;
-      });
-      setDiariesByDate(map);
-    } catch (e) {
-      console.error("❌ fetchDiaries 에러:", e);
-    } finally {
-      if (withLoading) setLoading(false);
-    }
-  }, []);
+  const fetchDiaries = useCallback(
+    async (withLoading = false) => {
+      try {
+        if (withLoading) setLoading(true);
+        const token = await SecureStore.getItemAsync("accessToken");
+        const year = format(currentMonth, "yyyy");
+        const month = format(currentMonth, "MM");
+        const res = await fetch(
+          `${BACKEND_URL}/api/diaries/calendar?year=${year}&month=${month}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const data = await res.json();
+        const map = {};
+        data.forEach((item) => {
+          map[item.diaryDate] = item;
+        });
+        setDiariesByDate(map);
+      } catch (e) {
+        console.error("fetchDiaries 에러:", e);
+      } finally {
+        if (withLoading) setLoading(false);
+      }
+    },
+    [currentMonth]
+  );
 
-  // ✅ 앱 최초 로딩 시 1회
   useEffect(() => {
     fetchDiaries(true);
-  }, [fetchDiaries]);
+    isFirstLoad.current = false;
+  }, []);
+
+  useEffect(() => {
+    if (isFirstLoad.current) return;
+    fetchDiaries(false);
+  }, [currentMonth]);
 
   // ✅ 캘린더 화면에 포커스될 때마다 새로고침 + 30초 주기 인터벌 실행
   useFocusEffect(
@@ -101,7 +112,11 @@ export default function Calendar({ onDatePress }) {
   }, [fetchDiaries]);
 
   if (loading) {
-    return <ActivityIndicator style={{ marginTop: 50 }} />;
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
   }
 
   return (
@@ -140,6 +155,12 @@ export default function Calendar({ onDatePress }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#FCF9F4",
+  },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: "#FCF9F4",
   },
   scrollContent: { flexGrow: 1 },

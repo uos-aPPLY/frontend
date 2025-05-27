@@ -1,5 +1,5 @@
 // components/Calendar/CalendarGrid.jsx
-import React, { useState, useContext } from "react";
+import React, { useContext, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,10 @@ import {
   Image,
   Dimensions,
   PanResponder,
+  Animated,
+  Easing,
 } from "react-native";
+import Svg, { Circle } from "react-native-svg";
 import {
   startOfMonth,
   endOfMonth,
@@ -29,15 +32,15 @@ import {
 } from "@expo-google-fonts/inter";
 import { useRouter } from "expo-router";
 import { useDiary } from "../../contexts/DiaryContext";
-import { useAuth } from "../../contexts/AuthContext";
 import { CalendarViewContext } from "../../contexts/CalendarViewContext";
 import characterList from "../../assets/characterList";
-import Constants from "expo-constants";
 
 const screenWidth = Dimensions.get("window").width;
 const DAY_ITEM_SIZE = (screenWidth - 60) / 7;
 const screenHeight = Dimensions.get("window").height;
 const TIMEZONE = "Asia/Seoul";
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 const toSeoulDate = (date) =>
   new Date(
@@ -46,6 +49,58 @@ const toSeoulDate = (date) =>
     })
   );
 
+const GeneratingProgressCircle = ({ size, duration, text }) => {
+  const progress = useRef(new Animated.Value(0)).current;
+  const STROKE_WIDTH = 3;
+  const radius = size / 2 - STROKE_WIDTH / 2;
+  const circumference = 2 * Math.PI * radius;
+
+  useEffect(() => {
+    progress.setValue(0);
+    Animated.timing(progress, {
+      toValue: 1,
+      duration: duration,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [duration, progress]);
+
+  const strokeDashoffset = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [circumference, circumference * 0.03],
+  });
+
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <AnimatedCircle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="#D68089" // 테두리 색상
+          strokeWidth={STROKE_WIDTH}
+          fill="transparent"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          rotation="-90" // 12시 방향에서 시작하도록 -90도 회전
+          originX={size / 2} // 회전 중심 X
+          originY={size / 2} // 회전 중심 Y
+        />
+      </Svg>
+      <Text style={[styles.generatingDayText, { position: "absolute" }]}>
+        {text}
+      </Text>
+    </View>
+  );
+};
+
 export default function CalendarGrid({
   currentMonth,
   diariesByDate,
@@ -53,7 +108,6 @@ export default function CalendarGrid({
   onNext,
 }) {
   const router = useRouter();
-  const { token } = useAuth();
   const { selectedDate, setSelectedDate } = useDiary();
   const { showEmotion } = useContext(CalendarViewContext);
 
@@ -65,11 +119,8 @@ export default function CalendarGrid({
         onMoveShouldSetPanResponderCapture: (_, { dx, dy }) =>
           Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10,
         onPanResponderRelease: (_, { dx }) => {
-          if (dx > 50) {
-            onPrev?.();
-          } else if (dx < -50) {
-            onNext?.();
-          }
+          if (dx > 50) onPrev?.();
+          else if (dx < -50) onNext?.();
         },
       }),
     [onPrev, onNext]
@@ -124,6 +175,7 @@ export default function CalendarGrid({
             const dateStr = format(daySeoul, "yyyy-MM-dd");
             const entry = diariesByDate[dateStr] || null;
             const hasDiary = Boolean(entry);
+            const isGenerating = entry?.status === "generating";
             const isCurrentMonth = isSameMonth(daySeoul, currentMonth);
             const isToday = dateStr === todayStr;
             const isFuture = daySeoul > todaySeoul;
@@ -139,49 +191,33 @@ export default function CalendarGrid({
               emotionSource = found?.source ?? null;
             }
 
-            const hasRepresentativePhoto =
-              hasDiary && entry.representativePhotoUrl;
+            const hasPhoto = hasDiary && entry.representativePhotoUrl;
+            const isUnconfirmed = hasPhoto && entry.status === "unconfirmed";
 
-            const isUnconfirmedWithPhoto =
-              hasRepresentativePhoto && entry.status === "unconfirmed";
-
-            const handlePress = async () => {
-              setSelectedDate(dateStr);
-
-              if (!isCurrentMonth || isFuture) return;
-
-              try {
-                const res = await fetch(
-                  `${Constants.expoConfig.extra.BACKEND_URL}/api/diaries/status?date=${dateStr}`,
-                  {
-                    headers: {
-                      Authorization: `Bearer ${token}`,
-                    },
-                  }
-                );
-
-                const json = await res.json();
-                console.log("📆 상태 확인:", json);
-
-                switch (json.status) {
-                  case "none":
-                    router.push(`/create?date=${dateStr}&from=calendar`);
-                    break;
-                  case "generating":
-                    router.push(`/loadingDiary?date=${dateStr}`);
-                    break;
-                  case "exists":
-                    router.push(`/diary/${dateStr}`);
-                    break;
-                  default:
-                    console.warn("❓ 알 수 없는 상태:", json?.status);
+            const handlePress = () => {
+              if (isGenerating) {
+                router.push(`/loadingDiary?date=${dateStr}`);
+                return;
+              }
+              if (hasDiary) {
+                router.push(`/diary/${dateStr}`);
+              } else if (isPastNoDiary) {
+                if (selectedDate === dateStr) {
+                  setSelectedDate(dateStr);
+                  router.push(`/create?date=${dateStr}&from=calendar`);
+                } else {
+                  setSelectedDate(dateStr);
                 }
-              } catch (err) {
-                console.error("❌ 상태 조회 실패:", err);
+              } else if (isToday) {
+                if (todayHasDiary) {
+                  router.push(`/diary/${dateStr}`);
+                } else {
+                  router.push(`/create?date=${dateStr}&from=calendar`);
+                }
               }
             };
 
-            const shouldShowDateText =
+            const showText =
               (!showEmotion || !hasDiary) &&
               selectedDate !== dateStr &&
               !(isToday && !todayHasDiary);
@@ -193,7 +229,15 @@ export default function CalendarGrid({
                 onPress={handlePress}
                 disabled={!isCurrentMonth}
               >
-                {showEmotion && emotionSource ? (
+                {isGenerating ? (
+                  <View style={styles.generatingWrapper}>
+                    <GeneratingProgressCircle
+                      size={DAY_ITEM_SIZE * 0.9}
+                      duration={25000}
+                      text={format(daySeoul, "d")}
+                    />
+                  </View>
+                ) : showEmotion && emotionSource ? (
                   <Image source={emotionSource} style={styles.dayEmotionIcon} />
                 ) : isToday && !todayHasDiary && selectedDate !== dateStr ? (
                   <Image
@@ -201,8 +245,8 @@ export default function CalendarGrid({
                     style={styles.plusIcon}
                   />
                 ) : hasDiary ? (
-                  hasRepresentativePhoto ? (
-                    isUnconfirmedWithPhoto ? (
+                  hasPhoto ? (
+                    isUnconfirmed ? (
                       <LinearGradient
                         colors={["#D68089", "#FFBB91"]}
                         locations={[1, 0]}
@@ -239,11 +283,11 @@ export default function CalendarGrid({
                   <View style={styles.dayPlaceholder} />
                 )}
 
-                {shouldShowDateText && (
+                {showText && (
                   <View style={styles.dayTextWrapper}>
                     <Text
                       style={[
-                        styles.actualDayText, // Changed from styles.dayText
+                        styles.actualDayText,
                         !isCurrentMonth && styles.inactiveDayText,
                       ]}
                     >
@@ -297,6 +341,17 @@ const styles = StyleSheet.create({
     height: DAY_ITEM_SIZE,
     alignItems: "center",
     justifyContent: "center",
+  },
+  generatingWrapper: {
+    width: DAY_ITEM_SIZE * 0.9,
+    height: DAY_ITEM_SIZE * 0.9,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  generatingDayText: {
+    fontSize: 18,
+    color: "#D68089",
+    fontFamily: "Inter_600SemiBold",
   },
   dayEmotionIcon: {
     width: DAY_ITEM_SIZE * 0.9,

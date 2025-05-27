@@ -21,7 +21,7 @@ export default function SettingsPage() {
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
   const goBack = () => {
-    router.back();
+    router.replace("/profile");
   };
   const handleLogoutConfirm = () => {
     setLogoutModalVisible(false);
@@ -88,7 +88,8 @@ export default function SettingsPage() {
             if (t === "휴지통") {
               onPress = () => router.push("/settings/waste");
             } else if (t === "말투 커스터마이징") {
-              onPress = () => router.push("/speechstyle?from=settings");
+              onPress = () =>
+                router.push("/settings/speechstyle?from=settings");
             } else if (t === "기본 키워드 설정") {
               onPress = () => router.push("/settings/defaultkeywords");
             }

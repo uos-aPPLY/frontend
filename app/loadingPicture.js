@@ -16,14 +16,14 @@ export default function LoadingPage() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      {/* <View style={styles.header}>
         <IconButton
           source={require("../assets/icons/backicon.png")}
           wsize={22}
           hsize={22}
           onPress={() => nav.push("/create")}
         />
-      </View>
+      </View> */}
 
       <View style={styles.loadingArea}>
         <ActivityIndicator size="large" color="#D68089" />

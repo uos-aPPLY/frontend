@@ -139,7 +139,7 @@ export default function SpeechStyle() {
       {isValid && (
         <View style={styles.editorContainer}>
           <Text style={styles.descriptionText}>
-            말투 커스터마이징이 가능해요.
+            아래의 말투를 누르면 커스터마이징이 가능해요.
           </Text>
 
           <TouchableOpacity
