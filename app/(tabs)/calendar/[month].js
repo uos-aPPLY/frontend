@@ -1,4 +1,4 @@
-// app/diaries/[month].js
+// app/(tabs)/calendar/[month].js
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -16,7 +16,7 @@ import { useLocalSearchParams } from "expo-router";
 import { useRouter } from "expo-router";
 import { parse, format } from "date-fns";
 import { LinearGradient } from "expo-linear-gradient";
-import HeaderSettings from "../../components/Header/HeaderSettings";
+import HeaderSettings from "../../../components/Header/HeaderSettings";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
@@ -36,7 +36,7 @@ export default function DiaryList() {
   );
 
   const goBack = () => {
-    router.replace("/calendar");
+    router.back();
   };
 
   useEffect(() => {
@@ -130,7 +130,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#FCF9F4",
   },
   listContent: {
-    marginTop: 14,
     paddingBottom: 20,
     paddingHorizontal: 20,
   },
@@ -179,7 +178,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     textAlign: "center",
-    marginTop: 50,
+    marginTop: 30,
     fontSize: 16,
     color: "#999",
   },

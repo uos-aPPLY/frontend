@@ -116,7 +116,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#FCF9F4",
   },
   listContent: {
-    marginTop: 14,
     paddingBottom: 20,
     paddingHorizontal: 20,
   },

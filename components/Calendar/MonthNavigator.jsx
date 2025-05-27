@@ -29,7 +29,7 @@ export default function MonthNavigator({ currentMonth, onPrev, onNext }) {
       </TouchableOpacity>
 
       <TouchableOpacity
-        onPress={() => router.push(`/diaries/${monthParam}`)}
+        onPress={() => router.push(`/calendar/${monthParam}`)}
         style={styles.monthButton}
       >
         <Text style={styles.monthText}>{format(currentMonth, "M월")}</Text>
