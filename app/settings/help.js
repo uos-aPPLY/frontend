@@ -4,6 +4,7 @@ import { StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 import { useRouter } from "expo-router";
+import Header from "../../components/Header/HeaderSettings";
 
 export default function HelpPage() {
   const router = useRouter();
@@ -12,6 +13,8 @@ export default function HelpPage() {
   };
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
+      <Header title="문의하기" />
+
       <WebView
         style={styles.webview}
         source={{

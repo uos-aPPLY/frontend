@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image,
   ScrollView,
   TextInput,
 } from "react-native";
@@ -12,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../contexts/AuthContext";
+import Header from "../../components/Header/HeaderSettings";
 
 export default function DefaultKeywordsPage() {
   const router = useRouter();
@@ -77,24 +77,17 @@ export default function DefaultKeywordsPage() {
   };
 
   return (
-    <View style={styles.container} edges={["top"]}>
-      {/* 헤더 */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Image
-            source={require("../../assets/icons/backicon.png")}
-            style={styles.backIcon}
-          />
-        </TouchableOpacity>
-
-        <View style={styles.headerTitleWrapper}>
-          <Text style={styles.headerTitle}>키워드 설정</Text>
-        </View>
-
-        <TouchableOpacity onPress={() => setIsEditMode((prev) => !prev)}>
-          <Text style={styles.editText}>{isEditMode ? "확인" : "수정"}</Text>
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      <Header
+        title="키워드 설정"
+        rightComponent={
+          <TouchableOpacity onPress={() => setIsEditMode((prev) => !prev)}>
+            <Text style={styles.headerEditText}>
+              {isEditMode ? "확인" : "수정"}
+            </Text>
+          </TouchableOpacity>
+        }
+      />
 
       <Text style={styles.description}>
         포커스 키워드 설정 시 기본 키워드로 제공돼요.
@@ -130,7 +123,7 @@ export default function DefaultKeywordsPage() {
           </View>
         )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -138,34 +131,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FCF9F4",
-    paddingTop: 26,
   },
-  header: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 37,
-    paddingTop: 63,
-    paddingBottom: 10,
-    backgroundColor: "#FCF9F4",
-  },
-  backIcon: {
-    width: 12,
-    height: 22,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#A78C7B",
-    textAlign: "center",
-    flex: 1,
-  },
-  editText: {
+  headerEditText: {
     fontSize: 16,
     color: "#A78C7B",
   },
-
   description: {
     fontSize: 12,
     textAlign: "center",

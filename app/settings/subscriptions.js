@@ -11,14 +11,11 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import ConfirmModal from "../../components/Modal/ConfirmModal";
+import Header from "../../components/Header/HeaderSettings";
 
 export default function SubscriptionsPage() {
   const router = useRouter();
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
-
-  const goBack = () => {
-    router.back();
-  };
 
   const handleUpgradePress = () => {
     setPaymentModalVisible(true);
@@ -31,17 +28,7 @@ export default function SubscriptionsPage() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <TouchableOpacity style={styles.backButton} onPress={goBack}>
-        <Image
-          source={require("../../assets/icons/backicon.png")}
-          style={styles.backicon}
-          resizeMode="contain"
-        />
-      </TouchableOpacity>
-
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>구독 내역</Text>
-      </View>
+      <Header title="구독 내역" />
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.table}>
@@ -86,31 +73,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FCF9F4",
-    paddingTop: 26,
-  },
-  backButton: {
-    position: "absolute",
-    top: 80,
-    left: 30,
-    padding: 8,
-    zIndex: 1,
-  },
-  backicon: {
-    width: 12,
-    height: 22,
-  },
-  header: {
-    paddingHorizontal: 30,
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 30,
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#A78C7B",
   },
   content: {
     paddingHorizontal: 30,

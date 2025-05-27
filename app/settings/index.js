@@ -14,6 +14,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import Withdrawal from "../../components/Settings/Withdrawal";
 import ConfirmModal from "../../components/Modal/ConfirmModal";
 import NotificationSettings from "../../components/Settings/NotificationSettings";
+import Header from "../../components/Header/HeaderSettings";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -40,19 +41,7 @@ export default function SettingsPage() {
         onCancel={() => setLogoutModalVisible(false)}
         onConfirm={handleLogoutConfirm}
       />
-
-      <Pressable onPress={goBack} style={styles.backButton}>
-        <Image
-          source={require("../../assets/icons/backicon.png")}
-          style={styles.backicon}
-          resizeMode="contain"
-        />
-      </Pressable>
-
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>설정</Text>
-      </View>
-
+      <Header title="설정" />
       <ScrollView>
         <NotificationSettings />
 
@@ -137,28 +126,7 @@ export default function SettingsPage() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FCF9F4", paddingTop: 26 },
-  header: {
-    paddingHorizontal: 30,
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 40,
-  },
-  backButton: {
-    position: "absolute",
-    top: 80,
-    left: 30,
-    padding: 8,
-    zIndex: 1,
-  },
-  backicon: { width: 12, height: 22 },
-  headerTitle: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#A78C7B",
-  },
+  container: { flex: 1, backgroundColor: "#FCF9F4" },
   section: { paddingHorizontal: 30, marginBottom: 24 },
   sectionTitle: {
     fontSize: 18,
