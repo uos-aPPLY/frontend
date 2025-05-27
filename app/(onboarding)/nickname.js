@@ -17,6 +17,18 @@ import * as SecureStore from "expo-secure-store";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
+const HEADER_HEIGHT_REFERENCE = 50;
+const BUTTON_PADDING = 8; // 각 파일의 backButton 스타일에 있는 padding 값과 일치해야 함
+const ICON_HEIGHT = 22; // 각 파일의 backicon 스타일에 있는 height 값과 일치해야 함
+const ICON_WIDTH = 12; // 각 파일의 backicon 스타일에 있는 width 값과 일치해야 함
+const ICON_HORIZONTAL_POSITION_REFERENCE = 30; // 아이콘이 화면 가장자리로부터 떨어지는 시각적 목표 거리
+
+const touchableAreaHeight = ICON_HEIGHT + BUTTON_PADDING * 2;
+const topOffsetInHeader = (HEADER_HEIGHT_REFERENCE - touchableAreaHeight) / 2;
+const absoluteTopPosition = Constants.statusBarHeight + topOffsetInHeader;
+const absoluteLeftPosition =
+  ICON_HORIZONTAL_POSITION_REFERENCE - BUTTON_PADDING;
+
 const Nickname = () => {
   const router = useRouter();
   const [nickname, setNickname] = useState("");
@@ -104,7 +116,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fcf9f4",
-    paddingTop: 50,
+    paddingTop: 30,
     paddingHorizontal: 30,
   },
   keyboardContainer: {
@@ -112,13 +124,14 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: "absolute",
-    top: 80,
-    left: 30,
-    padding: 8,
+    top: absoluteTopPosition, // 수정된 top 값
+    left: absoluteLeftPosition, // 수정된 left 값
+    padding: BUTTON_PADDING, // 상수 값 사용
+    zIndex: 1, // 다른 요소 위에 오도록 설정
   },
   backicon: {
-    width: 12,
-    height: 22,
+    width: ICON_WIDTH, // 상수 값 사용
+    height: ICON_HEIGHT, // 상수 값 사용
   },
   title: {
     fontSize: 24,

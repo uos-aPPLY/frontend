@@ -18,6 +18,19 @@ import TextEditorModal from "../../components/Modal/TextEditorModal";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
+const HEADER_HEIGHT_REFERENCE = 50;
+const BUTTON_PADDING = 8;
+const ICON_HEIGHT = 22;
+const ICON_WIDTH = 12;
+const ICON_HORIZONTAL_POSITION_REFERENCE = 30;
+
+const touchableAreaHeight = ICON_HEIGHT + BUTTON_PADDING * 2;
+const topOffsetInHeader = (HEADER_HEIGHT_REFERENCE - touchableAreaHeight) / 2;
+const absoluteTopPosition = Constants.statusBarHeight + topOffsetInHeader;
+
+const absoluteLeftPosition =
+  ICON_HORIZONTAL_POSITION_REFERENCE - BUTTON_PADDING;
+
 const templates = {
   기록형:
     "오늘은 아침 8시에 일어났다. 날씨가 흐려서 그런지 몸이 조금 무거웠다. 오전엔 도서관에서 공부했고, 오후엔 친구와 카페에서 얘기를 나눴다. 하루가 평범하게 흘러갔다.",
@@ -218,7 +231,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fcf9f4",
-    paddingTop: 70,
+    paddingTop: 50,
     paddingHorizontal: 30,
   },
   loaderContainer: {
@@ -228,15 +241,24 @@ const styles = StyleSheet.create({
     backgroundColor: "#fcf9f4",
   },
   header: { marginBottom: 20 },
-  backButton: { position: "absolute", top: 80, left: 30, padding: 8 },
-  backicon: { width: 12, height: 22 },
+  backButton: {
+    position: "absolute",
+    top: absoluteTopPosition, // 수정된 top 값
+    left: absoluteLeftPosition, // 수정된 left 값
+    padding: BUTTON_PADDING, // 상수 값 사용
+    zIndex: 1,
+  },
+  backicon: {
+    width: ICON_WIDTH, // 상수 값 사용
+    height: ICON_HEIGHT, // 상수 값 사용
+  },
   title: {
     fontSize: 24,
     fontWeight: "bold",
     lineHeight: 36,
     textAlign: "left",
   },
-  scrollContent: { paddingTop: 10 },
+  scrollContent: {},
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -267,7 +289,7 @@ const styles = StyleSheet.create({
     marginLeft: 5,
     marginBottom: 5,
   },
-  editorContainer: {},
+  editorContainer: { paddingTop: 10 },
   textInput: {
     height: 120,
     borderRadius: 20,

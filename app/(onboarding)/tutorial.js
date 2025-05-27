@@ -11,6 +11,7 @@ import {
   Image,
 } from "react-native";
 import { useRouter } from "expo-router";
+import Constants from "expo-constants";
 
 const { width } = Dimensions.get("window");
 const pages = [
@@ -38,6 +39,18 @@ const pages = [
     subtitle: "모든 일기는 캘린더로 한눈에 정리돼요",
   },
 ];
+
+const HEADER_HEIGHT_REFERENCE = 50;
+const BUTTON_PADDING = 8;
+const ICON_HEIGHT = 22;
+const ICON_HORIZONTAL_POSITION_REFERENCE = 30;
+
+const touchableAreaHeight = ICON_HEIGHT + BUTTON_PADDING * 2;
+const topOffsetInHeader = (HEADER_HEIGHT_REFERENCE - touchableAreaHeight) / 2;
+const absoluteTopPosition = Constants.statusBarHeight + topOffsetInHeader;
+
+const absoluteLeftPosition =
+  ICON_HORIZONTAL_POSITION_REFERENCE - BUTTON_PADDING;
 
 export default function Tutorial() {
   const scrollRef = useRef(null);
@@ -120,12 +133,12 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: "absolute",
-    top: 80,
-    left: 30,
-    padding: 8,
+    top: absoluteTopPosition,
+    left: absoluteLeftPosition,
+    padding: BUTTON_PADDING,
     zIndex: 1,
   },
-  backicon: { width: 12, height: 22 },
+  backicon: { width: 12, height: ICON_HEIGHT },
   scrollView: { flex: 1 },
   contentContainer: { alignItems: "center" },
   page: {

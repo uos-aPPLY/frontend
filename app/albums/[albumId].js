@@ -15,6 +15,7 @@ import Constants from "expo-constants";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { parse, format } from "date-fns";
 import { LinearGradient } from "expo-linear-gradient";
+import HeaderSettings from "../../components/Header/HeaderSettings";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
@@ -58,16 +59,7 @@ export default function AlbumDiaryList() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <TouchableOpacity onPress={goBack} style={styles.backButton}>
-        <Image
-          source={require("../../assets/icons/backicon.png")}
-          style={styles.backIcon}
-          resizeMode="contain"
-        />
-      </TouchableOpacity>
-      <View style={styles.headerContainer}>
-        <Text style={styles.title}>{title}</Text>
-      </View>
+      <HeaderSettings title={title} onBackPress={goBack} />
 
       <FlatList
         data={diaries}
@@ -116,33 +108,12 @@ export default function AlbumDiaryList() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FCF9F4", paddingTop: 26 },
+  container: { flex: 1, backgroundColor: "#FCF9F4" },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#FCF9F4",
-  },
-  headerContainer: {
-    paddingHorizontal: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  backButton: {
-    padding: 8,
-    position: "absolute",
-    top: 80,
-    left: 20,
-    zIndex: 1,
-  },
-  backIcon: { width: 24, height: 24 },
-  title: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: 20,
-    fontFamily: "Inter_600SemiBold",
-    color: "#A78C7B",
   },
   listContent: {
     marginTop: 14,

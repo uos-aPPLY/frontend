@@ -22,8 +22,8 @@ export default function HeaderDate({ date, onBack, onTrashPress }) {
     <View style={styles.header}>
       <IconButton
         source={require("../../assets/icons/backicon.png")}
-        hsize={24}
-        wsize={24}
+        hsize={22}
+        wsize={22}
         style={styles.back}
         onPress={onBack}
       />
@@ -33,8 +33,8 @@ export default function HeaderDate({ date, onBack, onTrashPress }) {
 
       <IconButton
         source={require("../../assets/icons/trashcanicon.png")}
-        hsize={24}
-        wsize={24}
+        hsize={22}
+        wsize={22}
         onPress={onTrashPress}
       />
     </View>
@@ -45,12 +45,13 @@ const styles = StyleSheet.create({
   header: {
     width: "100%",
     paddingHorizontal: 30,
-    paddingTop: 75,
+    paddingTop: 60,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: "#FCF9F4",
     marginBottom: 15,
+    resizeMode: "contain",
   },
   date: {
     fontSize: 18,
