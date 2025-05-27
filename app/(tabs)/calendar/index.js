@@ -1,4 +1,4 @@
-// app/(tabs)/calendar.js
+// app/(tabs)/calendar/index.js
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
@@ -13,10 +13,10 @@ import * as Haptics from "expo-haptics";
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
 import { addMonths, subMonths, format } from "date-fns";
-import HeaderCalender from "../../components/Header/HeaderCalendar";
-import MonthNavigator from "../../components/Calendar/MonthNavigator";
-import CalendarGrid from "../../components/Calendar/CalendarGrid";
-import { CalendarViewContext } from "../../contexts/CalendarViewContext";
+import HeaderCalender from "../../../components/Header/HeaderCalendar";
+import MonthNavigator from "../../../components/Calendar/MonthNavigator";
+import CalendarGrid from "../../../components/Calendar/CalendarGrid";
+import { CalendarViewContext } from "../../../contexts/CalendarViewContext";
 import { useFocusEffect } from "@react-navigation/native";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
@@ -72,9 +72,9 @@ export default function Calendar({ onDatePress }) {
       fetchDiaries(false); // 진입 시 1회
 
       const intervalId = setInterval(() => {
-        console.log("⏱ 10초마다 캘린더 새로고침 실행");
+        console.log("⏱ 8초마다 캘린더 새로고침 실행");
         fetchDiaries(false); // 조용한 자동 새로고침
-      }, 10000);
+      }, 8000);
 
       return () => {
         console.log("👋 캘린더 탭 이탈 → 인터벌 제거");
@@ -162,6 +162,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#FCF9F4",
+    color: "#AC8B78",
   },
   scrollContent: { flexGrow: 1 },
   headerWrapper: {

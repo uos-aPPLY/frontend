@@ -16,6 +16,7 @@ import Constants from "expo-constants";
 import { LinearGradient } from "expo-linear-gradient";
 import ConfirmModal from "../../components/Modal/ConfirmModal";
 import CheckBox from "../../components/CheckBox";
+import HeaderSettings from "../../components/Header/HeaderSettings";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
@@ -151,6 +152,23 @@ export default function WastePage() {
     );
   }
 
+  const rightHeaderTextComponent = (
+    <TouchableOpacity
+      onPress={() => {
+        if (selectionMode) {
+          setSelectionMode(false);
+          setSelectedIds(new Set());
+        } else {
+          setSelectionMode(true);
+        }
+      }}
+    >
+      <Text style={styles.headerActionText}>
+        {selectionMode ? "취소" : "선택"}
+      </Text>
+    </TouchableOpacity>
+  );
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <ConfirmModal
@@ -173,31 +191,10 @@ export default function WastePage() {
         onConfirm={handleConfirm}
       />
 
-      {/* Header */}
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <Image
-          source={require("../../assets/icons/backicon.png")}
-          style={styles.backicon}
-        />
-      </TouchableOpacity>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>휴지통</Text>
-        <TouchableOpacity
-          style={styles.headerActionButton}
-          onPress={() => {
-            if (selectionMode) {
-              setSelectionMode(false);
-              setSelectedIds(new Set());
-            } else {
-              setSelectionMode(true);
-            }
-          }}
-        >
-          <Text style={styles.headerAction}>
-            {selectionMode ? "취소" : "선택"}
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <HeaderSettings
+        title="휴지통"
+        rightComponent={rightHeaderTextComponent}
+      />
 
       <FlatList
         data={diaries}
@@ -240,30 +237,14 @@ export default function WastePage() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FCF9F4", paddingTop: 26 },
+  container: { flex: 1, backgroundColor: "#FCF9F4" },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  backButton: {
-    position: "absolute",
-    top: 80,
-    left: 30,
-    padding: 8,
-    zIndex: 1,
+  headerActionText: {
+    fontSize: 16,
+    color: "#A78C7B",
+    fontWeight: "600",
   },
-  backicon: { width: 12, height: 22 },
-  header: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "center",
-  },
-  headerTitle: { fontSize: 20, fontWeight: "700", color: "#A78C7B" },
-  headerAction: { fontSize: 16, color: "#A78C7B", fontWeight: "600" },
-  headerActionButton: {
-    position: "absolute",
-    right: 36,
-  },
-  listContent: { padding: 20 },
+  listContent: { paddingHorizontal: 20, paddingBottom: 20 },
   card: {
     flexDirection: "row",
     backgroundColor: "#FFFEFE",

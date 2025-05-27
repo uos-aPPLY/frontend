@@ -13,6 +13,20 @@ import {
 import { useRouter } from "expo-router";
 import { useAuth } from "../../contexts/AuthContext";
 import CheckBox from "../../components/CheckBox";
+import Constants from "expo-constants";
+
+const HEADER_HEIGHT_REFERENCE = 50;
+const BUTTON_PADDING = 8;
+const ICON_HEIGHT = 22;
+const ICON_WIDTH = 12;
+const ICON_HORIZONTAL_POSITION_REFERENCE = 30;
+
+const touchableAreaHeight = ICON_HEIGHT + BUTTON_PADDING * 2;
+const topOffsetInHeader = (HEADER_HEIGHT_REFERENCE - touchableAreaHeight) / 2;
+const absoluteTopPosition = Constants.statusBarHeight + topOffsetInHeader;
+
+const absoluteLeftPosition =
+  ICON_HORIZONTAL_POSITION_REFERENCE - BUTTON_PADDING;
 
 export default function Terms() {
   const router = useRouter();
@@ -145,23 +159,20 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: "#fcf9f4",
     flex: 1,
-    paddingTop: 50,
+    paddingTop: 30,
     paddingLeft: 30,
     paddingRight: 30,
   },
   backButton: {
     position: "absolute",
-    top: 80,
-    left: 30,
-    padding: 8,
+    top: absoluteTopPosition, // 수정된 top 값
+    left: absoluteLeftPosition, // 수정된 left 값
+    padding: BUTTON_PADDING, // 상수 값 사용
+    zIndex: 1, // 다른 요소 위에 오도록 설정
   },
   backicon: {
-    width: 12,
-    height: 22,
-  },
-  backText: {
-    fontSize: 16,
-    color: "#333",
+    width: ICON_WIDTH, // 상수 값 사용
+    height: ICON_HEIGHT, // 상수 값 사용
   },
   header: {
     fontSize: 24,

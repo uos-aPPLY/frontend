@@ -205,7 +205,7 @@ export default function LoadingDiary() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FCF9F4" },
-  header: { paddingTop: 75, paddingLeft: 30 },
+  header: { paddingTop: 60, paddingLeft: 30 },
   loadingArea: { flex: 1, justifyContent: "center", alignItems: "center" },
   message: {
     marginTop: 16,

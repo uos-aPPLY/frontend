@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     alignContent: "center",
     justifyContent: "center",
     paddingHorizontal: 5,
-    paddingTop: 10,
+    paddingTop: 14,
   },
   weekDaysRow: {
     flexDirection: "row",

@@ -1,4 +1,4 @@
-// app/diaries/[month].js
+// app/(tabs)/calendar/[month].js
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -16,6 +16,7 @@ import { useLocalSearchParams } from "expo-router";
 import { useRouter } from "expo-router";
 import { parse, format } from "date-fns";
 import { LinearGradient } from "expo-linear-gradient";
+import HeaderSettings from "../../../components/Header/HeaderSettings";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
@@ -35,7 +36,7 @@ export default function DiaryList() {
   );
 
   const goBack = () => {
-    router.replace("/calendar");
+    router.back();
   };
 
   useEffect(() => {
@@ -69,16 +70,7 @@ export default function DiaryList() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <TouchableOpacity onPress={goBack} style={styles.backButton}>
-        <Image
-          source={require("../../assets/icons/backicon.png")}
-          style={styles.backicon}
-          resizeMode="contain"
-        />
-      </TouchableOpacity>
-      <View style={styles.headerContainer}>
-        <Text style={styles.monthTitle}>{displayMonth}</Text>
-      </View>
+      <HeaderSettings title={displayMonth} onBackPress={goBack} />
 
       <FlatList
         data={diaries}
@@ -130,7 +122,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FCF9F4",
-    paddingTop: 26,
   },
   center: {
     flex: 1,
@@ -138,32 +129,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#FCF9F4",
   },
-  headerContainer: {
-    paddingHorizontal: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  backButton: {
-    padding: 8,
-    position: "absolute",
-    top: 80,
-    left: 20,
-    zIndex: 1,
-  },
-  backicon: {
-    width: 24,
-    height: 24,
-  },
-  monthTitle: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: 20,
-    fontFamily: "Inter_600SemiBold",
-    color: "#A78C7B",
-  },
   listContent: {
-    marginTop: 14,
     paddingBottom: 20,
     paddingHorizontal: 20,
   },
@@ -212,7 +178,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     textAlign: "center",
-    marginTop: 50,
+    marginTop: 30,
     fontSize: 16,
     color: "#999",
   },
