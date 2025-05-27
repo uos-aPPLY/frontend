@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 0,
     left: 0,
-    paddingTop: Platform.OS === "ios" ? 75 : 30,
+    paddingTop: Platform.OS === "ios" ? 60 : 30,
     paddingLeft: 30,
   },
   image: {
