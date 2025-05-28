@@ -1,4 +1,3 @@
-// app/PhotoReorder.js
 import { useEffect, useState, useRef, useMemo } from "react";
 import {
   View,
@@ -9,64 +8,112 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useRouter } from "expo-router";
-import Constants from "expo-constants";
 import DraggableFlatList, {
   ScaleDecorator,
 } from "react-native-draggable-flatlist";
 import { usePhoto } from "../contexts/PhotoContext";
 import IconButton from "../components/IconButton";
-import { useAuth } from "../contexts/AuthContext";
+import ConfirmModal from "../components/Modal/ConfirmModal";
 
 const screenWidth = Dimensions.get("window").width;
 
 export default function PhotoReorder() {
   const router = useRouter();
-  const { token } = useAuth();
-  const { BACKEND_URL } = Constants.expoConfig.extra;
   const flatListRef = useRef(null);
-  const { photoList, setPhotoList, setMainPhotoId } = usePhoto();
+
+  const {
+    tempPhotoList,
+    setTempPhotoList,
+    photoList,
+    setPhotoList,
+    selected,
+    setSelected,
+    mainPhotoId,
+    setMainPhotoId,
+  } = usePhoto();
 
   const [photos, setPhotos] = useState([]);
   const [mainPhotoIdLocal, setMainPhotoIdLocal] = useState(null);
   const [hiddenIds, setHiddenIds] = useState([]);
+  const [isConfirmVisible, setIsConfirmVisible] = useState(false);
+  const [targetPhotoId, setTargetPhotoId] = useState(null);
+
+  const effectivePhotos = useMemo(
+    () => tempPhotoList ?? photoList,
+    [tempPhotoList, photoList]
+  );
 
   const visiblePhotos = useMemo(
-    () => photos.filter((photo) => !hiddenIds.includes(photo.id)),
+    () => photos.filter((p) => !hiddenIds.includes(p.id)),
     [photos, hiddenIds]
   );
 
+  // 초기화
   useEffect(() => {
-    if (photoList.length > 0) {
-      setPhotos(photoList);
-      setMainPhotoIdLocal(photoList[0]?.id || null);
+    setPhotos(effectivePhotos);
+    const valid =
+      effectivePhotos.find((p) => String(p.id) === String(mainPhotoId)) ||
+      effectivePhotos[0];
+    setMainPhotoIdLocal(valid?.id ?? null);
+  }, [effectivePhotos]);
+
+  // 대표사진이 숨겨졌을 때 자동으로 대체
+  useEffect(() => {
+    if (hiddenIds.includes(mainPhotoIdLocal)) {
+      const fallback = photos.find((p) => !hiddenIds.includes(p.id));
+      if (fallback) {
+        setMainPhotoIdLocal(fallback.id);
+      }
     }
-  }, [photoList]);
+  }, [hiddenIds, photos]);
 
   const handleSaveOrder = () => {
-    setPhotoList(visiblePhotos); // ✅ 전역에 순서 저장
-    setMainPhotoId(mainPhotoIdLocal); // ✅ 전역에 대표사진 저장
+    const newOrder = photos.filter((p) => !hiddenIds.includes(p.id));
+    const newIds = newOrder.map((p) => String(p.id));
+
+    setSelected(newIds);
+    setPhotoList(newOrder);
+    setTempPhotoList(null);
+    setMainPhotoId(mainPhotoIdLocal);
+    router.back();
+  };
+
+  const handleBack = () => {
+    setTempPhotoList(null);
     router.back();
   };
 
   const handleHidePhoto = (id) => {
-    setHiddenIds((prev) => [...prev, id]);
+    setTargetPhotoId(id);
+    setIsConfirmVisible(true);
+  };
+
+  const onConfirmDelete = () => {
+    if (targetPhotoId) {
+      setHiddenIds((prev) => [...prev, targetPhotoId]);
+      setTargetPhotoId(null);
+      setIsConfirmVisible(false);
+    }
+  };
+
+  const onCancelDelete = () => {
+    setTargetPhotoId(null);
+    setIsConfirmVisible(false);
   };
 
   return (
     <View style={styles.container}>
-      {/* 헤더 */}
       <View style={styles.header}>
         <IconButton
           source={require("../assets/icons/backicon.png")}
           wsize={22}
           hsize={22}
-          onPress={() => router.back()}
+          onPress={handleBack}
         />
         <Text style={styles.title}>사진 순서 수정</Text>
         <View style={{ width: 22 }} />
       </View>
 
-      {/* 사진 리스트 */}
       <DraggableFlatList
         ref={flatListRef}
         data={visiblePhotos}
@@ -82,21 +129,18 @@ export default function PhotoReorder() {
                       source={{ uri: item.photoUrl }}
                       style={styles.cardImage}
                     />
-
-                    {/* 대표 사진 표시 */}
                     <TouchableOpacity
                       style={[
                         styles.badgeOverlay,
-                        item.id === mainPhotoIdLocal
+                        String(item.id) === String(mainPhotoIdLocal)
                           ? styles.badgeActive
                           : styles.badgeInactive,
                       ]}
-                      onPress={() => setMainPhotoIdLocal(item.id)}
+                      onPress={() => setMainPhotoIdLocal(String(item.id))}
                     >
                       <Text style={styles.badgeText}>대표 사진</Text>
                     </TouchableOpacity>
 
-                    {/* 숨기기 버튼 */}
                     <TouchableOpacity
                       style={styles.closeWrapper}
                       onPress={() => handleHidePhoto(item.id)}
@@ -106,6 +150,14 @@ export default function PhotoReorder() {
                         style={styles.closeIconImg}
                       />
                     </TouchableOpacity>
+
+                    <ConfirmModal
+                      visible={isConfirmVisible}
+                      title="사진 삭제"
+                      message="정말 이 사진을 삭제하시겠어요?"
+                      onCancel={onCancelDelete}
+                      onConfirm={onConfirmDelete}
+                    />
                   </View>
                 </TouchableOpacity>
               </View>
@@ -115,7 +167,6 @@ export default function PhotoReorder() {
         contentContainerStyle={{ paddingBottom: 150 }}
       />
 
-      {/* 저장 버튼 */}
       <View style={styles.bottomRow}>
         <TouchableOpacity style={styles.saveButton} onPress={handleSaveOrder}>
           <Text style={styles.saveButtonText}>순서 저장</Text>
@@ -126,14 +177,15 @@ export default function PhotoReorder() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FCF9F4" },
+  container: { flex: 1, backgroundColor: "#FCF9F4", paddingBottom: 60 },
   header: {
     paddingHorizontal: 30,
-    paddingTop: 70,
+    paddingTop: 75,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: "#FCF9F4",
+    paddingBottom: 10,
   },
   title: {
     fontSize: 16,
@@ -201,7 +253,7 @@ const styles = StyleSheet.create({
   },
   bottomRow: {
     position: "absolute",
-    bottom: 40,
+    bottom: 60,
     width: "100%",
     paddingHorizontal: 30,
   },

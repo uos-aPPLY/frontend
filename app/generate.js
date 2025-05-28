@@ -31,7 +31,8 @@ export default function GeneratePage() {
   }, [selectedDate]);
 
   const nav = useRouter();
-  const { photos: rawPhotos = "{}" } = useLocalSearchParams();
+  const { photos: rawPhotos = "[]", fullPhotoList = "[]" } =
+    useLocalSearchParams();
   const { photoList } = usePhoto();
 
   const [photos, setPhotos] = useState([]);
@@ -113,13 +114,15 @@ export default function GeneratePage() {
   useEffect(() => {
     const initialize = async () => {
       try {
-        const parsed = JSON.parse(rawPhotos);
-        const recommendedPhotoIds = parsed?.recommendedPhotoIds;
-        if (!Array.isArray(recommendedPhotoIds)) return;
+        const parsedPhotoIds = JSON.parse(rawPhotos);
+        const parsedFullList = JSON.parse(fullPhotoList);
 
-        const filtered = photoList.filter((photo) =>
-          recommendedPhotoIds.includes(photo.id)
+        if (!Array.isArray(parsedPhotoIds)) return;
+
+        const filtered = parsedFullList.filter((photo) =>
+          parsedPhotoIds.includes(photo.id)
         );
+
         setPhotos(filtered);
         if (filtered.length > 0) setMainPhotoId(filtered[0].id);
 
@@ -138,7 +141,7 @@ export default function GeneratePage() {
     };
 
     initialize();
-  }, [rawPhotos, photoList]);
+  }, [rawPhotos, fullPhotoList]);
 
   const handleAddKeyword = (id) => {
     setEditingKeywordPhotoId(id);

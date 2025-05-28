@@ -121,7 +121,7 @@ export default function Calendar({ onDatePress }) {
 
   return (
     <CalendarViewContext.Provider value={{ showEmotion, setShowEmotion }}>
-      <SafeAreaView style={styles.container} edges={["top"]}>
+      <View style={styles.container} edges={["top"]}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           refreshControl={
@@ -147,7 +147,7 @@ export default function Calendar({ onDatePress }) {
             </View>
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </CalendarViewContext.Provider>
   );
 }

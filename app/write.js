@@ -24,6 +24,8 @@ import { useAuth } from "../contexts/AuthContext";
 import Constants from "expo-constants";
 import EditImageSlider from "../components/EditImageSlider";
 import { openGalleryAndAdd } from "../utils/openGalleryAndAdd";
+import ConfirmModal from "../components/Modal/ConfirmModal";
+import { clearAllTempPhotos } from "../utils/clearTempPhotos";
 
 const screenWidth = Dimensions.get("window").width;
 const MAX_PHOTO_COUNT = 9;
@@ -45,7 +47,8 @@ export default function WritePage() {
   const { BACKEND_URL } = Constants.expoConfig.extra;
   const [isPickerVisible, setIsPickerVisible] = useState(false);
   const [tempPhotos, setTempPhotos] = useState([]);
-  const { photoList, setPhotoList, mainPhotoId, setMainPhotoId } = usePhoto();
+  const { photoList, setPhotoList, mainPhotoId, setMainPhotoId, reset } =
+    usePhoto();
   const photosToShow = photoList.length > 0 ? photoList : tempPhotos;
   const date =
     selectedDate instanceof Date
@@ -53,6 +56,15 @@ export default function WritePage() {
       : "";
 
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isConfirmVisible, setIsConfirmVisible] = useState(false);
+  const [targetPhotoId, setTargetPhotoId] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (tempPhotos.length > 0 && photoList.length === 0) {
+      setPhotoList(tempPhotos);
+    }
+  }, [tempPhotos]);
 
   const photosToRender = [...photosToShow];
   if (photosToRender.length < MAX_PHOTO_COUNT) {
@@ -69,42 +81,61 @@ export default function WritePage() {
 
     const updated = [...photosToShow, ...newPhotos];
 
-    if (photoList.length > 0) {
-      setPhotoList(updated);
-    } else {
-      setTempPhotos(updated);
+    // ✅ 항상 전역 상태도 같이 설정
+    setPhotoList(updated);
+    setTempPhotos(updated); // 여전히 로컬도 유지
+
+    if (
+      !mainPhotoId ||
+      !updated.some((p) => String(p.id) === String(mainPhotoId))
+    ) {
+      setMainPhotoId(String(newPhotos[0].id));
     }
   };
 
-  const handleHidePhoto = async (id) => {
+  const handleHidePhoto = (id) => {
+    setTargetPhotoId(id);
+    setIsConfirmVisible(true);
+  };
+
+  const onConfirmDelete = async () => {
+    if (!targetPhotoId) return;
+
     try {
-      await deletePhotoById(id, token); // 서버에서 삭제
-      // 상태에서 해당 사진 제거
-      const updated = photosToShow.filter((p) => p.id !== id);
+      await deletePhotoById(targetPhotoId, token);
+      const updated = photosToShow.filter((p) => p.id !== targetPhotoId);
+
       if (photoList.length > 0) {
         setPhotoList(updated);
       } else {
         setTempPhotos(updated);
       }
 
-      // 대표 사진이 삭제된 경우
-      if (String(id) === String(mainPhotoId)) {
+      if (String(targetPhotoId) === String(mainPhotoId)) {
         if (updated.length > 0) {
           setMainPhotoId(String(updated[0].id));
           console.log("📸 대표 사진 삭제됨 → 새 대표:", updated[0].id);
         } else {
-          setMainPhotoId(null); // 사진이 아예 없어진 경우
+          setMainPhotoId(null);
           console.log("📸 모든 사진 삭제됨 → 대표 사진 없음");
         }
       }
 
-      // 현재 인덱스 범위 벗어났다면 조정
       if (currentIndex >= updated.length) {
         setCurrentIndex(updated.length - 1);
       }
+
+      setTargetPhotoId(null);
+      setIsConfirmVisible(false);
     } catch (err) {
       console.error("❌ 사진 삭제 중 오류:", err);
+      setIsConfirmVisible(false);
     }
+  };
+
+  const onCancelDelete = () => {
+    setTargetPhotoId(null);
+    setIsConfirmVisible(false);
   };
 
   useEffect(() => {
@@ -140,11 +171,13 @@ export default function WritePage() {
   }, [token]);
 
   const createDiary = async () => {
+    setIsSaving(true); // 👈 로딩 시작
+
     try {
       const payload = {
         diaryDate: date,
         content: text,
-        emotionIcon: selectedCharacter.name, // 또는 selectedCharacter.icon 등
+        emotionIcon: selectedCharacter.name,
         photoIds: photosToShow
           .filter((p) => p.id && p.id !== "add")
           .map((p) => Number(p.id)),
@@ -163,8 +196,10 @@ export default function WritePage() {
       });
 
       const result = await res.json();
+
       if (!res.ok) {
         console.error("❌ 일기 생성 실패:", result);
+        setIsSaving(false); // ❌ 실패 시 로딩 종료
         return;
       }
 
@@ -172,6 +207,8 @@ export default function WritePage() {
       nav.push("/calendar");
     } catch (err) {
       console.error("❌ 일기 생성 중 에러:", err);
+    } finally {
+      setIsSaving(false); // ✅ 항상 종료
     }
   };
 
@@ -183,14 +220,24 @@ export default function WritePage() {
       <View style={styles.all}>
         <HeaderDate
           date={date}
-          onBack={() => {
-            resetDiary();
-            nav.push("/calendar");
+          onBack={async () => {
+            try {
+              await clearAllTempPhotos(token); // ✅ 임시 사진 서버에서 제거
+              resetDiary(); // 기존 상태 리셋
+              reset();
+              nav.push("/calendar");
+            } catch (err) {
+              console.error("❌ 뒤로가기 중 임시 사진 삭제 실패:", err);
+              resetDiary();
+              reset();
+              nav.push("/calendar");
+            }
           }}
           hasText={text.trim().length > 0}
           onSave={() => {
             resetDiary();
             createDiary();
+            reset();
           }}
         />
 
@@ -242,8 +289,21 @@ export default function WritePage() {
                   placeholder="오늘의 이야기를 써보세요."
                 />
               )}
+
+              <ConfirmModal
+                visible={isConfirmVisible}
+                title="사진 삭제"
+                message="정말 이 사진을 삭제하시겠어요?"
+                onCancel={onCancelDelete}
+                onConfirm={onConfirmDelete}
+              />
             </View>
           </ScrollView>
+          {isSaving && (
+            <View style={styles.loadingOverlay}>
+              <Text style={styles.loadingText}>저장 중...</Text>
+            </View>
+          )}
         </View>
       </View>
     </KeyboardAvoidingView>
@@ -274,5 +334,21 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+  },
+  loadingText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+    backgroundColor: "#D68089",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 10,
   },
 });

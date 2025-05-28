@@ -1,4 +1,3 @@
-// components/ConfirmModal.jsx
 import React from "react";
 import {
   Modal,
@@ -20,6 +19,8 @@ export default function ConfirmModal({
   cancelText = "취소",
   confirmText = "확인",
 }) {
+  const hasMessage = !!message?.trim();
+
   return (
     <Modal
       transparent
@@ -30,8 +31,10 @@ export default function ConfirmModal({
       <View style={styles.backdrop}>
         <View style={styles.container}>
           <Text style={styles.title}>{title}</Text>
-          <Text style={styles.message}>{message}</Text>
-          <View style={styles.buttons}>
+
+          {hasMessage && <Text style={styles.message}>{message}</Text>}
+
+          <View style={[styles.buttons, !hasMessage && { marginTop: 10 }]}>
             <TouchableOpacity
               style={[styles.button, styles.cancelButton]}
               activeOpacity={0.7}

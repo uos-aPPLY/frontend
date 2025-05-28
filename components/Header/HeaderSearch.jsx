@@ -115,5 +115,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     fontSize: 16,
     outlineStyle: "none",
+    paddingVertical: 0,
+    lineHeight: 20,
+    textAlignVertical: "center",
   },
 });
