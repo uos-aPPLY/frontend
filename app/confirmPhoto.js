@@ -23,8 +23,15 @@ const IMAGE_SIZE = (SCREEN_WIDTH - 4) / 3;
 
 export default function confirmPhoto() {
   const nav = useRouter();
-  const { photoList, setPhotoList, selected, setSelected, setMode, reset } =
-    usePhoto();
+  const {
+    photoList,
+    setPhotoList,
+    selected,
+    setSelected,
+    setMode,
+    reset,
+    setMainPhotoId,
+  } = usePhoto();
   const { token } = useAuth();
   const { selectedDate } = useDiary();
 
@@ -158,10 +165,19 @@ export default function confirmPhoto() {
         <TouchableOpacity
           style={styles.button}
           onPress={() => {
-            setPhotoList(photoList);
-            setSelected(selected);
-            setMode("write");
-            nav.push("/write");
+            if (photoList.length > 9) {
+              // ✅ 베스트샷 고르기 → loading 이동
+              setMode("write");
+              nav.push("/loading");
+            } else {
+              setPhotoList(photoList);
+              setSelected(photoList.map((p) => p));
+              setMainPhotoId(
+                photoList.length > 0 ? String(photoList[0].id) : null
+              );
+              setMode("write");
+              nav.push("/write");
+            }
           }}
         >
           <Text style={styles.buttonText}>직접 쓰기</Text>

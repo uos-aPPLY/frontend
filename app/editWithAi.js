@@ -1,3 +1,4 @@
+// ✅ 변경사항 반영: EditWithAIPage 전체
 import { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -5,7 +6,6 @@ import {
   StyleSheet,
   Image,
   Dimensions,
-  FlatList,
   TouchableOpacity,
   TextInput,
   Keyboard,
@@ -21,6 +21,7 @@ import { parseISO } from "date-fns";
 import Constants from "expo-constants";
 import { useAuth } from "../contexts/AuthContext";
 import { useDiary } from "../contexts/DiaryContext";
+import { usePhoto } from "../contexts/PhotoContext";
 import HeaderDate from "../components/Header/HeaderDate";
 import characterList from "../assets/characterList";
 import IconButton from "../components/IconButton";
@@ -34,45 +35,48 @@ export default function EditWithAIPage() {
   const { date: dateParam } = useLocalSearchParams();
   const date = dateParam;
   const parsedDate = parseISO(date);
-  const { setText, resetDiary, diaryId, diaryMapById } = useDiary();
-  const diary = diaryMapById[diaryId];
+  const {
+    text,
+    setText,
+    diaryId,
+    diaryMapById,
+    selectedCharacter,
+    setSelectedCharacter,
+  } = useDiary();
 
-  const [loading, setLoading] = useState(true);
+  const diary = diaryMapById[diaryId];
+  const [localText, setLocalText] = useState(text ?? "");
   const [webviewLoaded, setWebviewLoaded] = useState(false);
   const [requestText, setRequestText] = useState("");
-  const [markedText, setMarkedText] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const flatListRef = useRef(null);
   const webviewRef = useRef(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [webViewHeight, setWebViewHeight] = useState(360);
+  const characterObj = characterList.find((c) => c.name === diary.emotionIcon);
+  const [localCharacter, setLocalCharacter] = useState(
+    selectedCharacter ?? characterObj
+  );
+  const photosToShow = diary.photos || [];
 
   const handleMessage = async (event) => {
     try {
-      const { action, text, content, height } = JSON.parse(
-        event.nativeEvent.data
-      );
+      const { action, content, height } = JSON.parse(event.nativeEvent.data);
 
       if (action === "HEIGHT" && height) setWebViewHeight(height);
 
       if (action === "FINAL_TEXT") {
-        if (!diaryId || !content || !requestText) {
-          console.warn("❌ 필수 데이터 누락", {
-            diaryId,
-            content,
-            requestText,
-          });
-          return;
-        }
+        if (!diaryId || !content || !requestText) return;
 
-        console.log("📦 요청 보낼 내용:", {
-          diaryId,
+        console.log("✅ PATCH body", {
           markedDiaryContent: content,
           userRequest: requestText,
         });
 
+        setIsSubmitting(true);
+
         const response = await fetch(
-          `${Constants.expoConfig.extra.BACKEND_URL}/api/diaries/${diaryId}/ai-modify`,
+          `${Constants.expoConfig.extra.BACKEND_URL}/api/diaries/${diaryId}/ai-suggest-modification`,
           {
             method: "PATCH",
             headers: {
@@ -87,125 +91,102 @@ export default function EditWithAIPage() {
         );
 
         const resultText = await response.text();
-        console.log("🟢 AI Modify 응답:", resultText);
+        console.log("📨 수정 요청 응답 전문:\n", resultText);
+
+        setIsSubmitting(false);
 
         if (!response.ok) {
-          console.error(
-            "❌ AI 수정 요청 실패:",
-            resultText,
-            `상태코드: ${response.status}`
-          );
+          console.error("AI 수정 제안 실패:", resultText);
           return;
         }
 
-        resetDiary();
-        nav.replace({
-          pathname: "/edit",
-          params: { id: diaryId },
-        });
+        const parsed = JSON.parse(resultText);
+        setLocalText(parsed.diary);
+
+        setRequestText("");
+
+        const newCharacter = characterList.find((c) => c.name === parsed.emoji);
+        if (newCharacter) {
+          setLocalCharacter(newCharacter);
+        }
+
+        // 수정된 내용 WebView에 반영
+        const escapedContent = parsed.diary
+          .replace(/\\/g, "\\\\")
+          .replace(/`/g, "\\`")
+          .replace(/\$/g, "\\$");
+
+        webviewRef.current?.injectJavaScript(`
+          window.postMessage(JSON.stringify({ content: \`${escapedContent}\` }), "*");
+          true;
+        `);
       }
 
       if (action === "SAVE_TEXT") {
-        if (!content) {
-          console.warn("⛔ 저장할 텍스트 없음");
-          return;
-        }
-        setText(content); // 📥 DiaryContext 전역 저장
-        console.log("✅ WebView 내용 저장 완료:", content);
+        if (!content) return;
+        setText(content);
+        nav.replace({ pathname: "/edit", params: { id: diaryId } });
+      }
 
-        nav.replace({
-          pathname: "/edit",
-          params: { id: diaryId },
-        });
+      if (action === "ERROR") {
+        alert(text || "AI 요청을 위한 하이라이팅이 필요해요.");
+        return;
       }
     } catch (err) {
-      console.warn("💥 웹뷰 메시지 파싱 실패", err);
+      console.warn("💥 WebView 메시지 처리 중 오류", err);
+      setIsSubmitting(false);
     }
   };
 
   const handleSubmit = () => {
     webviewRef.current?.injectJavaScript(`
-      window.ReactNativeWebView.postMessage(JSON.stringify({
-        action: "FINAL_TEXT",
-        content: window.getMarkedText()
-      }));
+      (function() {
+        const result = window.getMarkedText?.();
+        if (!result || !result.includes('<edit token>')) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            action: "ERROR",
+            message: "하이라이트한 영역이 없습니다."
+          }));
+        } else {
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            action: "FINAL_TEXT",
+            content: result
+          }));
+        }
+      })();
       true;
     `);
   };
-
   const handleSave = () => {
-    webviewRef.current?.injectJavaScript(`
-    window.ReactNativeWebView.postMessage(JSON.stringify({
-      action: "SAVE_TEXT",
-      content: window.getPlainText()
-    }));
-    true;
-  `);
+    setText(localText);
+    if (localCharacter) setSelectedCharacter(localCharacter); // ✅ 추가
+    nav.replace({ pathname: "/edit", params: { id: diaryId } });
   };
 
   const onWebViewLoadEnd = () => {
     setWebviewLoaded(true);
-    if (!diary) return;
+    if (!text) return;
 
-    const escapedContent = diary.content
+    const escapedContent = text
       .replace(/\\/g, "\\\\")
       .replace(/`/g, "\\`")
       .replace(/\$/g, "\\$");
 
-    const jsCode = `
-      (function() {
-        window.postMessage(JSON.stringify({ content: \`${escapedContent}\` }), "*");
-      })();
+    webviewRef.current?.injectJavaScript(`
+      window.postMessage(JSON.stringify({ content: \`${escapedContent}\` }), "*");
       true;
-    `;
-    webviewRef.current.injectJavaScript(jsCode);
+    `);
   };
-
-  useEffect(() => {
-    const showListener = Keyboard.addListener("keyboardDidShow", () =>
-      setIsKeyboardVisible(true)
-    );
-    const hideListener = Keyboard.addListener("keyboardDidHide", () =>
-      setIsKeyboardVisible(false)
-    );
-
-    return () => {
-      showListener.remove();
-      hideListener.remove();
-    };
-  }, []);
 
   if (!diaryId || !diary) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <View style={styles.loadingHeader}>
-          <IconButton
-            source={require("../assets/icons/backicon.png")}
-            wsize={24}
-            hsize={24}
-            onPress={() => nav.back()}
-          />
-        </View>
-
-        <ActivityIndicator size="large" color="#D68089" />
-        <Text style={{ fontSize: 16, color: "#888", marginTop: 10 }}>
-          일기를 불러오는 중입니다...
+        <Text style={{ fontSize: 16, color: "#888" }}>
+          일기 데이터를 불러오는 중입니다...
         </Text>
       </SafeAreaView>
     );
   }
-
-  if (!diary)
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={{ fontSize: 16, color: "#888" }}>
-          일기 데이터를 불러올 수 없습니다.
-        </Text>
-      </View>
-    );
-
-  const photosToShow = diary.photos || [];
-  const characterObj = characterList.find((c) => c.name === diary.emotionIcon);
 
   return (
     <SafeAreaView
@@ -226,12 +207,9 @@ export default function EditWithAIPage() {
             <HeaderDate
               date={parsedDate}
               hasText={true}
-              onBack={() => {
-                nav.replace({
-                  pathname: "/edit",
-                  params: { id: diaryId },
-                });
-              }}
+              onBack={() =>
+                nav.replace({ pathname: "/edit", params: { id: diaryId } })
+              }
               onSave={handleSave}
             />
 
@@ -245,7 +223,10 @@ export default function EditWithAIPage() {
 
             <View style={styles.middle}>
               <View style={{ width: 29 }} />
-              <Image source={characterObj?.source} style={styles.character} />
+              <Image
+                source={localCharacter?.source ?? characterObj?.source}
+                style={styles.character}
+              />
               <IconButton
                 source={require("../assets/icons/highlighticon.png")}
                 wsize={24}
@@ -296,10 +277,18 @@ export default function EditWithAIPage() {
               style={styles.inputBox}
               value={requestText}
               onChangeText={setRequestText}
+              editable={!isSubmitting}
             />
-            <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
-              <Text style={styles.submitText}>보내기</Text>
-            </TouchableOpacity>
+
+            {isSubmitting ? (
+              <View style={styles.loadingSubmit}>
+                <ActivityIndicator size="small" color="#fff" />
+              </View>
+            ) : (
+              <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
+                <Text style={styles.submitText}>보내기</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -309,29 +298,12 @@ export default function EditWithAIPage() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FCF9F4" },
-  scrollContainer: {
-    paddingBottom: 40,
-  },
+  scrollContainer: { paddingBottom: 40 },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#FCF9F4",
-  },
-
-  loadingHeader: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    paddingTop: Platform.OS === "ios" ? 60 : 30,
-    paddingLeft: 30,
-  },
-  image: {
-    width: screenWidth - 60,
-    aspectRatio: 1,
-    borderRadius: 20,
-    resizeMode: "cover",
-    marginHorizontal: 30,
   },
   middle: {
     alignItems: "center",
@@ -341,10 +313,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     flexDirection: "row",
   },
-  character: {
-    width: 42,
-    height: 40,
-  },
+  character: { width: 42, height: 40 },
   webview: {
     marginHorizontal: 30,
     borderRadius: 20,
@@ -392,5 +361,12 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "600",
     fontSize: 14,
+  },
+  loadingSubmit: {
+    backgroundColor: "#E1A4A9",
+    height: 44,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

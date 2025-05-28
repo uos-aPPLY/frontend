@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   View,
   StyleSheet,
@@ -6,8 +6,9 @@ import {
   Platform,
   ScrollView,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter } from "expo-router";
 import HeaderDate from "../components/Header/HeaderDate";
 import IconButton from "../components/IconButton";
 import TextBox from "../components/TextBox";
@@ -18,78 +19,132 @@ import EditImageSlider from "../components/EditImageSlider";
 import { useDiary } from "../contexts/DiaryContext";
 import { useAuth } from "../contexts/AuthContext";
 import { openGalleryAndAdd } from "../utils/openGalleryAndAdd";
+import Constants from "expo-constants";
+import ConfirmModal from "../components/Modal/ConfirmModal";
 
-const screenWidth = Dimensions.get("window").width;
+const API_BASE_URL = Constants?.expoConfig?.extra?.BACKEND_URL;
 
 export default function EditPage() {
   const { token } = useAuth();
   const nav = useRouter();
-  const { id } = useLocalSearchParams(); // diaryId
-  const { diaryMapById } = useDiary();
-  const diary = diaryMapById?.[id];
+  const {
+    text,
+    setText,
+    selectedCharacter,
+    setSelectedCharacter,
+    selectedDate,
+    diaryId,
+    resetDiary,
+  } = useDiary();
 
-  const [text, setText] = useState("");
-  const [selectedCharacter, setSelectedCharacter] = useState(characterList[0]);
-  const [photos, setPhotos] = useState([]);
+  const {
+    photoList: photos,
+    setPhotoList,
+    setTempPhotoList,
+    mainPhotoId,
+    setMainPhotoId,
+    selected,
+    setSelected,
+    reset: resetPhoto,
+  } = usePhoto();
+
   const [currentIndex, setCurrentIndex] = useState(0);
-  const { mainPhotoId, setMainPhotoId } = usePhoto();
   const [isPickerVisible, setIsPickerVisible] = useState(false);
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [photoToDelete, setPhotoToDelete] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    if (diary) {
-      setText(diary.content);
-      setSelectedCharacter(
-        characterList.find((c) => c.name === diary.emotionIcon) ||
-          characterList[0]
-      );
-      setPhotos(diary.photos || []);
-    }
-  }, [diary]);
+  const API_URL =
+    Constants?.manifest?.extra?.BACKEND_URL ||
+    Constants?.expoConfig?.extra?.BACKEND_URL;
+  console.log("📡 최종 API_URL:", API_URL);
+
+  const formatDateToYMD = (date) => {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+  const payload = {
+    diaryDate: formatDateToYMD(selectedDate),
+    content: text,
+    emotionIcon: selectedCharacter?.name,
+    photoIds: photos.map((p) => Number(p.id)),
+    representativePhotoId: Number(mainPhotoId),
+  };
+
+  console.log("📦 PATCH 요청 body:", JSON.stringify(payload, null, 2));
 
   const photosToRender = [...photos];
   if (photosToRender.length < 9) {
     photosToRender.push({ id: "add", type: "add" });
   }
-
-  const handleSave = async () => {
-    const payload = {
-      content: text,
-      emotionIcon: selectedCharacter.name,
-      photoIds: photos.map((p) => Number(p.id)),
-      representativePhotoId: Number(mainPhotoId),
-    };
-
-    try {
-      const res = await fetch(
-        `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/diaries/${id}`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
-      );
-      if (!res.ok) {
-        console.error("❌ 수정 실패:", await res.json());
-        return;
-      }
-      console.log("✅ 수정 성공");
-      nav.replace({
-        pathname: "/diary/[date]",
-        params: { date: diary.diaryDate },
-      });
-    } catch (err) {
-      console.error("❌ 저장 중 에러:", err);
-    }
+  const confirmDeletePhoto = (photoId) => {
+    setPhotoToDelete(photoId);
+    setConfirmVisible(true);
   };
 
-  const handleDeletePhoto = (photoId) => {
-    const updated = photos.filter((p) => p.id !== photoId);
-    setPhotos(updated);
-    if (String(photoId) === String(mainPhotoId)) {
-      setMainPhotoId(updated.length > 0 ? String(updated[0].id) : null);
+  const handleDeleteConfirmed = () => {
+    if (photoToDelete) {
+      const updated = photos.filter((p) => p.id !== photoToDelete);
+      setPhotoList(updated);
+
+      if (String(photoToDelete) === String(mainPhotoId)) {
+        setMainPhotoId(updated.length > 0 ? String(updated[0].id) : null);
+      }
+
+      setSelected((prev) =>
+        prev.filter((id) => String(id) !== String(photoToDelete))
+      );
+    }
+
+    setConfirmVisible(false);
+    setPhotoToDelete(null);
+  };
+
+  const handleSave = async () => {
+    if (!token) {
+      console.warn("❌ 저장 실패: 토큰이 없습니다.");
+      return;
+    }
+
+    setIsSaving(true); // <-- ✅ 로딩 시작
+
+    try {
+      const response = await fetch(`${API_URL}/api/diaries/${diaryId}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          diaryDate: formatDateToYMD(selectedDate),
+          content: text,
+          emotionIcon: selectedCharacter?.name,
+          photoIds: photos.map((p) => Number(p.id)),
+          representativePhotoId: Number(mainPhotoId),
+        }),
+      });
+
+      const resText = await response.text();
+      console.log("📨 응답 상태:", response.status);
+      console.log("📨 응답 본문:", resText);
+
+      if (!response.ok) {
+        console.error("❌ 저장 실패:", resText);
+        return;
+      }
+
+      resetPhoto();
+      resetDiary();
+      nav.replace({
+        pathname: "/diary/[date]",
+        params: { date: formatDateToYMD(selectedDate) },
+      });
+    } catch (err) {
+      console.error("💥 저장 중 에러:", err);
+    } finally {
+      setIsSaving(false); // <-- ✅ 로딩 끝
     }
   };
 
@@ -104,7 +159,8 @@ export default function EditPage() {
       }));
 
       const updatedPhotos = [...photos, ...newPhotos];
-      setPhotos(updatedPhotos);
+      setPhotoList(updatedPhotos);
+      setTempPhotoList(updatedPhotos);
 
       if (
         !mainPhotoId ||
@@ -113,13 +169,13 @@ export default function EditPage() {
         setMainPhotoId(String(newPhotos[0].id));
       }
 
+      setSelected((prev) => [...prev, ...newPhotos.map((p) => String(p.id))]);
+
       console.log("📸 사진 추가 완료:", newPhotos.length, "장");
     } catch (err) {
       console.error("❌ 사진 추가 중 오류:", err);
     }
   };
-
-  if (!diary) return null;
 
   return (
     <KeyboardAvoidingView
@@ -128,11 +184,11 @@ export default function EditPage() {
     >
       <View style={styles.container}>
         <HeaderDate
-          date={diary.diaryDate}
+          date={selectedDate}
           onBack={() =>
             nav.replace({
               pathname: "/diary/[date]",
-              params: { date: diary.diaryDate },
+              params: { date: formatDateToYMD(selectedDate) },
             })
           }
           hasText={text.trim().length > 0}
@@ -144,7 +200,7 @@ export default function EditPage() {
             photos={photosToRender}
             mainPhotoId={mainPhotoId}
             setMainPhotoId={setMainPhotoId}
-            onDeletePhoto={handleDeletePhoto}
+            onDeletePhoto={confirmDeletePhoto}
             onAddPhoto={handleAddPhoto}
             currentIndex={currentIndex}
             setCurrentIndex={setCurrentIndex}
@@ -166,7 +222,9 @@ export default function EditPage() {
                 onPress={() =>
                   nav.push({
                     pathname: "/editWithAi",
-                    params: { date: diary.diaryDate },
+                    params: {
+                      date: selectedDate.toISOString().split("T")[0],
+                    },
                   })
                 }
               />
@@ -196,8 +254,26 @@ export default function EditPage() {
                 placeholder="오늘의 이야기를 써보세요."
               />
             )}
+
+            <ConfirmModal
+              visible={confirmVisible}
+              title="사진 삭제"
+              message="정말 이 사진을 삭제하시겠어요?"
+              onCancel={() => {
+                setConfirmVisible(false);
+                setPhotoToDelete(null);
+              }}
+              onConfirm={handleDeleteConfirmed}
+              cancelText="취소"
+              confirmText="삭제"
+            />
           </View>
         </ScrollView>
+        {isSaving && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color="#D68089" />
+          </View>
+        )}
       </View>
     </KeyboardAvoidingView>
   );
@@ -208,6 +284,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#FCF9F4",
     flex: 1,
   },
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+  },
+
   scrollContainer: {
     flexGrow: 1,
     paddingBottom: 30,

@@ -19,6 +19,7 @@ import IconButton from "../components/IconButton";
 import TextBox from "../components/TextBox";
 import characterList from "../assets/characterList";
 import { useDiary } from "../contexts/DiaryContext";
+import { usePhoto } from "../contexts/PhotoContext"; // ✅ 추가
 import { useAuth } from "../contexts/AuthContext";
 import { uploadPhotos } from "../utils/uploadPhotos";
 import { clearAllTempPhotos } from "../utils/clearTempPhotos";
@@ -37,6 +38,8 @@ export default function CreatePage() {
     selectedDate,
     setSelectedDate,
   } = useDiary();
+  const { reset: resetPhoto } = usePhoto();
+
   const [isPickerVisible, setIsPickerVisible] = useState(false);
   const { resetDiary } = useDiary();
   const { BACKEND_URL } = Constants.expoConfig.extra;
@@ -110,6 +113,7 @@ export default function CreatePage() {
           date={date}
           onBack={() => {
             resetDiary();
+            resetPhoto();
             nav.push("/calendar");
           }}
           hasText={text.trim().length > 0}
@@ -135,7 +139,7 @@ export default function CreatePage() {
               <View style={{ width: 24 }} />
               <IconButton
                 source={selectedCharacter.source}
-                wsize={40}
+                wsize={42}
                 hsize={40}
                 onPress={() => setIsPickerVisible(!isPickerVisible)}
               />

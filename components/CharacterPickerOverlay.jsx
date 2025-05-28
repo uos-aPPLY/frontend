@@ -38,11 +38,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#fff",
     borderRadius: 30,
-    padding: 20,
+    padding: 15,
   },
   characterIcon: {
     width: 64,
     height: 62,
-    margin: 20,
+    margin: 15,
   },
 });

@@ -17,7 +17,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import IconButton from "../../components/IconButton";
 import HeaderDateAndTrash from "../../components/Header/HeaderDateAndTrash";
 import ImageSlider from "../../components/ImageSlider";
-import { parseISO } from "date-fns";
+import { parseISO, set } from "date-fns";
 import characterList from "../../assets/characterList";
 import fullHeartIcon from "../../assets/icons/fullhearticon.png";
 import emptyHeartIcon from "../../assets/icons/emptyhearticon.png";
@@ -26,17 +26,25 @@ import oneViewIcon from "../../assets/icons/oneviewicon.png";
 import ConfirmModal from "../../components/Modal/ConfirmModal";
 import { usePhoto } from "../../contexts/PhotoContext";
 import { useDiary } from "../../contexts/DiaryContext";
+import DebugDiaryState from "../../debug/DebugDiaryState";
 
 const screenWidth = Dimensions.get("window").width;
 
 export default function DiaryPage() {
   const nav = useRouter();
   const { token } = useAuth();
-  const { setPhotoList, setMainPhotoId } = usePhoto();
+  const { setPhotoList, setTempPhotoList, setMainPhotoId } = usePhoto();
   const { date: dateParam } = useLocalSearchParams();
   const date = dateParam;
   const parsedDate = parseISO(date);
-  const { resetDiary, setDiaryId, setDiaryMapById } = useDiary();
+  const {
+    resetDiary,
+    setDiaryId,
+    setDiaryMapById,
+    setText,
+    setSelectedCharacter,
+    setSelectedDate,
+  } = useDiary();
 
   const [diary, setDiary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -145,6 +153,10 @@ export default function DiaryPage() {
       );
       if (res.ok) {
         console.log("🗑️ 일기 삭제 성공");
+        resetDiary();
+        setPhotoList([]);
+        setTempPhotoList([]);
+        setMainPhotoId(null);
         nav.push("/calendar");
       } else {
         console.warn("❌ 일기 삭제 실패:", res.status);
@@ -183,7 +195,21 @@ export default function DiaryPage() {
           [data.id]: data,
         }));
 
+        setText(data.content || "");
+
+        const characterFound = characterList.find(
+          (c) => c.name === data.emotionIcon
+        );
+        if (characterFound) {
+          setSelectedCharacter(characterFound);
+        }
+
+        const [year, month, day] = data.diaryDate.split("-").map(Number);
+        const localDate = new Date(year, month - 1, day);
+        setSelectedDate(localDate);
+
         setPhotoList(data.photos || []);
+        setTempPhotoList(data.photos || []);
         const found = data.photos.find(
           (p) => p.photoUrl === data.representativePhotoUrl
         );
@@ -237,6 +263,7 @@ export default function DiaryPage() {
         onBack={() => {
           resetDiary();
           setPhotoList([]);
+          setTempPhotoList([]);
           setMainPhotoId(null);
           nav.push("/calendar");
         }}
@@ -348,6 +375,7 @@ const styles = StyleSheet.create({
   character: {
     width: 42,
     height: 40,
+    resizeMode: "contain",
   },
   iconGroup: {
     flexDirection: "row",

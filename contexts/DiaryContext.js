@@ -14,7 +14,6 @@ export function DiaryProvider({ children }) {
     setText("");
     setDiaryId(null);
     setSelectedCharacter(characterList[0]);
-    setSelectedDate(new Date()); // null 대신 초기화된 날짜
   };
 
   return (
