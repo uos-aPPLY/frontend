@@ -1,7 +1,7 @@
-// app/settings/privacypolicy.js
+// app/(tabs)/profile/settings/privacypolicy.js
 import { Text, StyleSheet, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Header from "../../components/Header/HeaderSettings";
+import Header from "../../../../components/Header/HeaderSettings";
 
 export default function PrivacyPolicy() {
   return (
@@ -23,14 +23,14 @@ export default function PrivacyPolicy() {
 const styles = StyleSheet.create({
   safeAreaContainer: {
     flex: 1,
-    backgroundColor: "#FCF9F4",
+    backgroundColor: "#FCF9F4"
   },
   scrollContent: {
-    paddingHorizontal: 30,
+    paddingHorizontal: 30
   },
   text: {
     fontSize: 14,
     color: "#333",
-    lineHeight: 22,
-  },
+    lineHeight: 22
+  }
 });

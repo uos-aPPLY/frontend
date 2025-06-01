@@ -1,4 +1,4 @@
-// app/(tabs)/profile.js
+// app/(tabs)/profile/index.js
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -14,8 +14,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
-import TextEditorModal from "../../components/Modal/TextEditorModal";
-import ConfirmModal from "../../components/Modal/ConfirmModal";
+import TextEditorModal from "../../../components/Modal/TextEditorModal";
+import ConfirmModal from "../../../components/Modal/ConfirmModal";
 import { LinearGradient } from "expo-linear-gradient";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
@@ -123,20 +123,23 @@ export default function ProfilePage() {
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.header} edges={["top"]}>
-        <TouchableOpacity onPress={() => router.push("/settings")} style={styles.settingsWrapper}>
+        <TouchableOpacity
+          onPress={() => router.push("/profile/settings")}
+          style={styles.settingsWrapper}
+        >
           <Image
-            source={require("../../assets/icons/settingicon.png")}
+            source={require("../../../assets/icons/settingicon.png")}
             style={styles.settingsIcon}
           />
         </TouchableOpacity>
         <View style={styles.profileRow}>
-          <Image source={require("../../assets/bangulicon.png")} style={styles.bangulicon} />
+          <Image source={require("../../../assets/bangulicon.png")} style={styles.bangulicon} />
           <View style={styles.nameSection}>
             <View style={styles.nameRow}>
               <Text style={styles.name}>{nickname}</Text>
               <TouchableOpacity onPress={() => setModalVisible(true)}>
                 <Image
-                  source={require("../../assets/icons/editicon.png")}
+                  source={require("../../../assets/icons/editicon.png")}
                   style={styles.editIcon}
                 />
               </TouchableOpacity>
@@ -160,7 +163,7 @@ export default function ProfilePage() {
             activeOpacity={0.8}
             onPress={() =>
               router.push({
-                pathname: `/albums/${item.id}`,
+                pathname: `/profile/albums/${item.id}`,
                 params: { name: item.name }
               })
             }

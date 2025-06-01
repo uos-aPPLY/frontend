@@ -14,9 +14,9 @@ import * as SecureStore from "expo-secure-store";
 import { useRouter } from "expo-router";
 import Constants from "expo-constants";
 import { LinearGradient } from "expo-linear-gradient";
-import ConfirmModal from "../../components/Modal/ConfirmModal";
-import CheckBox from "../../components/CheckBox";
-import HeaderSettings from "../../components/Header/HeaderSettings";
+import ConfirmModal from "../../../../components/Modal/ConfirmModal";
+import CheckBox from "../../../../components/CheckBox";
+import HeaderSettings from "../../../../components/Header/HeaderSettings";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
