@@ -9,7 +9,7 @@ import {
   Dimensions,
   FlatList,
   TouchableOpacity,
-  DeviceEventEmitter,
+  DeviceEventEmitter
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Constants from "expo-constants";
@@ -27,6 +27,7 @@ import ConfirmModal from "../../components/Modal/ConfirmModal";
 import { usePhoto } from "../../contexts/PhotoContext";
 import { useDiary } from "../../contexts/DiaryContext";
 import DebugDiaryState from "../../debug/DebugDiaryState";
+import defaultCharacter from "../../assets/character/char1.png";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -43,7 +44,7 @@ export default function DiaryPage() {
     setDiaryMapById,
     setText,
     setSelectedCharacter,
-    setSelectedDate,
+    setSelectedDate
   } = useDiary();
 
   const [diary, setDiary] = useState(null);
@@ -54,9 +55,16 @@ export default function DiaryPage() {
   const [isGridView, setIsGridView] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-  const characterObj = diary
-    ? characterList.find((c) => c.name === diary.emotionIcon)
-    : null;
+  const characterObj =
+    diary && diary.emotionIcon
+      ? characterList.find((c) => c.name === diary.emotionIcon) || {
+          name: "default",
+          source: defaultCharacter
+        }
+      : {
+          name: "default",
+          source: defaultCharacter
+        };
 
   const confirmDiaryStatus = useCallback(async (diaryId, currentStatus) => {
     if (currentStatus === "confirmed" || !diaryId) {
@@ -67,13 +75,11 @@ export default function DiaryPage() {
       const res = await fetch(
         `${Constants.expoConfig.extra.BACKEND_URL}/api/diaries/${diaryId}/confirm`,
         {
-          method: "PATCH",
+          method: "PATCH"
         }
       );
       if (res.ok) {
-        console.log(
-          `Diary ${diaryId} status confirmed successfully via /confirm endpoint.`
-        );
+        console.log(`Diary ${diaryId} status confirmed successfully via /confirm endpoint.`);
         setDiary((prevDiary) => {
           if (prevDiary && prevDiary.id === diaryId) {
             return { ...prevDiary, status: "confirmed" };
@@ -89,10 +95,7 @@ export default function DiaryPage() {
         );
       }
     } catch (error) {
-      console.error(
-        `Error confirming diary ${diaryId} status via /confirm:`,
-        error
-      );
+      console.error(`Error confirming diary ${diaryId} status via /confirm:`, error);
     }
   }, []);
 
@@ -106,15 +109,15 @@ export default function DiaryPage() {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${token}`
           },
-          body: JSON.stringify({ isFavorited: !diary.isFavorited }),
+          body: JSON.stringify({ isFavorited: !diary.isFavorited })
         }
       );
       if (res.ok) {
         setDiary((prev) => ({
           ...prev,
-          isFavorited: !prev.isFavorited,
+          isFavorited: !prev.isFavorited
         }));
       } else {
         console.warn("❌ 즐겨찾기 API 실패:", res.status);
@@ -142,15 +145,12 @@ export default function DiaryPage() {
   const deleteDiary = async () => {
     if (!diary || !token) return;
     try {
-      const res = await fetch(
-        `${Constants.expoConfig.extra.BACKEND_URL}/api/diaries/${diary.id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      const res = await fetch(`${Constants.expoConfig.extra.BACKEND_URL}/api/diaries/${diary.id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`
         }
-      );
+      });
       if (res.ok) {
         console.log("🗑️ 일기 삭제 성공");
         resetDiary();
@@ -172,7 +172,7 @@ export default function DiaryPage() {
         const res = await fetch(
           `${Constants.expoConfig.extra.BACKEND_URL}/api/diaries/by-date?date=${date}`,
           {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: { Authorization: `Bearer ${token}` }
           }
         );
         if (!res.ok) {
@@ -192,14 +192,12 @@ export default function DiaryPage() {
         setDiaryId(data.id);
         setDiaryMapById((prev) => ({
           ...prev,
-          [data.id]: data,
+          [data.id]: data
         }));
 
         setText(data.content || "");
 
-        const characterFound = characterList.find(
-          (c) => c.name === data.emotionIcon
-        );
+        const characterFound = characterList.find((c) => c.name === data.emotionIcon);
         if (characterFound) {
           setSelectedCharacter(characterFound);
         }
@@ -210,9 +208,7 @@ export default function DiaryPage() {
 
         setPhotoList(data.photos || []);
         setTempPhotoList(data.photos || []);
-        const found = data.photos.find(
-          (p) => p.photoUrl === data.representativePhotoUrl
-        );
+        const found = data.photos.find((p) => p.photoUrl === data.representativePhotoUrl);
         if (found) {
           setMainPhotoId(String(found.id));
         }
@@ -244,10 +240,7 @@ export default function DiaryPage() {
     return (
       <View style={styles.loader}>
         <Text style={styles.loadingText}>해당 날짜에 일기가 없습니다.</Text>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => nav.push("/calendar")}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => nav.push("/calendar")}>
           <Text style={styles.backButtonText}>캘린더로 돌아가기</Text>
         </TouchableOpacity>
       </View>
@@ -301,7 +294,7 @@ export default function DiaryPage() {
                 onPress={() =>
                   nav.push({
                     pathname: "/edit",
-                    params: { id: diary.id.toString() },
+                    params: { id: diary.id.toString() }
                   })
                 }
               />
@@ -310,9 +303,7 @@ export default function DiaryPage() {
                 hsize={24}
                 wsize={24}
                 onPress={() => setIsGridView((prev) => !prev)}
-                disabled={
-                  photosToShow.length === 0 || photosToShow.length === 1
-                }
+                disabled={photosToShow.length === 0 || photosToShow.length === 1}
               />
               <IconButton
                 source={diary.isFavorited ? fullHeartIcon : emptyHeartIcon}
@@ -350,37 +341,37 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FCF9F4",
+    backgroundColor: "#FCF9F4"
   },
   loadingText: {
     marginTop: 16,
     fontSize: 14,
-    color: "#A78C7B",
+    color: "#A78C7B"
   },
 
   middle: {
     marginTop: 10,
-    marginBottom: 10,
+    marginBottom: 10
   },
   iconRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 35,
+    paddingHorizontal: 35
   },
   characterWrapper: {
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "center"
   },
   character: {
     width: 42,
     height: 40,
-    resizeMode: "contain",
+    resizeMode: "contain"
   },
   iconGroup: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 12
   },
   cardText: {
     backgroundColor: "#fff",
@@ -392,19 +383,19 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     marginHorizontal: 30,
     minHeight: 360,
-    marginBottom: 40,
+    marginBottom: 60
   },
   backButton: {
     marginTop: 20,
     backgroundColor: "#D68089",
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderRadius: 20,
+    borderRadius: 20
   },
   backButtonText: {
     color: "#fff",
     fontSize: 14,
-    fontWeight: "bold",
+    fontWeight: "bold"
   },
   shadowWrapper: {
     paddingTop: 30,
@@ -414,7 +405,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderRadius: 30,
-    paddingHorizontal: 30,
+    paddingHorizontal: 30
   },
   noPhotoWrapper: {
     width: "100%",
@@ -424,10 +415,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
-    position: "relative",
+    position: "relative"
   },
   noPhotoText: {
     fontSize: 14,
-    color: "#A78C7B",
-  },
+    color: "#A78C7B"
+  }
 });

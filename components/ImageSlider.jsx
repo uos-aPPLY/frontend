@@ -1,12 +1,5 @@
 import React from "react";
-import {
-  View,
-  Image,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  Dimensions,
-} from "react-native";
+import { View, Image, FlatList, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -15,7 +8,7 @@ export default function DiaryImageSlider({
   isGridView,
   currentIndex,
   setCurrentIndex,
-  flatListRef,
+  flatListRef
 }) {
   const formatPhotosInRows = (photos, columns = 3) => {
     const rows = [];
@@ -37,11 +30,7 @@ export default function DiaryImageSlider({
           <View key={rowIndex} style={styles.gridRow}>
             {row.map((photo, colIndex) =>
               photo ? (
-                <Image
-                  key={colIndex}
-                  source={{ uri: photo.photoUrl }}
-                  style={styles.gridImage}
-                />
+                <Image key={colIndex} source={{ uri: photo.photoUrl }} style={styles.gridImage} />
               ) : (
                 <View key={colIndex} style={styles.gridImage} />
               )
@@ -65,10 +54,7 @@ export default function DiaryImageSlider({
             style={styles.indicatorItem}
           >
             {currentIndex === index ? (
-              <Image
-                source={{ uri: photo.photoUrl }}
-                style={styles.thumbnailImage}
-              />
+              <Image source={{ uri: photo.photoUrl }} style={styles.thumbnailImage} />
             ) : (
               <View style={styles.dot} />
             )}
@@ -89,9 +75,7 @@ export default function DiaryImageSlider({
           }
         }}
         viewabilityConfig={{ viewAreaCoveragePercentThreshold: 50 }}
-        renderItem={({ item }) => (
-          <Image source={{ uri: item.photoUrl }} style={styles.image} />
-        )}
+        renderItem={({ item }) => <Image source={{ uri: item.photoUrl }} style={styles.image} />}
       />
     </View>
   );
@@ -100,50 +84,50 @@ export default function DiaryImageSlider({
 const styles = StyleSheet.create({
   sliderContainer: {
     alignItems: "center",
-    marginTop: 5,
+    marginTop: 5
   },
   pageIndicator: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    gap: 10,
+    gap: 16,
     height: 22,
-    marginBottom: 10,
+    marginBottom: 10
   },
   indicatorItem: {
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "center"
   },
   dot: {
-    width: 8,
-    height: 8,
+    width: 10,
+    height: 10,
     borderRadius: 4,
-    backgroundColor: "#D9D9D9",
+    backgroundColor: "#D9D9D9"
   },
   thumbnailImage: {
-    width: 22,
-    height: 22,
-    borderRadius: 4,
+    width: 24,
+    height: 24,
+    borderRadius: 4
   },
   image: {
     width: screenWidth - 60,
     aspectRatio: 1,
     borderRadius: 20,
     resizeMode: "cover",
-    marginHorizontal: 30,
+    marginHorizontal: 30
   },
   gridContainer: {
     paddingHorizontal: 30,
-    marginTop: 10,
+    marginTop: 10
   },
   gridRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "space-between"
   },
   gridImage: {
     width: (screenWidth - 60) / 3,
     height: (screenWidth - 60) / 3,
     backgroundColor: "#EEE",
-    borderRadius: 6,
-  },
+    borderRadius: 6
+  }
 });

@@ -119,6 +119,7 @@ export default function PhotoReorder() {
         data={visiblePhotos}
         keyExtractor={(item) => item.id.toString()}
         onDragEnd={({ data }) => setPhotos(data)}
+        activationDelay={200}
         renderItem={({ item, drag, isActive }) => (
           <ScaleDecorator>
             <View style={styles.cardWrapper}>

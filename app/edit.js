@@ -6,7 +6,7 @@ import {
   Platform,
   ScrollView,
   Dimensions,
-  ActivityIndicator,
+  ActivityIndicator
 } from "react-native";
 import { useRouter } from "expo-router";
 import HeaderDate from "../components/Header/HeaderDate";
@@ -34,7 +34,7 @@ export default function EditPage() {
     setSelectedCharacter,
     selectedDate,
     diaryId,
-    resetDiary,
+    resetDiary
   } = useDiary();
 
   const {
@@ -45,7 +45,7 @@ export default function EditPage() {
     setMainPhotoId,
     selected,
     setSelected,
-    reset: resetPhoto,
+    resetPhoto
   } = usePhoto();
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -55,8 +55,7 @@ export default function EditPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   const API_URL =
-    Constants?.manifest?.extra?.BACKEND_URL ||
-    Constants?.expoConfig?.extra?.BACKEND_URL;
+    Constants?.manifest?.extra?.BACKEND_URL || Constants?.expoConfig?.extra?.BACKEND_URL;
   console.log("📡 최종 API_URL:", API_URL);
 
   const formatDateToYMD = (date) => {
@@ -70,7 +69,7 @@ export default function EditPage() {
     content: text,
     emotionIcon: selectedCharacter?.name,
     photoIds: photos.map((p) => Number(p.id)),
-    representativePhotoId: Number(mainPhotoId),
+    representativePhotoId: Number(mainPhotoId)
   };
 
   console.log("📦 PATCH 요청 body:", JSON.stringify(payload, null, 2));
@@ -93,9 +92,7 @@ export default function EditPage() {
         setMainPhotoId(updated.length > 0 ? String(updated[0].id) : null);
       }
 
-      setSelected((prev) =>
-        prev.filter((id) => String(id) !== String(photoToDelete))
-      );
+      setSelected((prev) => prev.filter((id) => String(id) !== String(photoToDelete)));
     }
 
     setConfirmVisible(false);
@@ -115,15 +112,15 @@ export default function EditPage() {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           diaryDate: formatDateToYMD(selectedDate),
           content: text,
           emotionIcon: selectedCharacter?.name,
           photoIds: photos.map((p) => Number(p.id)),
-          representativePhotoId: Number(mainPhotoId),
-        }),
+          representativePhotoId: Number(mainPhotoId)
+        })
       });
 
       const resText = await response.text();
@@ -139,7 +136,7 @@ export default function EditPage() {
       resetDiary();
       nav.replace({
         pathname: "/diary/[date]",
-        params: { date: formatDateToYMD(selectedDate) },
+        params: { date: formatDateToYMD(selectedDate) }
       });
     } catch (err) {
       console.error("💥 저장 중 에러:", err);
@@ -155,17 +152,14 @@ export default function EditPage() {
 
       const newPhotos = addedAssets.map((asset) => ({
         id: asset.id,
-        photoUrl: asset.photoUrl,
+        photoUrl: asset.photoUrl
       }));
 
       const updatedPhotos = [...photos, ...newPhotos];
       setPhotoList(updatedPhotos);
       setTempPhotoList(updatedPhotos);
 
-      if (
-        !mainPhotoId ||
-        !updatedPhotos.some((p) => String(p.id) === String(mainPhotoId))
-      ) {
+      if (!mainPhotoId || !updatedPhotos.some((p) => String(p.id) === String(mainPhotoId))) {
         setMainPhotoId(String(newPhotos[0].id));
       }
 
@@ -188,7 +182,7 @@ export default function EditPage() {
           onBack={() =>
             nav.replace({
               pathname: "/diary/[date]",
-              params: { date: formatDateToYMD(selectedDate) },
+              params: { date: formatDateToYMD(selectedDate) }
             })
           }
           hasText={text.trim().length > 0}
@@ -207,7 +201,7 @@ export default function EditPage() {
           />
 
           <View style={styles.characterRow}>
-            <View style={{ width: 58 }} />
+            <View style={{ width: 64 }} />
             <IconButton
               source={selectedCharacter.source}
               wsize={42}
@@ -223,14 +217,14 @@ export default function EditPage() {
                   nav.push({
                     pathname: "/editWithAi",
                     params: {
-                      date: selectedDate.toISOString().split("T")[0],
-                    },
+                      date: selectedDate.toISOString().split("T")[0]
+                    }
                   })
                 }
               />
               <IconButton
                 source={require("../assets/icons/pictureinfoicon.png")}
-                wsize={24}
+                wsize={28}
                 hsize={24}
                 onPress={() => nav.push("/photoReorder")}
               />
@@ -282,7 +276,7 @@ export default function EditPage() {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: "#FCF9F4",
-    flex: 1,
+    flex: 1
   },
   loadingOverlay: {
     position: "absolute",
@@ -293,26 +287,26 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.3)",
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 10,
+    zIndex: 10
   },
 
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: 30,
+    paddingBottom: 20
   },
   characterRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: 35,
-    paddingBottom: 10,
+    paddingBottom: 10
   },
   rightButtons: {
     flexDirection: "row",
-    gap: 10,
-    alignItems: "center",
+    gap: 12,
+    alignItems: "center"
   },
   textBoxWrapper: {
     paddingHorizontal: 30,
-    flex: 1,
-  },
+    flex: 1
+  }
 });

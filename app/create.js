@@ -1,35 +1,27 @@
 // app/create.js
-import { useState, useEffect } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Image,
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-} from "react-native";
-import * as ImagePicker from "expo-image-picker";
+import { useState, useEffect, useRef } from "react";
+import { Menu, Divider } from "react-native-paper";
+import { KeyboardAvoidingView, Platform, View, StyleSheet, ScrollView } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import * as ImageManipulator from "expo-image-manipulator";
-import { format } from "date-fns";
 
 import HeaderDate from "../components/Header/HeaderDate";
 import IconButton from "../components/IconButton";
 import TextBox from "../components/TextBox";
+import CharacterPickerOverlay from "../components/CharacterPickerOverlay";
 import characterList from "../assets/characterList";
 import { useDiary } from "../contexts/DiaryContext";
-import { usePhoto } from "../contexts/PhotoContext"; // ✅ 추가
+import { usePhoto } from "../contexts/PhotoContext";
 import { useAuth } from "../contexts/AuthContext";
-import { uploadPhotos } from "../utils/uploadPhotos";
 import { clearAllTempPhotos } from "../utils/clearTempPhotos";
 import { openGalleryAndUpload } from "../utils/openGalleryAndUpload";
-import CharacterPickerOverlay from "../components/CharacterPickerOverlay";
 import Constants from "expo-constants";
 
 export default function CreatePage() {
   const nav = useRouter();
-  const { date: dateParam, from = "calendar" } = useLocalSearchParams();
+  const { token } = useAuth();
+  const { date: dateParam } = useLocalSearchParams();
+  const [isPickerVisible, setIsPickerVisible] = useState(false);
+  const { resetPhoto, setMode } = usePhoto();
   const {
     text,
     setText,
@@ -37,12 +29,11 @@ export default function CreatePage() {
     setSelectedCharacter,
     selectedDate,
     setSelectedDate,
+    resetDiary
   } = useDiary();
-  const { reset: resetPhoto } = usePhoto();
 
-  const [isPickerVisible, setIsPickerVisible] = useState(false);
-  const { resetDiary } = useDiary();
   const { BACKEND_URL } = Constants.expoConfig.extra;
+  const [menuVisible, setMenuVisible] = useState(false);
 
   const createDiary = async () => {
     try {
@@ -50,17 +41,17 @@ export default function CreatePage() {
         diaryDate: date,
         content: text,
         emotionIcon: selectedCharacter.name,
-        photoIds: null, // ✅ 사진 없음
-        representativePhotoId: null, // ✅ 대표 사진 없음
+        photoIds: null,
+        representativePhotoId: null
       };
 
       const res = await fetch(`${BACKEND_URL}/api/diaries`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payload)
       });
 
       const result = await res.json();
@@ -71,7 +62,7 @@ export default function CreatePage() {
       }
 
       console.log("✅ 저장 성공:", result);
-      resetDiary(); // 상태 초기화
+      resetDiary();
       nav.push("/calendar");
     } catch (err) {
       console.error("❌ 저장 중 에러:", err);
@@ -80,7 +71,7 @@ export default function CreatePage() {
 
   useEffect(() => {
     if (dateParam) {
-      setSelectedDate(new Date(dateParam)); // 📌 이거 추가!
+      setSelectedDate(new Date(dateParam));
     }
   }, [dateParam]);
 
@@ -89,12 +80,10 @@ export default function CreatePage() {
   if (selectedDate instanceof Date && !isNaN(selectedDate)) {
     date = selectedDate.toISOString().split("T")[0];
   } else if (typeof selectedDate === "string") {
-    date = selectedDate; // 이미 yyyy-MM-dd 일 수도 있음
+    date = selectedDate;
   } else {
-    date = ""; // fallback
+    date = "";
   }
-
-  const { token } = useAuth();
 
   useEffect(() => {
     if (token) {
@@ -126,12 +115,49 @@ export default function CreatePage() {
           >
             <View style={styles.shadowWrapper}>
               <View style={styles.card}>
-                <IconButton
-                  source={require("../assets/icons/bigpinkplusicon.png")}
-                  wsize={50}
-                  hsize={50}
-                  onPress={() => openGalleryAndUpload(token, nav.push)}
-                />
+                <Menu
+                  visible={menuVisible}
+                  onDismiss={() => setMenuVisible(false)}
+                  anchor={
+                    <IconButton
+                      source={require("../assets/icons/bigpinkplusicon.png")}
+                      wsize={50}
+                      hsize={50}
+                      onPress={() => {
+                        setMenuVisible(true);
+                      }}
+                    />
+                  }
+                  contentStyle={{
+                    backgroundColor: "#fff",
+                    borderRadius: 8,
+                    elevation: 0,
+                    shadowColor: "transparent",
+                    shadowOffset: { width: 0, height: 0 }, // ✅ iOS 그림자 제거
+                    shadowOpacity: 0,
+                    shadowRadius: 0
+                  }}
+                >
+                  <Menu.Item
+                    onPress={() => {
+                      setMode("choose");
+                      setMenuVisible(false);
+                      nav.push("/customGallery");
+                    }}
+                    title="직접 사진 선택(9장)"
+                    titleStyle={{ fontSize: 16 }}
+                  />
+                  <Divider />
+                  <Menu.Item
+                    onPress={() => {
+                      setMode("recommend");
+                      setMenuVisible(false);
+                      nav.push("/customGallery");
+                    }}
+                    title="베스트샷 추천 받기"
+                    titleStyle={{ fontSize: 16 }}
+                  />
+                </Menu>
               </View>
             </View>
 
@@ -174,16 +200,16 @@ export default function CreatePage() {
 const styles = StyleSheet.create({
   all: {
     backgroundColor: "#FCF9F4",
-    flex: 1,
+    flex: 1
   },
   shadowWrapper: {
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 2.5 },
     shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowRadius: 1.6,
     elevation: 3,
     borderRadius: 30,
-    paddingHorizontal: 30,
+    paddingHorizontal: 30
   },
   card: {
     width: "100%",
@@ -193,26 +219,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
-    position: "relative",
+    position: "relative"
   },
   middle: {
     flex: 1,
     backgroundColor: "#FCF9F4",
-    paddingTop: 20,
+    paddingTop: 20
   },
   characterRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: 35,
-    padding: 10,
+    padding: 10
   },
 
   low: {
     paddingHorizontal: 30,
     flex: 1,
-    marginBottom: 40,
+    marginBottom: 40
   },
   scrollContainer: {
-    flexGrow: 1,
-  },
+    flexGrow: 1
+  }
 });

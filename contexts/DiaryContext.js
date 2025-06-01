@@ -25,11 +25,11 @@ export function DiaryProvider({ children }) {
         setSelectedCharacter,
         selectedDate,
         setSelectedDate,
-        resetDiary,
         diaryId,
         setDiaryId,
         diaryMapById,
         setDiaryMapById,
+        resetDiary,
       }}
     >
       {children}
