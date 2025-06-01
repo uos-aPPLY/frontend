@@ -35,24 +35,42 @@ export default function ConfirmModal({
           {hasMessage && <Text style={styles.message}>{message}</Text>}
 
           <View style={[styles.buttons, !hasMessage && { marginTop: 10 }]}>
-            <TouchableOpacity
-              style={[styles.button, styles.cancelButton]}
-              activeOpacity={0.7}
-              onPress={onCancel}
-            >
-              <Text style={[styles.buttonText, styles.cancelText]}>
-                {cancelText}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.button, styles.confirmButton]}
-              activeOpacity={0.7}
-              onPress={onConfirm}
-            >
-              <Text style={[styles.buttonText, styles.confirmText]}>
-                {confirmText}
-              </Text>
-            </TouchableOpacity>
+            {cancelText ? (
+              <>
+                <TouchableOpacity
+                  style={[styles.button, styles.cancelButton]}
+                  activeOpacity={0.7}
+                  onPress={onCancel}
+                >
+                  <Text style={[styles.buttonText, styles.cancelText]}>
+                    {cancelText}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.button, styles.confirmButton]}
+                  activeOpacity={0.7}
+                  onPress={onConfirm}
+                >
+                  <Text style={[styles.buttonText, styles.confirmText]}>
+                    {confirmText}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  styles.confirmButton,
+                  { flex: 1, marginLeft: 0, marginRight: 0 },
+                ]} // 전체 너비
+                activeOpacity={0.7}
+                onPress={onConfirm}
+              >
+                <Text style={[styles.buttonText, styles.confirmText]}>
+                  {confirmText}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </View>

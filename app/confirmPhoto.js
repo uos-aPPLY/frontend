@@ -29,8 +29,8 @@ export default function confirmPhoto() {
     selected,
     setSelected,
     setMode,
-    reset,
     setMainPhotoId,
+    resetPhoto,
   } = usePhoto();
   const { token } = useAuth();
   const { selectedDate } = useDiary();
@@ -98,7 +98,7 @@ export default function confirmPhoto() {
       );
 
       console.log("모든 임시 사진 삭제 완료");
-      reset();
+      resetPhoto();
     } catch (error) {
       console.error("사진 삭제 중 오류:", error);
     }
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
   header: {
     width: "100%",
     paddingHorizontal: 30,
-    paddingTop: 60,
+    paddingTop: 75,
     flexDirection: "row",
     justifyContent: "space-between",
     backgroundColor: "#FCF9F4",

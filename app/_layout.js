@@ -7,6 +7,7 @@ import { ActivityIndicator, View } from "react-native";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { DiaryProvider } from "../contexts/DiaryContext";
 import { PhotoProvider } from "../contexts/PhotoContext";
+import { PaperProvider } from "react-native-paper";
 import * as SplashScreen from "expo-splash-screen";
 
 SplashScreen.preventAutoHideAsync();
@@ -74,7 +75,9 @@ export default function RootLayout() {
       <DiaryProvider>
         <PhotoProvider>
           <GestureHandlerRootView style={{ flex: 1 }}>
-            <RootLayoutNav />
+            <PaperProvider>
+              <RootLayoutNav />
+            </PaperProvider>
           </GestureHandlerRootView>
         </PhotoProvider>
       </DiaryProvider>

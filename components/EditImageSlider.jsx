@@ -6,7 +6,7 @@ import {
   StyleSheet,
   Dimensions,
   FlatList,
-  TouchableOpacity,
+  TouchableOpacity
 } from "react-native";
 import IconButton from "./IconButton";
 
@@ -19,7 +19,7 @@ export default function EditImageSlider({
   onDeletePhoto,
   onAddPhoto,
   currentIndex,
-  setCurrentIndex,
+  setCurrentIndex
 }) {
   const flatListRef = useRef(null);
 
@@ -43,10 +43,7 @@ export default function EditImageSlider({
               style={styles.indicatorItem}
             >
               {currentIndex === index ? (
-                <Image
-                  source={{ uri: photo.photoUrl }}
-                  style={styles.thumbnail}
-                />
+                <Image source={{ uri: photo.photoUrl }} style={styles.thumbnail} />
               ) : (
                 <View style={styles.dot} />
               )}
@@ -72,7 +69,7 @@ export default function EditImageSlider({
             <View
               style={[
                 styles.cardContainer,
-                isEmpty && { marginTop: 30 }, // ✅ 사진이 없을 때만 위 여백 추가
+                isEmpty && { marginTop: 30 } // ✅ 사진이 없을 때만 위 여백 추가
               ]}
             >
               <View style={styles.addCard}>
@@ -93,7 +90,7 @@ export default function EditImageSlider({
                     styles.badgeOverlay,
                     String(item.id) === String(mainPhotoId)
                       ? styles.badgeActive
-                      : styles.badgeInactive,
+                      : styles.badgeInactive
                   ]}
                   onPress={() => setMainPhotoId(String(item.id))}
                 >
@@ -119,31 +116,31 @@ export default function EditImageSlider({
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 10,
+    marginBottom: 10
   },
   pageIndicator: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    gap: 10,
+    gap: 16,
     height: 22,
     marginTop: 5,
-    marginBottom: 10,
+    marginBottom: 10
   },
   indicatorItem: {
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "center"
   },
   dot: {
-    width: 8,
-    height: 8,
+    width: 10,
+    height: 10,
     borderRadius: 4,
-    backgroundColor: "#D9D9D9",
+    backgroundColor: "#D9D9D9"
   },
   thumbnail: {
-    width: 22,
-    height: 22,
-    borderRadius: 4,
+    width: 24,
+    height: 24,
+    borderRadius: 4
   },
   cardContainer: {
     position: "relative",
@@ -151,7 +148,7 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     borderRadius: 20,
     overflow: "hidden",
-    marginHorizontal: 30,
+    marginHorizontal: 30
   },
   shadowCard: {
     shadowColor: "#000",
@@ -159,13 +156,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.5,
     shadowRadius: 4,
     elevation: 3,
-    marginBottom: 10,
+    marginBottom: 10
   },
   image: {
     width: screenWidth - 60,
     aspectRatio: 1,
     borderRadius: 20,
-    resizeMode: "cover",
+    resizeMode: "cover"
   },
   addCard: {
     width: screenWidth - 60,
@@ -175,7 +172,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
-    position: "relative",
+    position: "relative"
   },
   badgeOverlay: {
     position: "absolute",
@@ -185,19 +182,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderWidth: 1,
-    zIndex: 10,
+    zIndex: 10
   },
   badgeActive: {
     backgroundColor: "#D68089",
-    borderColor: "#fff",
+    borderColor: "#fff"
   },
   badgeInactive: {
     backgroundColor: "rgba(0,0,0,0.2)",
-    borderColor: "#fff",
+    borderColor: "#fff"
   },
   badgeText: {
     fontSize: 12,
-    color: "#fff",
+    color: "#fff"
   },
   closeWrapper: {
     position: "absolute",
@@ -207,11 +204,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.5,
     shadowRadius: 2,
-    elevation: 3,
+    elevation: 3
   },
   closeIconImg: {
     width: 16,
     height: 16,
-    tintColor: "#fff",
-  },
+    tintColor: "#fff"
+  }
 });

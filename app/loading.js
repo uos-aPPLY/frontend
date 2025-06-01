@@ -29,9 +29,24 @@ export default function LoadingPage() {
       try {
         if (photoList.length <= 9) {
           if (isCancelledRef.current) return;
+
+          const selectedIds = photoList.map((p) => p.id);
+
           setSelected(photoList);
           setMainPhotoId(String(photoList[0]?.id || null));
-          nav.push(`/${mode}`);
+
+          const destination =
+            mode === "write"
+              ? "/write"
+              : {
+                  pathname: "/generate",
+                  params: {
+                    photos: JSON.stringify(selectedIds),
+                    fullPhotoList: JSON.stringify(photoList),
+                  },
+                };
+
+          nav.push(destination);
           return;
         }
 
@@ -69,7 +84,7 @@ export default function LoadingPage() {
                   pathname: "/generate",
                   params: {
                     photos: JSON.stringify(result.recommendedPhotoIds),
-                    fullPhotoList: JSON.stringify(photoList), // ✅ 핵심 추가
+                    fullPhotoList: JSON.stringify(photoList),
                   },
                 };
           nav.push(destination);

@@ -8,33 +8,26 @@ import {
   Dimensions,
   TouchableOpacity,
   TextInput,
-  Keyboard,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
+  ActivityIndicator
 } from "react-native";
 import { WebView } from "react-native-webview";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { parseISO } from "date-fns";
 import Constants from "expo-constants";
 import { useAuth } from "../contexts/AuthContext";
 import { useDiary } from "../contexts/DiaryContext";
-import { usePhoto } from "../contexts/PhotoContext";
 import HeaderDate from "../components/Header/HeaderDate";
 import characterList from "../assets/characterList";
 import IconButton from "../components/IconButton";
 import ImageSlider from "../components/ImageSlider";
-
-const screenWidth = Dimensions.get("window").width;
+import ConfirmModal from "../components/Modal/ConfirmModal";
 
 export default function EditWithAIPage() {
   const nav = useRouter();
   const { token } = useAuth();
-  const { date: dateParam } = useLocalSearchParams();
-  const date = dateParam;
-  const parsedDate = parseISO(date);
   const {
     text,
     setText,
@@ -42,6 +35,7 @@ export default function EditWithAIPage() {
     diaryMapById,
     selectedCharacter,
     setSelectedCharacter,
+    selectedDate
   } = useDiary();
 
   const diary = diaryMapById[diaryId];
@@ -53,11 +47,20 @@ export default function EditWithAIPage() {
   const webviewRef = useRef(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [webViewHeight, setWebViewHeight] = useState(360);
+  const [isGridView, setIsGridView] = useState(false);
   const characterObj = characterList.find((c) => c.name === diary.emotionIcon);
-  const [localCharacter, setLocalCharacter] = useState(
-    selectedCharacter ?? characterObj
-  );
+  const [localCharacter, setLocalCharacter] = useState(selectedCharacter ?? characterObj);
   const photosToShow = diary.photos || [];
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [isResultReady, setIsResultReady] = useState(false);
+  const scrollRef = useRef(null);
+  const [isErrorModalVisible, setIsErrorModalVisible] = useState(false);
+
+  useEffect(() => {
+    if (isSubmitting && scrollRef.current) {
+      scrollRef.current.scrollTo({ y: 0, animated: true });
+    }
+  }, [isSubmitting]);
 
   const handleMessage = async (event) => {
     try {
@@ -70,7 +73,7 @@ export default function EditWithAIPage() {
 
         console.log("✅ PATCH body", {
           markedDiaryContent: content,
-          userRequest: requestText,
+          userRequest: requestText
         });
 
         setIsSubmitting(true);
@@ -81,12 +84,12 @@ export default function EditWithAIPage() {
             method: "PATCH",
             headers: {
               Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
+              "Content-Type": "application/json"
             },
             body: JSON.stringify({
               markedDiaryContent: content,
-              userRequest: requestText,
-            }),
+              userRequest: requestText
+            })
           }
         );
 
@@ -102,8 +105,8 @@ export default function EditWithAIPage() {
 
         const parsed = JSON.parse(resultText);
         setLocalText(parsed.diary);
-
         setRequestText("");
+        setIsResultReady(true);
 
         const newCharacter = characterList.find((c) => c.name === parsed.emoji);
         if (newCharacter) {
@@ -129,7 +132,7 @@ export default function EditWithAIPage() {
       }
 
       if (action === "ERROR") {
-        alert(text || "AI 요청을 위한 하이라이팅이 필요해요.");
+        setIsErrorModalVisible(true);
         return;
       }
     } catch (err) {
@@ -139,6 +142,7 @@ export default function EditWithAIPage() {
   };
 
   const handleSubmit = () => {
+    setHasSubmitted(true);
     webviewRef.current?.injectJavaScript(`
       (function() {
         const result = window.getMarkedText?.();
@@ -167,10 +171,7 @@ export default function EditWithAIPage() {
     setWebviewLoaded(true);
     if (!text) return;
 
-    const escapedContent = text
-      .replace(/\\/g, "\\\\")
-      .replace(/`/g, "\\`")
-      .replace(/\$/g, "\\$");
+    const escapedContent = text.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$/g, "\\$");
 
     webviewRef.current?.injectJavaScript(`
       window.postMessage(JSON.stringify({ content: \`${escapedContent}\` }), "*");
@@ -181,73 +182,65 @@ export default function EditWithAIPage() {
   if (!diaryId || !diary) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <Text style={{ fontSize: 16, color: "#888" }}>
-          일기 데이터를 불러오는 중입니다...
-        </Text>
+        <Text style={{ fontSize: 16, color: "#888" }}>일기 데이터를 불러오는 중입니다...</Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: "#fff" }}
-      edges={["bottom"]}
-    >
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }} edges={["bottom"]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 15 : 0}
       >
         <View style={{ flex: 1 }}>
           <ScrollView
+            ref={scrollRef}
             style={styles.container}
             contentContainerStyle={styles.scrollContainer}
             keyboardShouldPersistTaps="handled"
           >
             <HeaderDate
-              date={parsedDate}
-              hasText={true}
-              onBack={() =>
-                nav.replace({ pathname: "/edit", params: { id: diaryId } })
-              }
-              onSave={handleSave}
+              date={selectedDate}
+              hasText={false}
+              onBack={() => nav.replace({ pathname: "/edit", params: { id: diaryId } })}
+              onSave={undefined}
             />
 
             <ImageSlider
               photos={photosToShow}
-              isGridView={false}
+              isGridView={isGridView}
               currentIndex={currentIndex}
               setCurrentIndex={setCurrentIndex}
               flatListRef={flatListRef}
             />
 
             <View style={styles.middle}>
-              <View style={{ width: 29 }} />
+              <View style={{ width: 34 }} />
               <Image
                 source={localCharacter?.source ?? characterObj?.source}
                 style={styles.character}
               />
               <IconButton
-                source={require("../assets/icons/highlighticon.png")}
+                source={
+                  isGridView
+                    ? require("../assets/icons/oneviewicon.png")
+                    : require("../assets/icons/viewicon.png")
+                }
                 wsize={24}
                 hsize={24}
-                style={{ marginRight: 5 }}
-                onPress={() => {
-                  webviewRef.current?.injectJavaScript(`
-                    if (typeof toggleMark === 'function') toggleMark();
-                    true;
-                  `);
-                }}
+                style={{ marginRight: 10 }}
+                onPress={() => setIsGridView((prev) => !prev)}
+                disabled={photosToShow.length <= 1}
               />
             </View>
 
             <View style={styles.textBoxWrapper}>
-              {!webviewLoaded && (
+              {(!webviewLoaded || isSubmitting) && (
                 <View style={styles.webviewLoading}>
                   <ActivityIndicator size="small" color="#D68089" />
-                  <Text style={{ marginTop: 10, color: "#A78C7B" }}>
-                    로딩 중...
-                  </Text>
+                  <Text style={{ marginTop: 10, color: "#A78C7B" }}>로딩 중...</Text>
                 </View>
               )}
 
@@ -264,33 +257,70 @@ export default function EditWithAIPage() {
                   styles.webview,
                   { height: webViewHeight },
                   !webviewLoaded && { height: 0 },
+                  isSubmitting && { opacity: 0 }
                 ]}
               />
             </View>
           </ScrollView>
 
           <View style={styles.inputAreaFixed}>
-            <TextInput
-              placeholder="수정할 부분을 하이라이팅한 뒤, 원하는 수정 방향을 입력해주세요."
-              placeholderTextColor="#aaa"
-              multiline
-              style={styles.inputBox}
-              value={requestText}
-              onChangeText={setRequestText}
-              editable={!isSubmitting}
-            />
+            <View style={styles.inputRow}>
+              <TextInput
+                placeholder="수정할 부분을 드래그하여 하이라이팅한 뒤, 원하는 수정 방향을 입력해주세요."
+                placeholderTextColor="#aaa"
+                multiline
+                style={styles.inputBox}
+                value={requestText}
+                onChangeText={setRequestText}
+                editable={!isSubmitting}
+              />
 
-            {isSubmitting ? (
+              <View style={styles.iconButtons}>
+                <IconButton
+                  source={require("../assets/icons/highlightingicon.png")}
+                  wsize={32}
+                  hsize={32}
+                  onPress={() => {
+                    webviewRef.current?.injectJavaScript(`
+            if (typeof toggleMark === 'function') toggleMark();
+            true;
+          `);
+                  }}
+                />
+                <View style={{ height: 10 }} />
+                <IconButton
+                  source={require("../assets/icons/submiticon.png")}
+                  wsize={32}
+                  hsize={32}
+                  onPress={handleSubmit}
+                  disabled={!requestText.trim() || isSubmitting}
+                  style={{
+                    opacity: !requestText.trim() || isSubmitting ? 0.5 : 1
+                  }}
+                />
+              </View>
+            </View>
+          </View>
+
+          {isResultReady &&
+            (isSubmitting ? (
               <View style={styles.loadingSubmit}>
                 <ActivityIndicator size="small" color="#fff" />
               </View>
             ) : (
-              <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
-                <Text style={styles.submitText}>보내기</Text>
+              <TouchableOpacity style={styles.completeBtn} onPress={handleSave}>
+                <Text style={styles.completeText}>완료</Text>
               </TouchableOpacity>
-            )}
-          </View>
+            ))}
         </View>
+        <ConfirmModal
+          visible={isErrorModalVisible}
+          onConfirm={() => setIsErrorModalVisible(false)}
+          title="하이라이팅된 문구가 없어요."
+          message="수정할 영역을 선택해주세요."
+          cancelText="" // ❗️빈 문자열 전달
+          confirmText="확인"
+        />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -303,7 +333,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FCF9F4",
+    backgroundColor: "#FCF9F4"
   },
   middle: {
     alignItems: "center",
@@ -311,21 +341,21 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     paddingHorizontal: 30,
     marginVertical: 10,
-    flexDirection: "row",
+    flexDirection: "row"
   },
   character: { width: 42, height: 40 },
   webview: {
     marginHorizontal: 30,
     borderRadius: 20,
-    overflow: "hidden",
+    overflow: "hidden"
   },
   webviewLoading: {
     height: 75,
     justifyContent: "center",
-    alignItems: "center",
+    alignItems: "center"
   },
   textBoxWrapper: {
-    backgroundColor: "#FCF9F4",
+    backgroundColor: "#FCF9F4"
   },
   inputAreaFixed: {
     paddingHorizontal: 20,
@@ -337,36 +367,55 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: -5 },
-    elevation: 10,
+    elevation: 10
   },
+
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "flex-start"
+  },
+
   inputBox: {
+    flex: 1,
     backgroundColor: "#f9f9f9",
     borderRadius: 20,
     padding: 14,
     fontSize: 14,
     lineHeight: 22,
     color: "#333",
-    marginBottom: 12,
     minHeight: 80,
     textAlignVertical: "top",
+    marginRight: 10
   },
-  submitBtn: {
-    backgroundColor: "#E1A4A9",
+
+  iconButtons: {
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 4 // 상하 여백 추가
+  },
+
+  completeBtn: {
+    marginTop: 10,
+    marginHorizontal: 20,
+    backgroundColor: "#E3A7AD",
     height: 44,
     borderRadius: 14,
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "center"
   },
-  submitText: {
+  completeText: {
     color: "#fff",
     fontWeight: "600",
-    fontSize: 14,
+    fontSize: 14
   },
+
   loadingSubmit: {
-    backgroundColor: "#E1A4A9",
+    marginTop: 10,
+    marginHorizontal: 20,
+    backgroundColor: "#E3A7AD",
     height: 44,
     borderRadius: 14,
     alignItems: "center",
-    justifyContent: "center",
-  },
+    justifyContent: "center"
+  }
 });

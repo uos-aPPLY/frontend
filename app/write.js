@@ -224,12 +224,12 @@ export default function WritePage() {
             try {
               await clearAllTempPhotos(token); // ✅ 임시 사진 서버에서 제거
               resetDiary(); // 기존 상태 리셋
-              reset();
+              resetPhoto();
               nav.push("/calendar");
             } catch (err) {
               console.error("❌ 뒤로가기 중 임시 사진 삭제 실패:", err);
               resetDiary();
-              reset();
+              resetPhoto();
               nav.push("/calendar");
             }
           }}
@@ -237,7 +237,7 @@ export default function WritePage() {
           onSave={() => {
             resetDiary();
             createDiary();
-            reset();
+            resetPhoto();
           }}
         />
 
@@ -257,7 +257,7 @@ export default function WritePage() {
             />
 
             <View style={styles.characterPicker}>
-              <View style={{ width: 24, height: 24 }} />
+              <View style={{ width: 38, height: 24 }} />
               <IconButton
                 source={selectedCharacter.source}
                 wsize={40}
@@ -266,8 +266,9 @@ export default function WritePage() {
               />
               <IconButton
                 source={require("../assets/icons/pictureinfoicon.png")}
-                wsize={24}
+                wsize={28}
                 hsize={24}
+                style={{ marginRight: 10 }}
                 onPress={() => nav.push("/photoReorder")}
               />
             </View>
@@ -324,8 +325,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     flexDirection: "row",
-    gap: 16,
-    paddingHorizontal: 35,
+    paddingHorizontal: 30,
   },
   low: {
     paddingHorizontal: 30,

@@ -2,8 +2,6 @@ import React, { createContext, useContext, useState } from "react";
 
 const PhotoContext = createContext();
 
-export const usePhoto = () => useContext(PhotoContext);
-
 export const PhotoProvider = ({ children }) => {
   const [photoList, setPhotoList] = useState([]);
   const [selected, setSelected] = useState([]);
@@ -11,7 +9,7 @@ export const PhotoProvider = ({ children }) => {
   const [mainPhotoId, setMainPhotoId] = useState(null);
   const [tempPhotoList, setTempPhotoList] = useState(null);
 
-  const reset = () => {
+  const resetPhoto = () => {
     setPhotoList([]);
     setSelected([]);
     setMode(null);
@@ -30,12 +28,14 @@ export const PhotoProvider = ({ children }) => {
         setSelected,
         mode,
         setMode,
-        reset,
         mainPhotoId,
         setMainPhotoId,
+        resetPhoto,
       }}
     >
       {children}
     </PhotoContext.Provider>
   );
 };
+
+export const usePhoto = () => useContext(PhotoContext);

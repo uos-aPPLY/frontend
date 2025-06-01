@@ -1,5 +1,5 @@
 import { InteractionManager } from "react-native";
-import * as ImagePicker from "expo-image-picker";
+import * as MediaLibrary from "expo-media-library";
 import * as ImageManipulator from "expo-image-manipulator";
 import { uploadPhotos } from "./uploadPhotos";
 
@@ -21,7 +21,7 @@ export const openGalleryAndUpload = async (token, navigate) => {
     allowsMultipleSelection: true,
     selectionLimit: 160,
     quality: 1,
-    exif: true,
+    exif: true
   });
 
   if (!result.canceled) {
@@ -39,11 +39,10 @@ export const openGalleryAndUpload = async (token, navigate) => {
         const originalAssets = result.assets;
         const resizedAssets = await Promise.all(
           originalAssets.map((asset) =>
-            ImageManipulator.manipulateAsync(
-              asset.uri,
-              [{ resize: { width: 400 } }],
-              { compress: 0.5, format: ImageManipulator.SaveFormat.JPEG }
-            )
+            ImageManipulator.manipulateAsync(asset.uri, [{ resize: { width: 400 } }], {
+              compress: 0.5,
+              format: ImageManipulator.SaveFormat.JPEG
+            })
           )
         );
 

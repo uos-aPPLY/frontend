@@ -44,6 +44,9 @@ npx expo install expo-linear-gradient
 npx expo install react-native-safe-area-context
 npx expo install expo-haptics
 npx expo install react-native-svg
+npx expo install expo-media-library
+npx expo install react-native-paper react-native-vector-icons
+
 ```
 
 ## Prettier 설정
