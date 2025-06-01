@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
-  ActivityIndicator,
+  ActivityIndicator
 } from "react-native";
 import * as KakaoLogin from "@react-native-seoul/kakao-login";
 import NaverLogin from "@react-native-seoul/naver-login";
@@ -22,7 +22,7 @@ const {
   NAVER_CLIENT_KEY,
   NAVER_CLIENT_SECRET,
   NAVER_APP_NAME,
-  NAVER_SERVICE_URL_SCHEME,
+  NAVER_SERVICE_URL_SCHEME
 } = Constants.expoConfig.extra;
 
 export default function Login() {
@@ -39,7 +39,7 @@ export default function Login() {
           consumerKey: NAVER_CLIENT_KEY,
           consumerSecret: NAVER_CLIENT_SECRET,
           serviceUrlSchemeIOS: NAVER_SERVICE_URL_SCHEME,
-          disableNaverAppAuthIOS: true,
+          disableNaverAppAuthIOS: true
         });
         console.log("Naver SDK initialized");
       } catch (e) {
@@ -66,20 +66,20 @@ export default function Login() {
       const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider: "naver", accessToken: naverToken }),
+        body: JSON.stringify({ provider: "naver", accessToken: naverToken })
       });
       if (!res.ok) throw new Error(await res.text());
 
-      const {
-        accessToken: backendAccessToken,
-        refreshToken: backendRefreshToken,
-      } = await res.json();
-      console.log("Backend access token: ", backendAccessToken);
-      console.log("Backend refresh token: ", backendRefreshToken);
-
+      const { accessToken, accessTokenExpiresIn, refreshToken, refreshTokenExpiresIn } =
+        await res.json();
+      console.log("Backend access token: ", accessToken);
+      console.log("Backend access token expires in: ", accessTokenExpiresIn);
+      console.log("Backend refresh token: ", refreshToken);
       await saveToken({
-        accessToken: backendAccessToken,
-        refreshToken: backendRefreshToken,
+        accessToken,
+        accessTokenExpiresIn,
+        refreshToken,
+        refreshTokenExpiresIn
       });
 
       const requiredAgreed = await checkRequiredAgreed();
@@ -98,22 +98,29 @@ export default function Login() {
     setLoading(true);
     try {
       const token =
-        Platform.OS === "ios"
-          ? await KakaoLogin.loginWithKakaoAccount()
-          : await KakaoLogin.login();
+        Platform.OS === "ios" ? await KakaoLogin.loginWithKakaoAccount() : await KakaoLogin.login();
       console.log(token);
       const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           provider: "kakao",
-          accessToken: token.accessToken,
-        }),
+          accessToken: token.accessToken
+        })
       });
       if (!res.ok) throw new Error(await res.text());
 
-      const { accessToken, refreshToken } = await res.json();
-      await saveToken({ accessToken, refreshToken });
+      const { accessToken, accessTokenExpiresIn, refreshToken, refreshTokenExpiresIn } =
+        await res.json();
+      console.log("Backend access token: ", accessToken);
+      console.log("Backend access token expires in: ", accessTokenExpiresIn);
+      console.log("Backend refresh token: ", refreshToken);
+      await saveToken({
+        accessToken,
+        accessTokenExpiresIn,
+        refreshToken,
+        refreshTokenExpiresIn
+      });
 
       const requiredAgreed = await checkRequiredAgreed();
       router.replace(requiredAgreed ? "/home" : "/terms");
@@ -143,24 +150,12 @@ export default function Login() {
         resizeMode="contain"
       />
       <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={styles.kakaoLoginButton}
-          onPress={handleKakaoLogin}
-        >
-          <Image
-            source={require("../assets/icons/kakaoicon.png")}
-            style={styles.kakaoIcon}
-          />
+        <TouchableOpacity style={styles.kakaoLoginButton} onPress={handleKakaoLogin}>
+          <Image source={require("../assets/icons/kakaoicon.png")} style={styles.kakaoIcon} />
           <Text style={styles.loginButtonText}>카카오로 시작하기</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.naverLoginButton}
-          onPress={handleNaverLogin}
-        >
-          <Image
-            source={require("../assets/icons/navericon.png")}
-            style={styles.naverIcon}
-          />
+        <TouchableOpacity style={styles.naverLoginButton} onPress={handleNaverLogin}>
+          <Image source={require("../assets/icons/navericon.png")} style={styles.naverIcon} />
           <Text style={styles.naverloginButtonText}>네이버로 시작하기</Text>
         </TouchableOpacity>
       </View>
@@ -174,26 +169,26 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fcf9f4",
     justifyContent: "center",
-    alignItems: "center",
+    alignItems: "center"
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.2)",
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 10,
+    zIndex: 10
   },
   logo: {
     width: 120,
     height: 120,
-    marginVertical: -10,
+    marginVertical: -10
   },
   buttonContainer: {
     position: "absolute",
     bottom: 100,
     width: "100%",
     alignItems: "center",
-    gap: 10,
+    gap: 10
   },
   kakaoLoginButton: {
     width: "80%",
@@ -204,7 +199,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FEE500",
     borderRadius: 14,
     paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingHorizontal: 24
   },
   naverLoginButton: {
     width: "80%",
@@ -215,26 +210,26 @@ const styles = StyleSheet.create({
     backgroundColor: "#03C75A",
     borderRadius: 14,
     paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingHorizontal: 24
   },
   kakaoIcon: {
     width: 20,
     height: 20,
-    marginRight: 10,
+    marginRight: 10
   },
   naverIcon: {
     width: 35,
     height: 35,
-    marginRight: 5,
+    marginRight: 5
   },
   loginButtonText: {
     color: "#000",
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "600"
   },
   naverloginButtonText: {
     color: "#fff",
     fontSize: 16,
-    fontWeight: "600",
-  },
+    fontWeight: "600"
+  }
 });
