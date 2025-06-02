@@ -53,7 +53,6 @@ export default function SpeechStyle() {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalText, setModalText] = useState(text);
 
   useEffect(() => {
     if (from === "settings") {
@@ -84,10 +83,6 @@ export default function SpeechStyle() {
     }
   }, [from]);
 
-  useEffect(() => {
-    setModalText(text);
-  }, [text]);
-
   const onSelect = (style) => {
     setSelected(style);
     setText(templates[style]);
@@ -98,8 +93,13 @@ export default function SpeechStyle() {
   };
 
   const onConfirm = async () => {
-    if (!selected || loading) return;
+    if (!selected && text.trim() === "") {
+      Alert.alert("알림", "말투를 선택하거나 직접 입력해주세요.");
+      return;
+    }
+    if (loading) return;
     setLoading(true);
+
     try {
       const token = await SecureStore.getItemAsync("accessToken");
       if (!token) throw new Error("인증 토큰이 없습니다.");
@@ -132,12 +132,12 @@ export default function SpeechStyle() {
     }
   };
 
-  const isValid = selected !== null && !loading;
+  const isValid = (selected !== null || text.trim() !== "") && !loading;
 
-  if (loading && from === "settings" && !selected) {
+  if (loading && from === "settings" && !selected && text.trim() === "") {
     return (
       <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#D68089" />
       </View>
     );
   }
@@ -175,16 +175,17 @@ export default function SpeechStyle() {
         </View>
       </ScrollView>
 
-      {isValid && (
+      {(selected !== null || text.trim() !== "") && (
         <View style={styles.editorContainer}>
           <Text style={styles.descriptionText}>아래의 말투를 누르면 커스터마이징이 가능해요.</Text>
-
           <TouchableOpacity
-            style={styles.textInput}
+            style={styles.textInputDisplay}
             activeOpacity={0.7}
             onPress={() => setModalVisible(true)}
           >
-            <Text>{text}</Text>
+            <Text numberOfLines={5} ellipsizeMode="tail">
+              {text || "말투를 선택하거나 직접 입력해주세요."}
+            </Text>
           </TouchableOpacity>
         </View>
       )}
@@ -200,8 +201,12 @@ export default function SpeechStyle() {
       <TextEditorModal
         visible={modalVisible}
         initialText={text}
-        onSave={(edited) => setText(edited)}
+        onSave={(editedText) => {
+          setText(editedText.trim());
+          return true;
+        }}
         onCancel={() => setModalVisible(false)}
+        hintText="자유롭게 말투를 수정해보세요!"
       />
     </SafeAreaView>
   );
@@ -223,14 +228,14 @@ const styles = StyleSheet.create({
   header: { marginBottom: 20 },
   backButton: {
     position: "absolute",
-    top: absoluteTopPosition, // 수정된 top 값
-    left: absoluteLeftPosition, // 수정된 left 값
-    padding: BUTTON_PADDING, // 상수 값 사용
+    top: absoluteTopPosition,
+    left: absoluteLeftPosition,
+    padding: BUTTON_PADDING,
     zIndex: 1
   },
   backicon: {
-    width: ICON_WIDTH, // 상수 값 사용
-    height: ICON_HEIGHT // 상수 값 사용
+    width: ICON_WIDTH,
+    height: ICON_HEIGHT
   },
   title: {
     fontSize: 24,
@@ -270,7 +275,7 @@ const styles = StyleSheet.create({
     marginBottom: 5
   },
   editorContainer: { paddingTop: 10 },
-  textInput: {
+  textInputDisplay: {
     height: 120,
     borderRadius: 20,
     padding: 15,

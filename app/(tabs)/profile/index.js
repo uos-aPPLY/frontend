@@ -8,7 +8,8 @@ import {
   Image,
   ActivityIndicator,
   TouchableOpacity,
-  Dimensions
+  Dimensions,
+  Alert
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as SecureStore from "expo-secure-store";
@@ -91,25 +92,58 @@ export default function ProfilePage() {
   }, []);
 
   const handleSaveNickname = async (newName) => {
-    const cleaned = newName
-      .replace(/[\r\n]/g, "")
-      .trim()
-      .slice(0, 10);
+    const trimmedName = newName.trim();
+    if (trimmedName === "") {
+      Alert.alert("오류", "닉네임은 비워둘 수 없습니다.\n원래 닉네임으로 유지됩니다.");
+      return false;
+    }
+    let validatedName = "";
+    let currentWeight = 0;
+    const maxWeight = 20;
+    for (const char of trimmedName) {
+      let charWeight = 1;
+      if (char >= "\uAC00" && char <= "\uD7A3") {
+        charWeight = 2;
+      }
+      if (currentWeight + charWeight <= maxWeight) {
+        validatedName += char;
+        currentWeight += charWeight;
+      } else {
+        break;
+      }
+    }
+    if (validatedName !== trimmedName) {
+      Alert.alert("알림", "닉네임이 최대 길이에 맞춰 자동 수정되었습니다.");
+    }
+    if (validatedName === "") {
+      Alert.alert("오류", "유효한 닉네임이 아닙니다.");
+      return false;
+    }
+
     try {
       const token = await SecureStore.getItemAsync("accessToken");
-      await fetch(`${BACKEND_URL}/api/users/nickname`, {
+      const response = await fetch(`${BACKEND_URL}/api/users/nickname`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ nickname: cleaned })
+        body: JSON.stringify({ nickname: validatedName })
       });
-      setNickname(cleaned);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: "알 수 없는 서버 오류" }));
+        Alert.alert("닉네임 변경 실패", errorData.message || `서버 응답: ${response.status}`);
+        return false;
+      }
+
+      setNickname(validatedName);
+      return true;
     } catch (e) {
-      console.error(e);
+      console.error("Save Nickname Error:", e);
+      Alert.alert("오류", "닉네임 변경 중 네트워크 또는 기타 오류가 발생했습니다.");
+      return false;
     }
-    setModalVisible(false);
   };
 
   if (loading) {
@@ -259,7 +293,7 @@ const styles = StyleSheet.create({
   settingsIcon: {
     position: "absolute",
     top: 75,
-    right: 30,
+    right: 15,
     resizeMode: "contain",
     width: 24,
     height: 24
