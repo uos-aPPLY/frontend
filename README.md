@@ -46,7 +46,7 @@ npx expo install expo-haptics
 npx expo install react-native-svg
 npx expo install expo-media-library
 npx expo install react-native-paper react-native-vector-icons
-
+npx expo install react-native-render-html
 ```
 
 ## Prettier 설정

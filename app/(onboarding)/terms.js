@@ -9,11 +9,13 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  Dimensions
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../contexts/AuthContext";
 import CheckBox from "../../components/CheckBox";
 import Constants from "expo-constants";
+import RenderHtml from "react-native-render-html";
 
 const HEADER_HEIGHT_REFERENCE = 50;
 const BUTTON_PADDING = 8;
@@ -24,9 +26,9 @@ const ICON_HORIZONTAL_POSITION_REFERENCE = 30;
 const touchableAreaHeight = ICON_HEIGHT + BUTTON_PADDING * 2;
 const topOffsetInHeader = (HEADER_HEIGHT_REFERENCE - touchableAreaHeight) / 2;
 const absoluteTopPosition = Constants.statusBarHeight + topOffsetInHeader;
+const absoluteLeftPosition = ICON_HORIZONTAL_POSITION_REFERENCE - BUTTON_PADDING;
 
-const absoluteLeftPosition =
-  ICON_HORIZONTAL_POSITION_REFERENCE - BUTTON_PADDING;
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 export default function Terms() {
   const router = useRouter();
@@ -49,30 +51,30 @@ export default function Terms() {
   }, []);
 
   const toggle = (id) =>
-    setTerms((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, agreed: !t.agreed } : t))
-    );
+    setTerms((prev) => prev.map((t) => (t.id === id ? { ...t, agreed: !t.agreed } : t)));
 
   const toggleExpand = (id) => {
     setExpandedId((prev) => (prev === id ? null : id));
   };
 
-  const allRequiredAgreed = terms
-    .filter((t) => t.required)
-    .every((t) => t.agreed);
+  const allRequiredAgreed = terms.filter((t) => t.required).every((t) => t.agreed);
   const allChecked = terms.every((t) => t.agreed);
 
-  const toggleAll = () =>
-    setTerms((prev) => prev.map((t) => ({ ...t, agreed: !allChecked })));
+  const toggleAll = () => setTerms((prev) => prev.map((t) => ({ ...t, agreed: !allChecked })));
 
   const onConfirm = async () => {
     try {
       const agreements = terms.map(({ id, agreed }) => ({
         termsId: id,
-        agreed,
+        agreed
       }));
-      await submitAgreements(agreements);
-      router.replace("/nickname");
+      const updatedUser = await submitAgreements(agreements);
+
+      if (!updatedUser?.nickname) {
+        router.push("/nickname");
+      } else {
+        router.push("/home");
+      }
     } catch (e) {
       Alert.alert("제출 실패", e.message);
     }
@@ -90,10 +92,7 @@ export default function Terms() {
             {t.required ? "[필수] " : "[선택] "}
             {t.title}
           </Text>
-          <TouchableOpacity
-            onPress={() => toggleExpand(t.id)}
-            style={styles.arrowButton}
-          >
+          <TouchableOpacity onPress={() => toggleExpand(t.id)} style={styles.arrowButton}>
             <Image
               source={require("../../assets/icons/forwardicon.png")}
               style={[styles.arrowIcon, isExpanded && styles.arrowUp]}
@@ -102,7 +101,11 @@ export default function Terms() {
         </View>
         {isExpanded && (
           <View style={styles.contentContainer}>
-            <Text style={styles.contentText}>{t.content}</Text>
+            <RenderHtml
+              source={{ html: t.content }}
+              contentWidth={SCREEN_WIDTH - 60}
+              baseStyle={styles.contentText}
+            />
           </View>
         )}
       </View>
@@ -115,7 +118,7 @@ export default function Terms() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <TouchableOpacity style={styles.backButton} onPress={goBack}>
         <Text style={styles.backText}>
           <Image
@@ -135,16 +138,12 @@ export default function Terms() {
 
       <View style={styles.separator} />
 
-      <ScrollView style={styles.textContainer}>
-        {terms.map(renderRow)}
-      </ScrollView>
+      <ScrollView style={styles.textContainer}>{terms.map(renderRow)}</ScrollView>
 
       <TouchableOpacity
         style={[
           styles.confirmButton,
-          allRequiredAgreed
-            ? styles.confirmButtonEnabled
-            : styles.confirmButtonDisabled,
+          allRequiredAgreed ? styles.confirmButtonEnabled : styles.confirmButtonDisabled
         ]}
         onPress={onConfirm}
         disabled={!allRequiredAgreed}
@@ -161,18 +160,18 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 30,
     paddingLeft: 30,
-    paddingRight: 30,
+    paddingRight: 30
   },
   backButton: {
     position: "absolute",
-    top: absoluteTopPosition, // 수정된 top 값
-    left: absoluteLeftPosition, // 수정된 left 값
-    padding: BUTTON_PADDING, // 상수 값 사용
-    zIndex: 1, // 다른 요소 위에 오도록 설정
+    top: absoluteTopPosition,
+    left: absoluteLeftPosition,
+    padding: BUTTON_PADDING,
+    zIndex: 1
   },
   backicon: {
-    width: ICON_WIDTH, // 상수 값 사용
-    height: ICON_HEIGHT, // 상수 값 사용
+    width: ICON_WIDTH,
+    height: ICON_HEIGHT
   },
   header: {
     fontSize: 24,
@@ -180,7 +179,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 30,
     textAlign: "left",
-    lineHeight: 36,
+    lineHeight: 36
   },
   textContainer: { flex: 1 },
   item: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
@@ -190,25 +189,25 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: "#C7C7CC",
     marginTop: 10,
-    marginBottom: 28,
+    marginBottom: 28
   },
   confirmButton: {
     alignItems: "center",
     justifyContent: "center",
     height: 50,
     borderRadius: 14,
-    marginBottom: 60,
+    marginBottom: 60
   },
   confirmButtonEnabled: {
-    backgroundColor: "rgba(214, 128, 137, 0.7)",
+    backgroundColor: "rgba(214, 128, 137, 0.7)"
   },
   confirmButtonDisabled: {
-    backgroundColor: "#D9D9D9",
+    backgroundColor: "#D9D9D9"
   },
   confirmButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "600"
   },
   rowContainer: { marginBottom: 20 },
   itemRow: { flexDirection: "row", alignItems: "center" },
@@ -217,17 +216,16 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     tintColor: "#A78C7B",
-    resizeMode: "contain",
+    resizeMode: "contain"
   },
   arrowUp: { transform: [{ rotate: "90deg" }] },
   contentContainer: {
     padding: 8,
-    backgroundColor: "#FFF8F5",
-    borderRadius: 8,
+    borderRadius: 8
   },
   contentText: {
     fontSize: 14,
     color: "#333",
-    lineHeight: 22,
-  },
+    lineHeight: 22
+  }
 });

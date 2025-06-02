@@ -177,7 +177,10 @@ export function AuthProvider({ children }) {
       body: JSON.stringify({ agreements })
     });
     if (!res.ok) throw new Error("약관 동의 제출 실패");
-    setUser((u) => ({ ...u, hasAgreedToTerms: true }));
+
+    const updatedUser = await res.json();
+    setUser(updatedUser);
+    return updatedUser;
   };
 
   const checkRequiredAgreed = async () => {

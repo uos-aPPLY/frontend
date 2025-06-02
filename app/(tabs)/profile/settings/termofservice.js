@@ -1,4 +1,4 @@
-// app/settings/termofservice.js
+// app/(tabs)/profile/settings/termofservice.js
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";

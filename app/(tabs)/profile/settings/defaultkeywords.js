@@ -1,3 +1,4 @@
+// app/(tabs)/profile/settings/defaultkeywords.js
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";

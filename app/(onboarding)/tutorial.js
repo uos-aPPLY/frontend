@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
-  Image,
+  Image
 } from "react-native";
 import { useRouter } from "expo-router";
 import Constants from "expo-constants";
@@ -18,26 +18,26 @@ const pages = [
   {
     image: require("../../assets/icons/cameraicon.png"),
     title: "사진만 올리면 하루 일기가\n자동으로 완성돼요",
-    subtitle: "사진별 포커스 키워드로\n더 풍부한 일기를 만들 수 있어요",
+    subtitle: "사진별 포커스 키워드로\n더 풍부한 일기를 만들 수 있어요"
   },
   {
     image: require("../../assets/icons/conversationicon.png"),
 
     title: "말투 커스터마이징으로\n나에게 맞는 일기를 만들 수 있어요",
-    subtitle: "마이페이지 설정에서\n언제든 말투를 바꿀 수 있어요",
+    subtitle: "마이페이지 설정에서\n언제든 말투를 바꿀 수 있어요"
   },
   {
     image: require("../../assets/icons/handpictureicon.png"),
 
     title: "사진 여러 장을 업로드하면\nAI가 좋은 사진을 골라줘요",
-    subtitle: "필수 사진을 선택해\n일기를 생성할 수 있어요",
+    subtitle: "필수 사진을 선택해\n일기를 생성할 수 있어요"
   },
   {
     image: require("../../assets/icons/phoneicon.png"),
 
     title: "텍스트 명령만으로 AI 일기를\n손쉽게 수정할 수 있어요",
-    subtitle: "모든 일기는 캘린더로 한눈에 정리돼요",
-  },
+    subtitle: "모든 일기는 캘린더로 한눈에 정리돼요"
+  }
 ];
 
 const HEADER_HEIGHT_REFERENCE = 50;
@@ -49,8 +49,7 @@ const touchableAreaHeight = ICON_HEIGHT + BUTTON_PADDING * 2;
 const topOffsetInHeader = (HEADER_HEIGHT_REFERENCE - touchableAreaHeight) / 2;
 const absoluteTopPosition = Constants.statusBarHeight + topOffsetInHeader;
 
-const absoluteLeftPosition =
-  ICON_HORIZONTAL_POSITION_REFERENCE - BUTTON_PADDING;
+const absoluteLeftPosition = ICON_HORIZONTAL_POSITION_REFERENCE - BUTTON_PADDING;
 
 export default function Tutorial() {
   const scrollRef = useRef(null);
@@ -58,7 +57,7 @@ export default function Tutorial() {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const goBack = () => {
-    router.replace("/speechstyle");
+    router.back();
   };
 
   const onMomentumScrollEnd = (e) => {
@@ -70,10 +69,10 @@ export default function Tutorial() {
     if (currentIndex < pages.length - 1) {
       scrollRef.current.scrollTo({
         x: width * (currentIndex + 1),
-        animated: true,
+        animated: true
       });
     } else {
-      router.replace("/home");
+      router.push("/home");
     }
   };
 
@@ -108,18 +107,13 @@ export default function Tutorial() {
         {pages.map((_, idx) => (
           <View
             key={idx}
-            style={[
-              styles.dot,
-              idx === currentIndex ? styles.dotActive : styles.dotInactive,
-            ]}
+            style={[styles.dot, idx === currentIndex ? styles.dotActive : styles.dotInactive]}
           />
         ))}
       </View>
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.nextButton} onPress={onNext}>
-          <Text style={styles.nextText}>
-            {currentIndex < pages.length - 1 ? "다음" : "확인"}
-          </Text>
+          <Text style={styles.nextText}>{currentIndex < pages.length - 1 ? "다음" : "확인"}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -129,14 +123,14 @@ export default function Tutorial() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fcf9f4",
+    backgroundColor: "#fcf9f4"
   },
   backButton: {
     position: "absolute",
     top: absoluteTopPosition,
     left: absoluteLeftPosition,
     padding: BUTTON_PADDING,
-    zIndex: 1,
+    zIndex: 1
   },
   backicon: { width: 12, height: ICON_HEIGHT },
   scrollView: { flex: 1 },
@@ -146,41 +140,41 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 30,
+    paddingHorizontal: 30
   },
   pageImage: {
     width: width * 0.3,
     height: width * 0.3,
     marginBottom: 24,
-    resizeMode: "contain",
+    resizeMode: "contain"
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
     textAlign: "center",
-    marginBottom: 12,
+    marginBottom: 12
   },
   subtitle: {
     fontSize: 16,
     textAlign: "center",
-    color: "#555",
+    color: "#555"
   },
   pagination: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 50,
+    marginBottom: 50
   },
   dot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    marginHorizontal: 6,
+    marginHorizontal: 6
   },
   dotActive: { backgroundColor: "rgba(214, 128, 137, 0.7)" },
   dotInactive: { backgroundColor: "#D9D9D9" },
   buttonContainer: {
-    paddingHorizontal: 30,
+    paddingHorizontal: 30
   },
   nextButton: {
     width: "100%",
@@ -189,7 +183,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 26,
+    marginBottom: 26
   },
-  nextText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  nextText: { color: "#fff", fontSize: 16, fontWeight: "600" }
 });

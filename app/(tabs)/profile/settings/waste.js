@@ -1,4 +1,4 @@
-// app/settings/waste.js
+// app/(tabs)/profile/settings/waste.js
 import React, { useState, useEffect } from "react";
 import {
   View,
