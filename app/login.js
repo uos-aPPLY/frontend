@@ -1,7 +1,6 @@
 // app/login.js
 import React, { useState, useEffect } from "react";
 import {
-  SafeAreaView,
   Image,
   Text,
   View,
@@ -11,6 +10,8 @@ import {
   Platform,
   ActivityIndicator
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import * as AppleAuthentication from "expo-apple-authentication";
 import * as KakaoLogin from "@react-native-seoul/kakao-login";
 import NaverLogin from "@react-native-seoul/naver-login";
 import { useRouter } from "expo-router";
@@ -48,6 +49,56 @@ export default function Login() {
       }
     })();
   }, []);
+
+  const handleAppleLogin = async () => {
+    if (Platform.OS !== "ios") {
+      Alert.alert("Apple 로그인", "iOS 기기에서만 지원됩니다.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL
+        ]
+      });
+
+      const { identityToken, fullName } = credential;
+      if (!identityToken) throw new Error("identityToken 누락");
+
+      console.log("Apple identity token: ", identityToken);
+      const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: "apple",
+          accessToken: identityToken
+        })
+      });
+      if (!res.ok) throw new Error(await res.text());
+
+      const { accessToken, accessTokenExpiresIn, refreshToken, refreshTokenExpiresIn } =
+        await res.json();
+      console.log("Backend access token: ", accessToken);
+      console.log("Backend access token expires in: ", accessTokenExpiresIn);
+      console.log("Backend refresh token: ", refreshToken);
+      await saveToken({
+        accessToken,
+        accessTokenExpiresIn,
+        refreshToken,
+        refreshTokenExpiresIn
+      });
+
+      const requiredAgreed = await checkRequiredAgreed();
+      router.replace(requiredAgreed ? "/home" : "/terms");
+    } catch (e) {
+      console.error("Apple 로그인 오류:", e);
+      Alert.alert("Apple 로그인 실패", e.message ?? "알 수 없는 오류");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Naver Login Handler
   const handleNaverLogin = async () => {
@@ -150,13 +201,19 @@ export default function Login() {
         resizeMode="contain"
       />
       <View style={styles.buttonContainer}>
+        {Platform.OS === "ios" && (
+          <TouchableOpacity style={styles.appleLoginButton} onPress={handleAppleLogin}>
+            <Image source={require("../assets/icons/appleicon.png")} style={styles.appleIcon} />
+            <Text style={styles.naverLoginButtonText}>애플로 시작하기</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity style={styles.kakaoLoginButton} onPress={handleKakaoLogin}>
           <Image source={require("../assets/icons/kakaoicon.png")} style={styles.kakaoIcon} />
           <Text style={styles.loginButtonText}>카카오로 시작하기</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.naverLoginButton} onPress={handleNaverLogin}>
           <Image source={require("../assets/icons/navericon.png")} style={styles.naverIcon} />
-          <Text style={styles.naverloginButtonText}>네이버로 시작하기</Text>
+          <Text style={styles.naverLoginButtonText}>네이버로 시작하기</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -181,14 +238,25 @@ const styles = StyleSheet.create({
   logo: {
     width: 120,
     height: 120,
-    marginVertical: -10
+    marginVertical: -12
   },
   buttonContainer: {
     position: "absolute",
-    bottom: 100,
+    bottom: 80,
     width: "100%",
     alignItems: "center",
     gap: 10
+  },
+  appleLoginButton: {
+    width: "80%",
+    height: 50,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "black",
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 24
   },
   kakaoLoginButton: {
     width: "80%",
@@ -212,22 +280,29 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 24
   },
+  appleIcon: {
+    width: 35,
+    height: 35,
+    marginRight: 5,
+    marginBottom: 3
+  },
   kakaoIcon: {
     width: 20,
     height: 20,
-    marginRight: 10
+    marginRight: 12
   },
   naverIcon: {
     width: 35,
     height: 35,
-    marginRight: 5
+    marginRight: 5,
+    marginBottom: 1
   },
   loginButtonText: {
     color: "#000",
     fontSize: 16,
     fontWeight: "600"
   },
-  naverloginButtonText: {
+  naverLoginButtonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "600"
