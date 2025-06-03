@@ -149,7 +149,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <SafeAreaView style={styles.center}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#D68089" />
       </SafeAreaView>
     );
   }

@@ -52,7 +52,7 @@ export default function AlbumDiaryList() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#D68089" />
       </View>
     );
   }

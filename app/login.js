@@ -187,7 +187,7 @@ export default function Login() {
     <SafeAreaView style={styles.container}>
       {loading && (
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#A78C7B" />
+          <ActivityIndicator size="large" color="#D68089" />
         </View>
       )}
       <Image
