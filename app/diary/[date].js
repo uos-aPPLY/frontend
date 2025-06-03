@@ -158,7 +158,7 @@ export default function DiaryPage() {
         setPhotoList([]);
         setTempPhotoList([]);
         setMainPhotoId(null);
-        nav.push("/calendar");
+        nav.push({ pathname: "/calendar", params: { date } });
       } else {
         console.warn("❌ 일기 삭제 실패:", res.status);
       }
@@ -259,7 +259,7 @@ export default function DiaryPage() {
           setPhotoList([]);
           setTempPhotoList([]);
           setMainPhotoId(null);
-          nav.push("/calendar");
+          nav.push({ pathname: "/calendar", params: { date } });
         }}
         onTrashPress={() => setShowConfirmModal(true)}
       />
