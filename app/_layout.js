@@ -2,7 +2,7 @@
 import React, { useEffect } from "react";
 import "react-native-reanimated";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { Slot, useRouter, useSegments } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { DiaryProvider } from "../contexts/DiaryContext";
@@ -60,7 +60,13 @@ function RootLayoutNav() {
     );
   }
 
-  return <Slot />;
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false
+      }}
+    />
+  );
 }
 
 export default function RootLayout() {

@@ -212,7 +212,10 @@ export default function WritePage() {
       }
 
       console.log("✅ 일기 생성 성공:", result);
-      nav.push("/calendar");
+      nav.push({
+        pathname: "/calendar",
+        params: { date }
+      });
     } catch (err) {
       console.error("❌ 일기 생성 중 에러:", err);
     } finally {
@@ -234,12 +237,12 @@ export default function WritePage() {
               resetDiary();
               resetPhoto();
               setMode("choose");
-              nav.push("/customGallery");
+              nav.back();
             } catch (err) {
               console.error("❌ 뒤로가기 중 임시 사진 삭제 실패:", err);
               resetDiary();
               resetPhoto();
-              nav.push("/calendar");
+              nav.back();
             }
           }}
           hasText={text.trim().length > 0}

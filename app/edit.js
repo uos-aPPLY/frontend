@@ -142,10 +142,7 @@ export default function EditPage() {
 
       resetPhoto();
       resetDiary();
-      nav.replace({
-        pathname: "/diary/[date]",
-        params: { date: formatDateToYMD(selectedDate) }
-      });
+      nav.back();
     } catch (err) {
       console.error("💥 저장 중 에러:", err);
     } finally {
@@ -170,12 +167,7 @@ export default function EditPage() {
       <View style={styles.container}>
         <HeaderDate
           date={selectedDate}
-          onBack={() =>
-            nav.replace({
-              pathname: "/diary/[date]",
-              params: { date: formatDateToYMD(selectedDate) }
-            })
-          }
+          onBack={() => nav.back()}
           hasText={text.trim().length > 0}
           onSave={handleSave}
         />

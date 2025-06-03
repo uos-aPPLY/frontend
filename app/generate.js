@@ -192,7 +192,7 @@ export default function GeneratePage() {
           wsize={22}
           onPress={async () => {
             await clearAllTempPhotos(token);
-            nav.push("/customGallery");
+            nav.back();
           }}
         />
         <Text style={styles.title}>포커스 키워드 설정</Text>

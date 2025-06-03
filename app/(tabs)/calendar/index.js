@@ -11,7 +11,8 @@ import {
 import * as Haptics from "expo-haptics";
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
-import { addMonths, subMonths, format } from "date-fns";
+import { useLocalSearchParams } from "expo-router";
+import { addMonths, subMonths, format, parseISO } from "date-fns";
 import HeaderCalender from "../../../components/Header/HeaderCalendar";
 import MonthNavigator from "../../../components/Calendar/MonthNavigator";
 import CalendarGrid from "../../../components/Calendar/CalendarGrid";
@@ -21,7 +22,9 @@ import { useFocusEffect } from "@react-navigation/native";
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
 export default function Calendar({ onDatePress }) {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const { date: dateParam } = useLocalSearchParams();
+  const initialMonth = dateParam ? parseISO(dateParam) : new Date();
+  const [currentMonth, setCurrentMonth] = useState(initialMonth);
   const [diariesByDate, setDiariesByDate] = useState({});
   const [loading, setLoading] = useState(true);
   const [showEmotion, setShowEmotion] = useState(false);

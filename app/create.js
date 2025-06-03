@@ -62,7 +62,7 @@ export default function CreatePage() {
 
       console.log("✅ 저장 성공:", result);
       resetDiary();
-      nav.push("/calendar");
+      nav.back();
     } catch (err) {
       console.error("❌ 저장 중 에러:", err);
     }
@@ -102,7 +102,7 @@ export default function CreatePage() {
           onBack={() => {
             resetDiary();
             resetPhoto();
-            nav.push("/calendar");
+            nav.back();
           }}
           hasText={text.trim().length > 0}
           onSave={createDiary}
