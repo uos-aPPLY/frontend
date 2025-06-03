@@ -116,10 +116,7 @@ export default function CustomGalleryScreen() {
 
             const formattedDate = selectedDate.toISOString().split("T")[0];
 
-            nav.push({
-              pathname: "/create",
-              params: { date: formattedDate }
-            });
+            nav.back();
           }}
           wsize={22}
           hsize={22}

@@ -237,15 +237,12 @@ export default function WritePage() {
               resetDiary();
               resetPhoto();
               setMode("choose");
-              nav.push("/customGallery");
+              nav.back();
             } catch (err) {
               console.error("❌ 뒤로가기 중 임시 사진 삭제 실패:", err);
               resetDiary();
               resetPhoto();
-              nav.push({
-                pathname: "/calendar",
-                params: { date }
-              });
+              nav.back();
             }
           }}
           hasText={text.trim().length > 0}

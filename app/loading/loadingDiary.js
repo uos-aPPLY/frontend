@@ -180,7 +180,7 @@ export default function LoadingDiary() {
         </Text>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => nav.push({ pathname: "/calendar", params: { date: diaryDate } })}
+          onPress={() => nav.replace({ pathname: "/calendar", params: { date: diaryDate } })}
         >
           <Text style={styles.backButtonText}>캘린더로 돌아가기</Text>
         </TouchableOpacity>

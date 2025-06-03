@@ -95,7 +95,7 @@ export default function confirmPhoto() {
     } catch (error) {
       console.error("사진 삭제 중 오류:", error);
     }
-    nav.push("/create");
+    nav.back();
   };
 
   return (

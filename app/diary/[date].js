@@ -158,7 +158,7 @@ export default function DiaryPage() {
         setPhotoList([]);
         setTempPhotoList([]);
         setMainPhotoId(null);
-        nav.push({ pathname: "/calendar", params: { date } });
+        nav.back();
       } else {
         console.warn("❌ 일기 삭제 실패:", res.status);
       }
@@ -241,7 +241,7 @@ export default function DiaryPage() {
     return (
       <View style={styles.loader}>
         <Text style={styles.loadingText}>해당 날짜에 일기가 없습니다.</Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => nav.push("/calendar")}>
+        <TouchableOpacity style={styles.backButton} onPress={() => nav.back()}>
           <Text style={styles.backButtonText}>캘린더로 돌아가기</Text>
         </TouchableOpacity>
       </View>
@@ -259,7 +259,7 @@ export default function DiaryPage() {
           setPhotoList([]);
           setTempPhotoList([]);
           setMainPhotoId(null);
-          nav.push({ pathname: "/calendar", params: { date } });
+          nav.back();
         }}
         onTrashPress={() => setShowConfirmModal(true)}
       />
