@@ -1,6 +1,7 @@
 // components/Header/HeaderCalendar.jsx
 import React, { useEffect, useContext } from "react";
 import { View, Image, TouchableOpacity, StyleSheet, Text } from "react-native";
+import * as Haptics from "expo-haptics";
 import { useFonts, Caveat_600SemiBold } from "@expo-google-fonts/caveat";
 import { format } from "date-fns";
 import { useRouter } from "expo-router";
@@ -44,7 +45,10 @@ export default function Header() {
 
       <View style={styles.right}>
         <TouchableOpacity
-          onPress={() => setShowEmotion((prev) => !prev)}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowEmotion((prev) => !prev);
+          }}
           style={styles.toggleWrapper}
         >
           <Image
