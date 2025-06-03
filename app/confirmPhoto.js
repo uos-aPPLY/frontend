@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Pressable,
   FlatList,
-  Dimensions,
+  Dimensions
 } from "react-native";
 import { useRouter } from "expo-router";
 import IconButton from "../components/IconButton";
@@ -23,15 +23,8 @@ const IMAGE_SIZE = (SCREEN_WIDTH - 4) / 3;
 
 export default function confirmPhoto() {
   const nav = useRouter();
-  const {
-    photoList,
-    setPhotoList,
-    selected,
-    setSelected,
-    setMode,
-    setMainPhotoId,
-    resetPhoto,
-  } = usePhoto();
+  const { photoList, setPhotoList, selected, setSelected, setMode, setMainPhotoId, resetPhoto } =
+    usePhoto();
   const { token } = useAuth();
   const { selectedDate } = useDiary();
 
@@ -59,8 +52,8 @@ export default function confirmPhoto() {
         const res = await fetch(`${BACKEND_URL}/api/photos/selection/temp`, {
           method: "GET",
           headers: {
-            Authorization: `Bearer ${token}`,
-          },
+            Authorization: `Bearer ${token}`
+          }
         });
 
         const data = await res.json();
@@ -80,8 +73,8 @@ export default function confirmPhoto() {
       const res = await fetch(`${BACKEND_URL}/api/photos/selection/temp`, {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${token}`,
-        },
+          Authorization: `Bearer ${token}`
+        }
       });
       const data = await res.json();
       const ids = data.map((photo) => photo.id);
@@ -91,8 +84,8 @@ export default function confirmPhoto() {
           fetch(`${BACKEND_URL}/api/photos/selection/${id}`, {
             method: "DELETE",
             headers: {
-              Authorization: `Bearer ${token}`,
-            },
+              Authorization: `Bearer ${token}`
+            }
           })
         )
       );
@@ -107,9 +100,7 @@ export default function confirmPhoto() {
 
   return (
     <View style={styles.container}>
-      <View
-        style={[styles.header, photoList.length <= 9 && { marginBottom: 30 }]}
-      >
+      <View style={[styles.header, photoList.length <= 9 && { marginBottom: 30 }]}>
         <IconButton
           source={require("../assets/icons/backicon.png")}
           hsize={22}
@@ -124,19 +115,14 @@ export default function confirmPhoto() {
         </Text>
         <View style={{ width: 24 }} />
       </View>
-      {photoList.length > 9 && (
-        <Text style={styles.count}>{`${selected.length}/9`}</Text>
-      )}
+      {photoList.length > 9 && <Text style={styles.count}>{`${selected.length}/9`}</Text>}
 
       <FlatList
         data={formatGridData(photoList, 3)}
         numColumns={3}
         keyExtractor={(_, i) => i.toString()}
         renderItem={({ item }) => {
-          if (!item)
-            return (
-              <View style={{ width: IMAGE_SIZE + 2, height: IMAGE_SIZE }} />
-            );
+          if (!item) return <View style={{ width: IMAGE_SIZE + 2, height: IMAGE_SIZE }} />;
 
           const isSelected = selected.some((p) => p.id === item.id);
           const isSelectable = photoList.length > 9;
@@ -168,13 +154,11 @@ export default function confirmPhoto() {
             if (photoList.length > 9) {
               // ✅ 베스트샷 고르기 → loading 이동
               setMode("write");
-              nav.push("/loading");
+              // nav.push("/loading");
             } else {
               setPhotoList(photoList);
               setSelected(photoList.map((p) => p));
-              setMainPhotoId(
-                photoList.length > 0 ? String(photoList[0].id) : null
-              );
+              setMainPhotoId(photoList.length > 0 ? String(photoList[0].id) : null);
               setMode("write");
               nav.push("/write");
             }
@@ -189,7 +173,7 @@ export default function confirmPhoto() {
             setPhotoList(photoList);
             setSelected(selected);
             setMode("generate");
-            nav.push("/loading");
+            // nav.push("/loading");
           }}
         >
           <Text style={styles.buttonText}>AI 생성 일기</Text>
@@ -202,7 +186,7 @@ export default function confirmPhoto() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FCF9F4",
+    backgroundColor: "#FCF9F4"
   },
   header: {
     width: "100%",
@@ -211,39 +195,39 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     backgroundColor: "#FCF9F4",
-    alignItems: "center",
+    alignItems: "center"
   },
   count: {
     fontSize: 14,
     color: "#a78c7b",
     textAlign: "center",
     marginBottom: 10,
-    marginTop: 5,
+    marginTop: 5
   },
   back: {
     fontSize: 24,
-    color: "#a78c7b",
+    color: "#a78c7b"
   },
   title: {
     fontSize: 16,
     textAlign: "center",
-    marginVertical: 10,
+    marginVertical: 10
   },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "center",
+    justifyContent: "center"
   },
   image: {
     width: IMAGE_SIZE,
     height: IMAGE_SIZE,
-    margin: 1,
+    margin: 1
   },
   letter: {
     fontSize: 16,
     fontWeight: "bold",
     color: "#a78c7b",
-    textAlign: "center",
+    textAlign: "center"
   },
   buttonRow: {
     flexDirection: "row",
@@ -251,19 +235,19 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 60,
     gap: 20,
-    paddingHorizontal: 30,
+    paddingHorizontal: 30
   },
   button: {
     backgroundColor: "#D9A2A8",
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: "center",
-    flex: 1,
+    flex: 1
   },
   buttonText: {
     color: "#fff",
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "bold"
   },
   overlay: {
     position: "absolute",
@@ -273,16 +257,16 @@ const styles = StyleSheet.create({
     height: IMAGE_SIZE,
     backgroundColor: "rgba(0, 0, 0, 0.4)",
     borderWidth: 4,
-    borderColor: "#D68089",
+    borderColor: "#D68089"
   },
   imageWrapper: {
-    position: "relative",
+    position: "relative"
   },
   checkIcon: {
     position: "absolute",
     top: 12,
     left: IMAGE_SIZE - 12 - 24,
     width: 24,
-    height: 24,
-  },
+    height: 24
+  }
 });

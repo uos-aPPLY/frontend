@@ -26,10 +26,7 @@ export default function HeaderDate({ date, onBack, hasText = false, onSave }) {
       if (!isNaN(parsed)) {
         // ✅ 동일 날짜면 무시
         if (!selectedDate || !isSameDay(parsed, selectedDate)) {
-          console.log(
-            "📌 HeaderDate에서 selectedDate 설정:",
-            parsed.toISOString()
-          );
+          console.log("📌 HeaderDate에서 selectedDate 설정:", parsed.toISOString());
           setSelectedDate(parsed);
         }
       }
@@ -71,12 +68,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#FCF9F4",
     marginBottom: 15,
-    resizeMode: "contain",
+    resizeMode: "contain"
   },
   date: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#a78c7b",
-    textAlign: "center",
-  },
+    textAlign: "center"
+  }
 });

@@ -1,11 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Dimensions,
   ActivityIndicator
 } from "react-native";
 import { useRouter } from "expo-router";
@@ -18,7 +17,6 @@ import CharacterPickerOverlay from "../components/CharacterPickerOverlay";
 import EditImageSlider from "../components/EditImageSlider";
 import { useDiary } from "../contexts/DiaryContext";
 import { useAuth } from "../contexts/AuthContext";
-import { openGalleryAndAdd } from "../utils/openGalleryAndAdd";
 import Constants from "expo-constants";
 import ConfirmModal from "../components/Modal/ConfirmModal";
 
@@ -43,9 +41,11 @@ export default function EditPage() {
     setTempPhotoList,
     mainPhotoId,
     setMainPhotoId,
-    selected,
     setSelected,
-    resetPhoto
+    resetPhoto,
+    setMode,
+    photoCount,
+    setPhotoCount
   } = usePhoto();
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -53,6 +53,11 @@ export default function EditPage() {
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [photoToDelete, setPhotoToDelete] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setPhotoCount(photos.length);
+    console.log("📸 사진 목록 업데이트:", photos.length);
+  }, [photos]);
 
   const API_URL =
     Constants?.manifest?.extra?.BACKEND_URL || Constants?.expoConfig?.extra?.BACKEND_URL;
@@ -87,6 +92,9 @@ export default function EditPage() {
     if (photoToDelete) {
       const updated = photos.filter((p) => p.id !== photoToDelete);
       setPhotoList(updated);
+      setTempPhotoList(updated);
+      setPhotoCount(updated.length);
+      console.log("📸 사진 삭제 완료:", updated.length);
 
       if (String(photoToDelete) === String(mainPhotoId)) {
         setMainPhotoId(updated.length > 0 ? String(updated[0].id) : null);
@@ -105,7 +113,7 @@ export default function EditPage() {
       return;
     }
 
-    setIsSaving(true); // <-- ✅ 로딩 시작
+    setIsSaving(true);
 
     try {
       const response = await fetch(`${API_URL}/api/diaries/${diaryId}`, {
@@ -141,34 +149,17 @@ export default function EditPage() {
     } catch (err) {
       console.error("💥 저장 중 에러:", err);
     } finally {
-      setIsSaving(false); // <-- ✅ 로딩 끝
+      setIsSaving(false);
     }
   };
 
-  const handleAddPhoto = async () => {
-    try {
-      const addedAssets = await openGalleryAndAdd(token);
-      if (!addedAssets || addedAssets.length === 0) return;
+  const handleAddPhoto = () => {
+    setMode("add");
 
-      const newPhotos = addedAssets.map((asset) => ({
-        id: asset.id,
-        photoUrl: asset.photoUrl
-      }));
-
-      const updatedPhotos = [...photos, ...newPhotos];
-      setPhotoList(updatedPhotos);
-      setTempPhotoList(updatedPhotos);
-
-      if (!mainPhotoId || !updatedPhotos.some((p) => String(p.id) === String(mainPhotoId))) {
-        setMainPhotoId(String(newPhotos[0].id));
-      }
-
-      setSelected((prev) => [...prev, ...newPhotos.map((p) => String(p.id))]);
-
-      console.log("📸 사진 추가 완료:", newPhotos.length, "장");
-    } catch (err) {
-      console.error("❌ 사진 추가 중 오류:", err);
-    }
+    nav.push({
+      pathname: "/customGallery",
+      params: { mode: "add" }
+    });
   };
 
   return (

@@ -1,3 +1,4 @@
+import { set } from "date-fns";
 import React, { createContext, useContext, useState } from "react";
 
 const PhotoContext = createContext();
@@ -8,6 +9,8 @@ export const PhotoProvider = ({ children }) => {
   const [mode, setMode] = useState(null);
   const [mainPhotoId, setMainPhotoId] = useState(null);
   const [tempPhotoList, setTempPhotoList] = useState(null);
+  const [photoCount, setPhotoCount] = useState(photoList.length);
+  const [selectedAssets, setSelectedAssets] = useState([]);
 
   const resetPhoto = () => {
     setPhotoList([]);
@@ -26,11 +29,15 @@ export const PhotoProvider = ({ children }) => {
         setTempPhotoList,
         selected,
         setSelected,
+        selectedAssets,
+        setSelectedAssets,
         mode,
         setMode,
+        photoCount,
+        setPhotoCount,
         mainPhotoId,
         setMainPhotoId,
-        resetPhoto,
+        resetPhoto
       }}
     >
       {children}

@@ -1,12 +1,13 @@
 import { useEffect, useRef, useCallback } from "react";
-import { View, ActivityIndicator, StyleSheet, Text } from "react-native";
+import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import Constants from "expo-constants";
-import { useAuth } from "../contexts/AuthContext";
-import { useDiary } from "../contexts/DiaryContext";
-import IconButton from "../components/IconButton";
+import { useAuth } from "../../contexts/AuthContext";
+import { useDiary } from "../../contexts/DiaryContext";
+import IconButton from "../../components/IconButton";
 import { DeviceEventEmitter } from "react-native";
-import { useFocusEffect } from "@react-navigation/native"; // ✅ 포커스 관리
+import { useFocusEffect } from "@react-navigation/native";
+import colors from "../../constants/colors";
 
 export default function LoadingDiary() {
   const router = useRouter();
@@ -18,12 +19,7 @@ export default function LoadingDiary() {
   const isMounted = useRef(false);
   const pollingRef = useRef(null);
 
-  const {
-    date: dateParam,
-    photos = "[]",
-    keywords = "{}",
-    mainPhotoId,
-  } = useLocalSearchParams();
+  const { date: dateParam, photos = "[]", keywords = "{}", mainPhotoId } = useLocalSearchParams();
 
   const diaryDate =
     typeof dateParam === "string"
@@ -38,22 +34,17 @@ export default function LoadingDiary() {
   const finalizedPhotos = visiblePhotos.map((photo, index) => ({
     photoId: photo.id,
     sequence: index,
-    keyword: (keywordMap[photo.id] ?? [])
-      .map((kw) => kw.replace(/^#/, ""))
-      .join(","),
+    keyword: (keywordMap[photo.id] ?? []).map((kw) => kw.replace(/^#/, "")).join(",")
   }));
 
   const confirmDiary = async (diaryId, diaryDate) => {
     try {
-      const confirmRes = await fetch(
-        `${BACKEND_URL}/api/diaries/${diaryId}/confirm`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      const confirmRes = await fetch(`${BACKEND_URL}/api/diaries/${diaryId}/confirm`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`
         }
-      );
+      });
 
       if (confirmRes.ok) {
         console.log("✅ confirm 성공");
@@ -75,14 +66,11 @@ export default function LoadingDiary() {
 
     while (attempts < maxRetries && isMounted.current) {
       try {
-        const res = await fetch(
-          `${BACKEND_URL}/api/diaries/by-date?date=${dateToPoll}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+        const res = await fetch(`${BACKEND_URL}/api/diaries/by-date?date=${dateToPoll}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
           }
-        );
+        });
 
         const data = await res.json();
         console.log("📡 현재 다이어리 상태:", data?.status);
@@ -114,10 +102,7 @@ export default function LoadingDiary() {
 
   const runCreateOrPoll = useCallback(async () => {
     const shouldCreate =
-      photos &&
-      keywords &&
-      mainPhotoId !== null &&
-      typeof diaryDate === "string";
+      photos && keywords && mainPhotoId !== null && typeof diaryDate === "string";
 
     if (!token || !diaryDate) {
       console.warn("🚫 유효하지 않은 diaryDate 또는 토큰 누락");
@@ -134,7 +119,7 @@ export default function LoadingDiary() {
       const body = {
         diaryDate,
         representativePhotoId: mainPhotoId,
-        finalizedPhotos,
+        finalizedPhotos
       };
 
       console.log("📤 일기 생성 요청:", body);
@@ -143,9 +128,9 @@ export default function LoadingDiary() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify(body)
       });
 
       const json = await res.json();
@@ -186,18 +171,16 @@ export default function LoadingDiary() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <IconButton
-          source={require("../assets/icons/backicon.png")}
-          wsize={12}
-          hsize={22}
-          onPress={() => nav.push("/calendar")}
-        />
-      </View>
-
       <View style={styles.loadingArea}>
         <ActivityIndicator size="large" color="#D68089" />
-        <Text style={styles.message}>AI가 당신의 하루를 기록 중이에요...</Text>
+        <Text style={styles.message}>
+          AI가 당신의 하루를 기록 중이에요...
+          {"\n"}
+          잠시 다른 일을 하셔도 괜찮아요 💫
+        </Text>
+        <TouchableOpacity style={styles.backButton} onPress={() => nav.push("/calendar")}>
+          <Text style={styles.backButtonText}>캘린더로 돌아가기</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -205,7 +188,6 @@ export default function LoadingDiary() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FCF9F4" },
-  header: { paddingTop: 60, paddingLeft: 30 },
   loadingArea: { flex: 1, justifyContent: "center", alignItems: "center" },
   message: {
     marginTop: 16,
@@ -213,6 +195,18 @@ const styles = StyleSheet.create({
     color: "#A78C7B",
     fontWeight: "500",
     textAlign: "center",
-    lineHeight: 22,
+    lineHeight: 22
   },
+  backButton: {
+    marginTop: 20,
+    backgroundColor: colors.pinkmain,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 20
+  },
+  backButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "bold"
+  }
 });

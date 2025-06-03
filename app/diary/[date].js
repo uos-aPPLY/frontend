@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   ScrollView,
   Image,
   Dimensions,
-  FlatList,
   TouchableOpacity,
   DeviceEventEmitter
 } from "react-native";
@@ -17,7 +16,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import IconButton from "../../components/IconButton";
 import HeaderDateAndTrash from "../../components/Header/HeaderDateAndTrash";
 import ImageSlider from "../../components/ImageSlider";
-import { parseISO, set } from "date-fns";
+import { parseISO } from "date-fns";
 import characterList from "../../assets/characterList";
 import fullHeartIcon from "../../assets/icons/fullhearticon.png";
 import emptyHeartIcon from "../../assets/icons/emptyhearticon.png";
@@ -26,18 +25,20 @@ import oneViewIcon from "../../assets/icons/oneviewicon.png";
 import ConfirmModal from "../../components/Modal/ConfirmModal";
 import { usePhoto } from "../../contexts/PhotoContext";
 import { useDiary } from "../../contexts/DiaryContext";
-import DebugDiaryState from "../../debug/DebugDiaryState";
 import defaultCharacter from "../../assets/character/char1.png";
+import colors from "../../constants/colors";
 
 const screenWidth = Dimensions.get("window").width;
 
 export default function DiaryPage() {
   const nav = useRouter();
   const { token } = useAuth();
-  const { setPhotoList, setTempPhotoList, setMainPhotoId } = usePhoto();
+
   const { date: dateParam } = useLocalSearchParams();
   const date = dateParam;
   const parsedDate = parseISO(date);
+
+  const { setPhotoList, setTempPhotoList, setMainPhotoId } = usePhoto();
   const {
     resetDiary,
     setDiaryId,
@@ -293,8 +294,7 @@ export default function DiaryPage() {
                 wsize={24}
                 onPress={() =>
                   nav.push({
-                    pathname: "/edit",
-                    params: { id: diary.id.toString() }
+                    pathname: "/edit"
                   })
                 }
               />
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     marginTop: 20,
-    backgroundColor: "#D68089",
+    backgroundColor: colors.pinkmain,
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 20

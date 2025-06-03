@@ -1,16 +1,7 @@
 import { useEffect, useState, useRef, useMemo } from "react";
-import {
-  View,
-  Text,
-  Image,
-  StyleSheet,
-  Dimensions,
-  TouchableOpacity,
-} from "react-native";
+import { View, Text, Image, StyleSheet, Dimensions, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
-import DraggableFlatList, {
-  ScaleDecorator,
-} from "react-native-draggable-flatlist";
+import DraggableFlatList, { ScaleDecorator } from "react-native-draggable-flatlist";
 import { usePhoto } from "../contexts/PhotoContext";
 import IconButton from "../components/IconButton";
 import ConfirmModal from "../components/Modal/ConfirmModal";
@@ -26,10 +17,9 @@ export default function PhotoReorder() {
     setTempPhotoList,
     photoList,
     setPhotoList,
-    selected,
     setSelected,
     mainPhotoId,
-    setMainPhotoId,
+    setMainPhotoId
   } = usePhoto();
 
   const [photos, setPhotos] = useState([]);
@@ -38,10 +28,7 @@ export default function PhotoReorder() {
   const [isConfirmVisible, setIsConfirmVisible] = useState(false);
   const [targetPhotoId, setTargetPhotoId] = useState(null);
 
-  const effectivePhotos = useMemo(
-    () => tempPhotoList ?? photoList,
-    [tempPhotoList, photoList]
-  );
+  const effectivePhotos = useMemo(() => tempPhotoList ?? photoList, [tempPhotoList, photoList]);
 
   const visiblePhotos = useMemo(
     () => photos.filter((p) => !hiddenIds.includes(p.id)),
@@ -52,8 +39,7 @@ export default function PhotoReorder() {
   useEffect(() => {
     setPhotos(effectivePhotos);
     const valid =
-      effectivePhotos.find((p) => String(p.id) === String(mainPhotoId)) ||
-      effectivePhotos[0];
+      effectivePhotos.find((p) => String(p.id) === String(mainPhotoId)) || effectivePhotos[0];
     setMainPhotoIdLocal(valid?.id ?? null);
   }, [effectivePhotos]);
 
@@ -126,16 +112,13 @@ export default function PhotoReorder() {
               <View style={styles.cardShadowWrapper}>
                 <TouchableOpacity onPressIn={drag} activeOpacity={1}>
                   <View style={[styles.card, isActive && { opacity: 0.8 }]}>
-                    <Image
-                      source={{ uri: item.photoUrl }}
-                      style={styles.cardImage}
-                    />
+                    <Image source={{ uri: item.photoUrl }} style={styles.cardImage} />
                     <TouchableOpacity
                       style={[
                         styles.badgeOverlay,
                         String(item.id) === String(mainPhotoIdLocal)
                           ? styles.badgeActive
-                          : styles.badgeInactive,
+                          : styles.badgeInactive
                       ]}
                       onPress={() => setMainPhotoIdLocal(String(item.id))}
                     >
@@ -186,17 +169,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: "#FCF9F4",
-    paddingBottom: 10,
+    paddingBottom: 10
   },
   title: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#a78c7b",
+    color: "#a78c7b"
   },
   cardWrapper: {
     width: screenWidth,
     alignItems: "center",
-    marginBottom: 30,
+    marginBottom: 30
   },
   cardShadowWrapper: {
     marginTop: 10,
@@ -206,19 +189,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
-    borderRadius: 30,
+    borderRadius: 30
   },
   card: {
     width: screenWidth * 0.8,
     aspectRatio: 1,
     borderRadius: 30,
     overflow: "hidden",
-    position: "relative",
+    position: "relative"
   },
   cardImage: {
     width: "100%",
     height: "100%",
-    resizeMode: "cover",
+    resizeMode: "cover"
   },
   badgeOverlay: {
     position: "absolute",
@@ -227,46 +210,46 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderWidth: 1,
+    borderWidth: 1
   },
   badgeActive: {
     backgroundColor: "#D68089",
-    borderColor: "#fff",
+    borderColor: "#fff"
   },
   badgeInactive: {
     backgroundColor: "rgba(0,0,0,0.2)",
-    borderColor: "#fff",
+    borderColor: "#fff"
   },
   badgeText: {
     fontSize: 12,
-    color: "#fff",
+    color: "#fff"
   },
   closeWrapper: {
     position: "absolute",
     top: 8,
     right: 8,
-    padding: 10,
+    padding: 10
   },
   closeIconImg: {
     width: 16,
     height: 16,
-    tintColor: "#fff",
+    tintColor: "#fff"
   },
   bottomRow: {
     position: "absolute",
     bottom: 60,
     width: "100%",
-    paddingHorizontal: 30,
+    paddingHorizontal: 30
   },
   saveButton: {
     backgroundColor: "#D9A2A8",
     paddingVertical: 16,
     borderRadius: 16,
-    alignItems: "center",
+    alignItems: "center"
   },
   saveButtonText: {
     fontSize: 16,
     color: "#fff",
-    fontWeight: "bold",
-  },
+    fontWeight: "bold"
+  }
 });

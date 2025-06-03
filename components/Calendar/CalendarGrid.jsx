@@ -9,7 +9,7 @@ import {
   Dimensions,
   PanResponder,
   Animated,
-  Easing,
+  Easing
 } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import {
@@ -19,17 +19,11 @@ import {
   endOfWeek,
   eachDayOfInterval,
   isSameMonth,
-  format,
+  format
 } from "date-fns";
 import { LinearGradient } from "expo-linear-gradient";
-import {
-  useFonts as useCaveatFonts,
-  Caveat_600SemiBold,
-} from "@expo-google-fonts/caveat";
-import {
-  useFonts as useInterFonts,
-  Inter_600SemiBold,
-} from "@expo-google-fonts/inter";
+import { useFonts as useCaveatFonts, Caveat_600SemiBold } from "@expo-google-fonts/caveat";
+import { useFonts as useInterFonts, Inter_600SemiBold } from "@expo-google-fonts/inter";
 import { useRouter } from "expo-router";
 import { useDiary } from "../../contexts/DiaryContext";
 import { CalendarViewContext } from "../../contexts/CalendarViewContext";
@@ -45,7 +39,7 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const toSeoulDate = (date) =>
   new Date(
     date.toLocaleString("sv", {
-      timeZone: TIMEZONE,
+      timeZone: TIMEZONE
     })
   );
 
@@ -61,13 +55,13 @@ const GeneratingProgressCircle = ({ size, duration, text }) => {
       toValue: 1,
       duration: duration,
       easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
+      useNativeDriver: false
     }).start();
   }, [duration, progress]);
 
   const strokeDashoffset = progress.interpolate({
     inputRange: [0, 1],
-    outputRange: [circumference, circumference * 0.03],
+    outputRange: [circumference, circumference * 0.03]
   });
 
   return (
@@ -76,7 +70,7 @@ const GeneratingProgressCircle = ({ size, duration, text }) => {
         width: size,
         height: size,
         alignItems: "center",
-        justifyContent: "center",
+        justifyContent: "center"
       }}
     >
       <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
@@ -94,19 +88,12 @@ const GeneratingProgressCircle = ({ size, duration, text }) => {
           originY={size / 2} // 회전 중심 Y
         />
       </Svg>
-      <Text style={[styles.generatingDayText, { position: "absolute" }]}>
-        {text}
-      </Text>
+      <Text style={[styles.generatingDayText, { position: "absolute" }]}>{text}</Text>
     </View>
   );
 };
 
-export default function CalendarGrid({
-  currentMonth,
-  diariesByDate,
-  onPrev,
-  onNext,
-}) {
+export default function CalendarGrid({ currentMonth, diariesByDate, onPrev, onNext }) {
   const router = useRouter();
   const { selectedDate, setSelectedDate } = useDiary();
   const { showEmotion } = useContext(CalendarViewContext);
@@ -121,16 +108,16 @@ export default function CalendarGrid({
         onPanResponderRelease: (_, { dx }) => {
           if (dx > 50) onPrev?.();
           else if (dx < -50) onNext?.();
-        },
+        }
       }),
     [onPrev, onNext]
   );
 
   const [fontsCaveatLoaded] = useCaveatFonts({
-    Caveat_600SemiBold,
+    Caveat_600SemiBold
   });
   const [fontsInterLoaded] = useInterFonts({
-    Inter_600SemiBold,
+    Inter_600SemiBold
   });
   if (!fontsCaveatLoaded || !fontsInterLoaded) {
     return <View />;
@@ -185,9 +172,7 @@ export default function CalendarGrid({
 
             let emotionSource = null;
             if (showEmotion && hasDiary && entry.emotionIcon) {
-              const found = characterList.find(
-                (c) => c.name === entry.emotionIcon
-              );
+              const found = characterList.find((c) => c.name === entry.emotionIcon);
               emotionSource = found?.source ?? null;
             }
 
@@ -196,7 +181,7 @@ export default function CalendarGrid({
 
             const handlePress = () => {
               if (isGenerating) {
-                router.push(`/loadingDiary?date=${dateStr}`);
+                router.push(`/loading/loadingDiary?date=${dateStr}`);
                 return;
               }
               if (hasDiary) {
@@ -285,12 +270,7 @@ export default function CalendarGrid({
 
                 {showText && (
                   <View style={styles.dayTextWrapper}>
-                    <Text
-                      style={[
-                        styles.actualDayText,
-                        !isCurrentMonth && styles.inactiveDayText,
-                      ]}
-                    >
+                    <Text style={[styles.actualDayText, !isCurrentMonth && styles.inactiveDayText]}>
                       {format(daySeoul, "d")}
                     </Text>
                   </View>
@@ -316,12 +296,12 @@ const styles = StyleSheet.create({
     alignContent: "center",
     justifyContent: "center",
     paddingHorizontal: 5,
-    paddingTop: 14,
+    paddingTop: 14
   },
   weekDaysRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 15,
+    marginBottom: 15
   },
   weekDayText: {
     width: DAY_ITEM_SIZE,
@@ -329,49 +309,49 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "600",
     color: "#A78C7B",
-    fontFamily: "Caveat_600SemiBold",
+    fontFamily: "Caveat_600SemiBold"
   },
   weekRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 14,
+    marginBottom: 14
   },
   dayContainer: {
     width: DAY_ITEM_SIZE,
     height: DAY_ITEM_SIZE,
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "center"
   },
   generatingWrapper: {
     width: DAY_ITEM_SIZE * 0.9,
     height: DAY_ITEM_SIZE * 0.9,
     justifyContent: "center",
-    alignItems: "center",
+    alignItems: "center"
   },
   generatingDayText: {
     fontSize: 18,
     color: "#D68089",
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Inter_600SemiBold"
   },
   dayEmotionIcon: {
     width: DAY_ITEM_SIZE * 0.9,
-    height: DAY_ITEM_SIZE * 0.88,
+    height: DAY_ITEM_SIZE * 0.88
   },
   dayImage: {
     width: "100%",
-    height: "100%",
+    height: "100%"
   },
   dayPlaceholder: {
     width: DAY_ITEM_SIZE * 0.9,
     height: DAY_ITEM_SIZE * 0.9,
     borderRadius: (DAY_ITEM_SIZE * 0.9) / 2,
-    backgroundColor: "transparent",
+    backgroundColor: "transparent"
   },
   dayStandardBackground: {
     width: DAY_ITEM_SIZE * 0.9,
     height: DAY_ITEM_SIZE * 0.9,
     borderRadius: (DAY_ITEM_SIZE * 0.9) / 2,
-    backgroundColor: "rgba(255, 187, 145, 0.7)",
+    backgroundColor: "rgba(255, 187, 145, 0.7)"
   },
   dayTextWrapper: {
     position: "absolute",
@@ -380,19 +360,19 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     justifyContent: "center",
-    alignItems: "center",
+    alignItems: "center"
   },
   actualDayText: {
     fontSize: 18,
     color: "#D68089",
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Inter_600SemiBold"
   },
   inactiveDayText: {
-    color: "rgba(214, 128, 137, 0.5)",
+    color: "rgba(214, 128, 137, 0.5)"
   },
   plusIcon: {
     width: DAY_ITEM_SIZE * 0.9,
-    height: DAY_ITEM_SIZE * 0.9,
+    height: DAY_ITEM_SIZE * 0.9
   },
   dayImageWrapper: {
     width: DAY_ITEM_SIZE * 0.9,
@@ -400,11 +380,11 @@ const styles = StyleSheet.create({
     borderRadius: (DAY_ITEM_SIZE * 0.9) / 2,
     overflow: "hidden",
     justifyContent: "center",
-    alignItems: "center",
+    alignItems: "center"
   },
   dayImageOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.2)",
+    backgroundColor: "rgba(0,0,0,0.2)"
   },
   gradientBorderWrapper: {
     width: DAY_ITEM_SIZE * 0.9,
@@ -412,20 +392,20 @@ const styles = StyleSheet.create({
     borderRadius: (DAY_ITEM_SIZE * 0.9) / 2,
     justifyContent: "center",
     alignItems: "center",
-    padding: 3,
+    padding: 3
   },
   imageContainerForGradientBorder: {
     width: "100%",
     height: "100%",
     borderRadius: (DAY_ITEM_SIZE * 0.9) / 2 - 3,
-    overflow: "hidden",
+    overflow: "hidden"
   },
   imageItselfInGradient: {
     width: "100%",
-    height: "100%",
+    height: "100%"
   },
   overlayItselfInGradient: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.2)",
-  },
+    backgroundColor: "rgba(0,0,0,0.2)"
+  }
 });

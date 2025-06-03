@@ -10,31 +10,37 @@ import {
   SafeAreaView
 } from "react-native";
 import * as MediaLibrary from "expo-media-library";
-import * as ImageManipulator from "expo-image-manipulator";
-import { useNavigation } from "@react-navigation/native";
-import { uploadPhotos } from "../utils/uploadPhotos";
+import { useRouter } from "expo-router";
 import DragSelectableGrid from "../components/DragSelectableGrid";
 import { useAuth } from "../contexts/AuthContext";
 import { useDiary } from "../contexts/DiaryContext";
 import { usePhoto } from "../contexts/PhotoContext";
 import IconButton from "../components/IconButton";
 import colors from "../constants/colors";
+import ConfirmModal from "../components/Modal/ConfirmModal";
 
 export default function CustomGalleryScreen() {
   const { token } = useAuth();
-  const navigation = useNavigation();
+  const nav = useRouter();
   const { selectedDate } = useDiary();
-  const { mode } = usePhoto(); // "choose" 또는 "recommend"
-
-  const MAX_SELECTION = mode === "choose" ? 9 : 160; // ✅ 선택 제한 분기
+  const {
+    mode,
+    setMode,
+    setPhotoList,
+    setTempPhotoList,
+    photoCount,
+    selectedAssets,
+    setSelectedAssets
+  } = usePhoto();
+  const MAX_SELECTION = mode === "add" ? 9 - photoCount : mode === "choose" ? 9 : 160;
 
   const [allPhotos, setAllPhotos] = useState([]);
-  const [selectedAssets, setSelectedAssets] = useState([]);
   const [multiSelectMode, setMultiSelectMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [hasNextPage, setHasNextPage] = useState(true);
   const [endCursor, setEndCursor] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     fetchPhotos();
@@ -79,33 +85,15 @@ export default function CustomGalleryScreen() {
   const handleUpload = async () => {
     if (!token) {
       Alert.alert("오류", "로그인이 필요합니다.");
-      return;
+      return false;
     }
 
     if (selectedAssets.length === 0) {
-      Alert.alert("선택 필요", "업로드할 사진을 선택하세요.");
-      return;
+      Alert.alert("선택 필요", "최소 1장의 사진을 선택해주세요.");
+      return false;
     }
 
-    setUploading(true);
-    try {
-      const resizedAssets = await Promise.all(
-        selectedAssets.map((asset) =>
-          ImageManipulator.manipulateAsync(asset.uri, [{ resize: { width: 400 } }], {
-            compress: 0.5,
-            format: ImageManipulator.SaveFormat.JPEG
-          })
-        )
-      );
-
-      await uploadPhotos(resizedAssets, token, selectedAssets);
-      navigation.navigate("confirmPhoto");
-    } catch (error) {
-      console.error("업로드 실패", error);
-      Alert.alert("오류", "사진 업로드 중 문제가 발생했습니다.");
-    } finally {
-      setUploading(false);
-    }
+    return true;
   };
 
   if (loading) {
@@ -123,12 +111,26 @@ export default function CustomGalleryScreen() {
       <View style={styles.header}>
         <IconButton
           source={require("../assets/icons/backicon.png")}
-          onPress={() => navigation.goBack()}
+          onPress={() => {
+            setSelectedAssets([]);
+
+            const formattedDate = selectedDate.toISOString().split("T")[0];
+
+            nav.push({
+              pathname: "/create",
+              params: { date: formattedDate }
+            });
+          }}
           wsize={22}
           hsize={22}
         />
+
         <Text style={styles.headerText}>
-          {mode === "choose" ? "직접 사진 선택(9장)" : "베스트샷 추천 받기"}
+          {mode === "choose"
+            ? "직접 사진 선택(9장)"
+            : mode === "add"
+            ? "사진 추가"
+            : "베스트샷 추천 받기"}
         </Text>
         <View style={{ width: 22 }} />
       </View>
@@ -136,6 +138,8 @@ export default function CustomGalleryScreen() {
         <Text style={styles.modeText}>
           {mode === "choose"
             ? "9장까지 선택할 수 있어요."
+            : mode === "add"
+            ? "일기에는 최대 9장의 사진을 추가할 수 있어요."
             : "베스트샷 기능을 통해서 9장이 선택돼요."}
         </Text>
       </View>
@@ -164,25 +168,92 @@ export default function CustomGalleryScreen() {
           selectedDate={selectedDate}
         />
       </View>
-      <View style={styles.buttonWrapper}>
-        {mode === "choose" ? (
-          <View style={styles.horizontalButtons}>
-            <TouchableOpacity
-              style={styles.commonButton}
-              onPress={() => navigation.navigate("manualWrite")}
-            >
-              <Text style={styles.commonButtonText}>직접 쓰기</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.commonButton} onPress={handleUpload}>
-              <Text style={styles.commonButtonText}>AI 생성 일기</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <TouchableOpacity style={styles.fullWidthButton} onPress={handleUpload}>
-            <Text style={styles.commonButtonText}>다음</Text>
+      <View style={styles.footerWrapper}>
+        {mode === "add" ? (
+          <TouchableOpacity
+            style={styles.singleButtonWrapper}
+            onPress={() => {
+              const formatted = selectedAssets.map((asset) => ({
+                id: asset.id,
+                photoUrl: asset.uri
+              }));
+              setPhotoList((prev) => [...prev, ...formatted]);
+              setTempPhotoList((prev) => [...prev, ...formatted]);
+              nav.back();
+            }}
+          >
+            <Text style={styles.commonButtonText}>사진 추가</Text>
           </TouchableOpacity>
+        ) : (
+          <View style={styles.doubleButtonWrapper}>
+            {mode === "choose" ? (
+              <>
+                <TouchableOpacity
+                  style={styles.commonButton}
+                  onPress={async () => {
+                    const success = await handleUpload();
+                    if (success) {
+                      nav.push("/loading/loadingWrite");
+                    }
+                  }}
+                >
+                  <Text style={styles.commonButtonText}>직접 쓰기</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.commonButton}
+                  onPress={async () => {
+                    const success = await handleUpload();
+                    if (success) {
+                      nav.push("/loading/loadingPicture");
+                    }
+                  }}
+                >
+                  <Text style={styles.commonButtonText}>AI 생성 일기</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <TouchableOpacity
+                  style={styles.commonButton}
+                  onPress={async () => {
+                    const success = await handleUpload();
+                    if (!success) return;
+
+                    if (selectedAssets.length < 9) {
+                      setModalVisible(true); // ✅ 여기서만 모달 띄우기
+                      return;
+                    }
+
+                    nav.push("/loading/loadingBestShot");
+                  }}
+                >
+                  <Text style={styles.commonButtonText}>베스트샷 추천</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.commonButton}
+                  onPress={() => nav.push("manualWrite")}
+                >
+                  <Text style={styles.commonButtonText}>필수 사진 선택</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
         )}
       </View>
+      <ConfirmModal
+        visible={modalVisible}
+        title="사진이 부족해요."
+        message={"아니면 베스트샷 추천을 포기하고\n바로 일기를 작성하시겠어요?"}
+        cancelText="취소"
+        confirmText="포기 및 작성"
+        onCancel={() => setModalVisible(false)}
+        onConfirm={() => {
+          setModalVisible(false);
+          setMode("choose");
+          nav.push("/customGallery");
+        }}
+      />
     </View>
   );
 }
@@ -194,8 +265,7 @@ const styles = StyleSheet.create({
     paddingTop: 75
   },
   container: {
-    flex: 1,
-    paddingBottom: 100
+    flex: 1
   },
   header: {
     flexDirection: "row",
@@ -245,37 +315,36 @@ const styles = StyleSheet.create({
     color: colors.pinkpoint,
     fontWeight: "500"
   },
-  buttonWrapper: {
-    position: "absolute",
-    bottom: 20,
-    left: 20,
-    right: 20,
-    alignItems: "center",
-    backgroundColor: "transparent" //
+  footerWrapper: {
+    paddingHorizontal: 30,
+    paddingBottom: 40,
+    paddingTop: 10,
+    backgroundColor: "transparent"
   },
-  horizontalButtons: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 12 // 또는 marginHorizontal 사용
-  },
-  commonButton: {
-    backgroundColor: colors.pinkmain,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    minWidth: 120,
-    alignItems: "center"
-  },
-  commonButtonText: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "500"
-  },
-  fullWidthButton: {
-    backgroundColor: colors.pinkmain,
-    paddingVertical: 12,
+  singleButtonWrapper: {
+    backgroundColor: colors.pinkpoint,
+    paddingVertical: 14,
     paddingHorizontal: 40,
     borderRadius: 12,
-    alignItems: "center"
+    alignItems: "center",
+    alignSelf: "center"
+  },
+  doubleButtonWrapper: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 10
+  },
+  commonButton: {
+    flex: 1,
+    height: 50,
+    backgroundColor: colors.pinkpoint,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  commonButtonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: "bold"
   }
 });

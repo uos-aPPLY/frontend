@@ -1,6 +1,5 @@
 import React from "react";
 import { View, Image, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
 import colors from "../constants/colors";
 
 const SIZE = Dimensions.get("window").width / 3;
@@ -20,7 +19,7 @@ export default function ImageItem({ asset, selected, onPress, onLongPress, onLay
 
       {selected && (
         <View style={styles.checkIconWrapper}>
-          <MaterialIcons name="check-circle" size={22} color={colors.pinkpoint} />
+          <Image source={require("../assets/icons/pinkcheckicon.png")} style={styles.checkIcon} />
         </View>
       )}
     </TouchableOpacity>
@@ -46,6 +45,11 @@ const styles = StyleSheet.create({
     right: 5,
     backgroundColor: "white",
     borderRadius: 11,
-    padding: 1
+    padding: 2
+  },
+  checkIcon: {
+    width: 20,
+    height: 20,
+    resizeMode: "contain"
   }
 });

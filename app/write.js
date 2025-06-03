@@ -9,7 +9,7 @@ import {
   ScrollView,
   FlatList,
   Dimensions,
-  Text,
+  Text
 } from "react-native";
 import { useRouter } from "expo-router";
 import CharacterPickerOverlay from "../components/CharacterPickerOverlay";
@@ -41,19 +41,23 @@ export default function WritePage() {
     setSelectedCharacter,
     selectedDate,
     setSelectedDate,
-    resetDiary,
+    resetDiary
   } = useDiary();
   const { token } = useAuth();
   const { BACKEND_URL } = Constants.expoConfig.extra;
   const [isPickerVisible, setIsPickerVisible] = useState(false);
   const [tempPhotos, setTempPhotos] = useState([]);
-  const { photoList, setPhotoList, mainPhotoId, setMainPhotoId, reset } =
-    usePhoto();
+  const {
+    photoList,
+    setPhotoList,
+    mainPhotoId,
+    setMainPhotoId,
+    resetPhoto,
+    setSelectedAssets,
+    setMode
+  } = usePhoto();
   const photosToShow = photoList.length > 0 ? photoList : tempPhotos;
-  const date =
-    selectedDate instanceof Date
-      ? selectedDate.toISOString().split("T")[0]
-      : "";
+  const date = selectedDate instanceof Date ? selectedDate.toISOString().split("T")[0] : "";
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isConfirmVisible, setIsConfirmVisible] = useState(false);
@@ -61,10 +65,22 @@ export default function WritePage() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
+    setSelectedAssets([]);
     if (tempPhotos.length > 0 && photoList.length === 0) {
       setPhotoList(tempPhotos);
+      setMainPhotoId(String(tempPhotos[0].id));
     }
   }, [tempPhotos]);
+
+  useEffect(() => {
+    if (!mainPhotoId) {
+      if (photoList.length > 0) {
+        setMainPhotoId(String(photoList[0].id));
+      } else if (tempPhotos.length > 0) {
+        setMainPhotoId(String(tempPhotos[0].id));
+      }
+    }
+  }, [photoList, tempPhotos]);
 
   const photosToRender = [...photosToShow];
   if (photosToRender.length < MAX_PHOTO_COUNT) {
@@ -76,7 +92,7 @@ export default function WritePage() {
 
     const newPhotos = addedAssets.map((asset) => ({
       id: asset.id,
-      photoUrl: asset.photoUrl,
+      photoUrl: asset.photoUrl
     }));
 
     const updated = [...photosToShow, ...newPhotos];
@@ -85,10 +101,7 @@ export default function WritePage() {
     setPhotoList(updated);
     setTempPhotos(updated); // 여전히 로컬도 유지
 
-    if (
-      !mainPhotoId ||
-      !updated.some((p) => String(p.id) === String(mainPhotoId))
-    ) {
+    if (!mainPhotoId || !updated.some((p) => String(p.id) === String(mainPhotoId))) {
       setMainPhotoId(String(newPhotos[0].id));
     }
   };
@@ -103,13 +116,11 @@ export default function WritePage() {
 
     try {
       await deletePhotoById(targetPhotoId, token);
+
       const updated = photosToShow.filter((p) => p.id !== targetPhotoId);
 
-      if (photoList.length > 0) {
-        setPhotoList(updated);
-      } else {
-        setTempPhotos(updated);
-      }
+      setPhotoList(updated);
+      setTempPhotos(updated);
 
       if (String(targetPhotoId) === String(mainPhotoId)) {
         if (updated.length > 0) {
@@ -145,8 +156,8 @@ export default function WritePage() {
         const res = await fetch(`${BACKEND_URL}/api/photos/selection/temp`, {
           method: "GET",
           headers: {
-            Authorization: `Bearer ${token}`,
-          },
+            Authorization: `Bearer ${token}`
+          }
         });
         const data = await res.json();
         console.log("📷 fetchTempPhotos 결과:", data);
@@ -156,8 +167,7 @@ export default function WritePage() {
 
         if (
           data.length > 0 &&
-          (!mainPhotoId ||
-            !data.some((p) => String(p.id) === String(mainPhotoId)))
+          (!mainPhotoId || !data.some((p) => String(p.id) === String(mainPhotoId)))
         ) {
           console.log("📸 대표 사진 초기 세팅:", data[0].id);
           setMainPhotoId(String(data[0].id));
@@ -178,10 +188,8 @@ export default function WritePage() {
         diaryDate: date,
         content: text,
         emotionIcon: selectedCharacter.name,
-        photoIds: photosToShow
-          .filter((p) => p.id && p.id !== "add")
-          .map((p) => Number(p.id)),
-        representativePhotoId: Number(mainPhotoId),
+        photoIds: photosToShow.filter((p) => p.id && p.id !== "add").map((p) => Number(p.id)),
+        representativePhotoId: Number(mainPhotoId)
       };
 
       console.log("📝 일기 생성 요청 페이로드:", payload);
@@ -190,9 +198,9 @@ export default function WritePage() {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payload)
       });
 
       const result = await res.json();
@@ -222,10 +230,11 @@ export default function WritePage() {
           date={date}
           onBack={async () => {
             try {
-              await clearAllTempPhotos(token); // ✅ 임시 사진 서버에서 제거
-              resetDiary(); // 기존 상태 리셋
+              await clearAllTempPhotos(token);
+              resetDiary();
               resetPhoto();
-              nav.push("/calendar");
+              setMode("choose");
+              nav.push("/customGallery");
             } catch (err) {
               console.error("❌ 뒤로가기 중 임시 사진 삭제 실패:", err);
               resetDiary();
@@ -314,33 +323,33 @@ export default function WritePage() {
 const styles = StyleSheet.create({
   all: {
     backgroundColor: "#FCF9F4",
-    flex: 1,
+    flex: 1
   },
   middle: {
     flex: 1,
-    backgroundColor: "#FCF9F4",
+    backgroundColor: "#FCF9F4"
   },
   characterPicker: {
     paddingBottom: 10,
     justifyContent: "space-between",
     alignItems: "center",
     flexDirection: "row",
-    paddingHorizontal: 30,
+    paddingHorizontal: 30
   },
   low: {
     paddingHorizontal: 30,
     flex: 1,
-    marginBottom: 30,
+    marginBottom: 30
   },
   scrollContainer: {
-    flexGrow: 1,
+    flexGrow: 1
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.3)",
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 10,
+    zIndex: 10
   },
   loadingText: {
     color: "#fff",
@@ -349,6 +358,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#D68089",
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 10,
-  },
+    borderRadius: 10
+  }
 });
