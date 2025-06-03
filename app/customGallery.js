@@ -220,8 +220,8 @@ export default function CustomGalleryScreen() {
                     const success = await handleUpload();
                     if (!success) return;
 
-                    if (selectedAssets.length < 9) {
-                      setModalVisible(true); // ✅ 여기서만 모달 띄우기
+                    if (selectedAssets.length < 10) {
+                      setModalVisible(true);
                       return;
                     }
 
@@ -232,7 +232,17 @@ export default function CustomGalleryScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.commonButton}
-                  onPress={() => nav.push("manualWrite")}
+                  onPress={async () => {
+                    const success = await handleUpload();
+                    if (!success) return;
+
+                    if (selectedAssets.length < 10) {
+                      setModalVisible(true);
+                      return;
+                    }
+                    setMode("bestshot");
+                    nav.push("/loading/loadingPicture");
+                  }}
                 >
                   <Text style={styles.commonButtonText}>필수 사진 선택</Text>
                 </TouchableOpacity>
@@ -243,7 +253,7 @@ export default function CustomGalleryScreen() {
       </View>
       <ConfirmModal
         visible={modalVisible}
-        title="사진이 부족해요."
+        title="사진이 부족해요(9장 이상 필요)."
         message={"아니면 베스트샷 추천을 포기하고\n바로 일기를 작성하시겠어요?"}
         cancelText="취소"
         confirmText="포기 및 작성"

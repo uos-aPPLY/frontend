@@ -6,6 +6,7 @@ import { usePhoto } from "../../contexts/PhotoContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { uploadPhotos } from "../../utils/uploadPhotos";
 import * as ImageManipulator from "expo-image-manipulator";
+import * as MediaLibrary from "expo-media-library";
 
 export default function LoadingPicture() {
   const nav = useRouter();
@@ -27,10 +28,19 @@ export default function LoadingPicture() {
           nav.replace("/");
           return;
         }
+        const resolvedAssets = await Promise.all(
+          selectedAssets.map(async (asset) => {
+            const info = await MediaLibrary.getAssetInfoAsync(asset.id);
+            return {
+              ...asset,
+              uri: info.localUri || asset.uri
+            };
+          })
+        );
 
         // 1. 이미지 리사이징
         const resized = await Promise.all(
-          selectedAssets.map((asset) =>
+          resolvedAssets.map((asset) =>
             ImageManipulator.manipulateAsync(asset.uri, [{ resize: { width: 400 } }], {
               compress: 0.5,
               format: ImageManipulator.SaveFormat.JPEG
@@ -39,6 +49,7 @@ export default function LoadingPicture() {
         );
 
         // 2. 서버 업로드
+        console.log("📤 업로드 시작:", resized.length, "개의 사진");
         const uploaded = await uploadPhotos(resized, token, selectedAssets);
 
         if (!uploaded || uploaded.length === 0) throw new Error("업로드 실패");
@@ -55,6 +66,10 @@ export default function LoadingPicture() {
         setSelectedAssets([]);
 
         // 4. 경로 분기
+        if (mode === "bestshot") {
+          nav.replace("/confirmPhoto");
+          return;
+        }
         nav.replace("/generate");
       } catch (err) {
         console.error("❌ 업로드 오류:", err);
