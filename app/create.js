@@ -13,7 +13,6 @@ import { useDiary } from "../contexts/DiaryContext";
 import { usePhoto } from "../contexts/PhotoContext";
 import { useAuth } from "../contexts/AuthContext";
 import { clearAllTempPhotos } from "../utils/clearTempPhotos";
-import { openGalleryAndUpload } from "../utils/openGalleryAndUpload";
 import Constants from "expo-constants";
 
 export default function CreatePage() {

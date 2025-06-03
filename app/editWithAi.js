@@ -15,10 +15,11 @@ import {
 } from "react-native";
 import { WebView } from "react-native-webview";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import Constants from "expo-constants";
 import { useAuth } from "../contexts/AuthContext";
 import { useDiary } from "../contexts/DiaryContext";
+import { usePhoto } from "../contexts/PhotoContext";
 import HeaderDate from "../components/Header/HeaderDate";
 import characterList from "../assets/characterList";
 import IconButton from "../components/IconButton";
@@ -28,6 +29,7 @@ import ConfirmModal from "../components/Modal/ConfirmModal";
 export default function EditWithAIPage() {
   const nav = useRouter();
   const { token } = useAuth();
+  const { photoList: photosToShow } = usePhoto();
   const {
     text,
     setText,
@@ -50,7 +52,6 @@ export default function EditWithAIPage() {
   const [isGridView, setIsGridView] = useState(false);
   const characterObj = characterList.find((c) => c.name === diary.emotionIcon);
   const [localCharacter, setLocalCharacter] = useState(selectedCharacter ?? characterObj);
-  const photosToShow = diary.photos || [];
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [isResultReady, setIsResultReady] = useState(false);
   const scrollRef = useRef(null);

@@ -12,7 +12,7 @@ export async function uploadPhotos(resizedAssets, token, originalAssets) {
     formData.append("files", {
       uri: resized.uri,
       name: `photo_${index}.${fileType}`,
-      type: `image/${fileType}`,
+      type: `image/${fileType}`
     });
 
     const original = originalAssets[index];
@@ -33,7 +33,7 @@ export async function uploadPhotos(resizedAssets, token, originalAssets) {
 
     metadataArray.push({
       location,
-      shootingDateTime,
+      shootingDateTime
     });
   });
 
@@ -46,9 +46,9 @@ export async function uploadPhotos(resizedAssets, token, originalAssets) {
   const response = await fetch(`${BACKEND_URL}/api/photos/upload`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${token}`
     },
-    body: formData,
+    body: formData
   });
 
   const contentType = response.headers.get("content-type");

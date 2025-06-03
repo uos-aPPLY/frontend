@@ -51,12 +51,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#FCF9F4",
     marginBottom: 15,
-    resizeMode: "contain",
+    resizeMode: "contain"
   },
   date: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#a78c7b",
-    textAlign: "center",
-  },
+    textAlign: "center"
+  }
 });

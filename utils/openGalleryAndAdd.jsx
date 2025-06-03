@@ -1,6 +1,7 @@
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { uploadPhotos } from "./uploadPhotos";
+import { usePhoto } from "../contexts/PhotoContext";
 
 /**
  * 갤러리 열고 사진을 업로드한 뒤 서버 응답 리스트 반환

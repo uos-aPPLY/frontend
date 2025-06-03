@@ -1,4 +1,6 @@
-import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+// app/generate.jsx
+
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -6,49 +8,44 @@ import {
   TouchableOpacity,
   Dimensions,
   Image,
+  KeyboardAvoidingView,
   TextInput,
+  Platform
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import DraggableFlatList, {
-  ScaleDecorator,
-} from "react-native-draggable-flatlist";
+import { useRouter } from "expo-router";
+import DraggableFlatList, { ScaleDecorator } from "react-native-draggable-flatlist";
 import IconButton from "../components/IconButton";
-import { usePhoto } from "../contexts/PhotoContext";
 import { useAuth } from "../contexts/AuthContext";
 import Constants from "expo-constants";
-import { useDiary } from "../contexts/DiaryContext";
+import { clearAllTempPhotos } from "../utils/clearTempPhotos";
+import ConfirmModal from "../components/Modal/ConfirmModal";
+import colors from "../constants/colors";
 
 const screenWidth = Dimensions.get("window").width;
 
 export default function GeneratePage() {
+  const nav = useRouter();
   const flatListRef = useRef(null);
   const { token } = useAuth();
   const { BACKEND_URL } = Constants.expoConfig.extra;
-  const { selectedDate } = useDiary();
-
-  useEffect(() => {
-    console.log("📅 GeneratePage에서 selectedDate:", selectedDate);
-  }, [selectedDate]);
-
-  const nav = useRouter();
-  const { photos: rawPhotos = "[]", fullPhotoList = "[]" } =
-    useLocalSearchParams();
-  const { photoList } = usePhoto();
 
   const [photos, setPhotos] = useState([]);
-  const [keywords, setKeywords] = useState([]);
+  const [keywords, setKeywords] = useState({});
   const [hiddenIds, setHiddenIds] = useState([]);
   const [mainPhotoId, setMainPhotoId] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
   const [editingKeywordPhotoId, setEditingKeywordPhotoId] = useState(null);
   const [newKeyword, setNewKeyword] = useState("");
   const [allKeywords, setAllKeywords] = useState([]);
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+  const [targetDeletePhotoId, setTargetDeletePhotoId] = useState(null);
 
   const visiblePhotos = useMemo(
     () => photos.filter((photo) => !hiddenIds.includes(photo.id)),
     [photos, hiddenIds]
   );
+
+  const isLast = currentIndex === visiblePhotos.length - 1;
 
   const handleNext = () => {
     const nextIdx = currentIndex + 1;
@@ -56,92 +53,75 @@ export default function GeneratePage() {
       flatListRef.current?.scrollToIndex({
         index: nextIdx,
         animated: true,
-        viewPosition: 0,
+        viewPosition: 0
       });
       setCurrentIndex(nextIdx);
     }
   };
-  const finalizedPhotos = visiblePhotos.map((photo, index) => ({
-    photoId: photo.id,
-    sequence: index,
-    keyword: keywords[photo.id] ?? [],
-  }));
 
   const handleComplete = () => {
     nav.push({
-      pathname: "/loadingDiary",
+      pathname: "/loading/loadingDiary",
       params: {
         photos: JSON.stringify(visiblePhotos),
         keywords: JSON.stringify(keywords),
-        mainPhotoId,
-      },
+        mainPhotoId
+      }
     });
   };
 
-  const isLast = currentIndex === visiblePhotos.length - 1;
-
-  const handleDragBegin = useCallback((index) => {
-    setIsDragging(true);
-  }, []);
-
-  const handleDragEnd = useCallback(({ data }) => {
-    setPhotos(data);
-    setKeywords((prev) => {
-      const reordered = {};
-      data.forEach((photo) => {
-        reordered[photo.id] = prev[photo.id] || [];
-      });
-      return reordered;
-    });
-  }, []);
   const fetchKeywordsFromAPI = async () => {
     try {
       const res = await fetch(`${BACKEND_URL}/api/keywords`, {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${token}`,
-        },
+          Authorization: `Bearer ${token}`
+        }
       });
-
       const json = await res.json();
-      return json;
+      return json.map((k) => `#${k.name}`);
     } catch (err) {
-      console.error("키워드 API 호출 실패:", err);
+      console.error("❌ 키워드 불러오기 실패:", err);
       return [];
     }
   };
 
-  useEffect(() => {
-    const initialize = async () => {
-      try {
-        const parsedPhotoIds = JSON.parse(rawPhotos);
-        const parsedFullList = JSON.parse(fullPhotoList);
+  const initialize = async () => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/photos/selection/temp`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
 
-        if (!Array.isArray(parsedPhotoIds)) return;
-
-        const filtered = parsedFullList.filter((photo) =>
-          parsedPhotoIds.includes(photo.id)
-        );
-
-        setPhotos(filtered);
-        if (filtered.length > 0) setMainPhotoId(filtered[0].id);
-
-        const keywordsFromAPI = await fetchKeywordsFromAPI();
-        const keywordNames = keywordsFromAPI.map((k) => `#${k.name}`);
-        setAllKeywords(keywordNames);
-
-        const keywordMap = filtered.reduce((acc, photo) => {
-          acc[photo.id] = [];
-          return acc;
-        }, {});
-        setKeywords(keywordMap);
-      } catch (err) {
-        console.error("초기화 중 오류:", err);
+      const tempPhotos = await res.json();
+      if (!Array.isArray(tempPhotos) || tempPhotos.length === 0) {
+        console.warn("⚠️ 임시 사진 없음");
+        return;
       }
-    };
 
+      console.log("✅ 가져온 임시 사진:", tempPhotos);
+
+      setPhotos(tempPhotos);
+      setMainPhotoId(tempPhotos[0].id);
+
+      const fetchedKeywords = await fetchKeywordsFromAPI();
+      setAllKeywords(fetchedKeywords);
+
+      const keywordMap = {};
+      tempPhotos.forEach((p) => {
+        keywordMap[p.id] = [];
+      });
+      setKeywords(keywordMap);
+    } catch (err) {
+      console.error("❌ 사진 초기화 실패:", err);
+    }
+  };
+
+  useEffect(() => {
     initialize();
-  }, [rawPhotos, fullPhotoList]);
+  }, []);
 
   const handleAddKeyword = (id) => {
     setEditingKeywordPhotoId(id);
@@ -150,27 +130,16 @@ export default function GeneratePage() {
 
   const handleKeywordSubmit = () => {
     const trimmed = newKeyword.trim();
-
     if (!trimmed) {
       setEditingKeywordPhotoId(null);
-      setNewKeyword("");
       return;
     }
 
     const formatted = `#${trimmed}`;
-
-    setKeywords((prev) => {
-      const current = prev[editingKeywordPhotoId] || [];
-
-      if (current.includes(formatted)) {
-        return prev;
-      }
-
-      return {
-        ...prev,
-        [editingKeywordPhotoId]: [...current, formatted],
-      };
-    });
+    setKeywords((prev) => ({
+      ...prev,
+      [editingKeywordPhotoId]: [...(prev[editingKeywordPhotoId] || []), formatted]
+    }));
 
     setEditingKeywordPhotoId(null);
     setNewKeyword("");
@@ -178,22 +147,41 @@ export default function GeneratePage() {
 
   const toggleKeywordSelection = (photoId, keyword) => {
     setKeywords((prev) => {
-      const current = prev[photoId] || [];
-
-      const updated = current.includes(keyword)
-        ? current.filter((kw) => kw !== keyword)
-        : [...current, keyword];
-
-      return {
-        ...prev,
-        [photoId]: updated,
-      };
+      const existing = prev[photoId] || [];
+      const updated = existing.includes(keyword)
+        ? existing.filter((k) => k !== keyword)
+        : [...existing, keyword];
+      return { ...prev, [photoId]: updated };
     });
   };
 
-  const handleHidePhoto = (id) => {
-    setHiddenIds((prev) => [...prev, id]);
+  const handleHidePhoto = async (id) => {
+    const nextHiddenIds = [...hiddenIds, id];
+    const nextVisiblePhotos = photos.filter((p) => !nextHiddenIds.includes(p.id));
+
+    if (id === mainPhotoId) {
+      setMainPhotoId(nextVisiblePhotos[0]?.id ?? null);
+    }
+
+    if (nextVisiblePhotos.length === 0) {
+      await clearAllTempPhotos(token);
+      nav.replace("/customGallery");
+      return;
+    }
+
+    setHiddenIds(nextHiddenIds);
   };
+
+  const handleDragEnd = useCallback(({ data }) => {
+    setPhotos(data);
+    setKeywords((prev) => {
+      const updated = {};
+      data.forEach((photo) => {
+        updated[photo.id] = prev[photo.id] || [];
+      });
+      return updated;
+    });
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -202,141 +190,155 @@ export default function GeneratePage() {
           source={require("../assets/icons/backicon.png")}
           hsize={22}
           wsize={22}
-          onPress={() => nav.push("/confirmPhoto")}
+          onPress={async () => {
+            await clearAllTempPhotos(token);
+            nav.push("/customGallery");
+          }}
         />
         <Text style={styles.title}>포커스 키워드 설정</Text>
         <View style={{ width: 22 }} />
       </View>
+
       <Text style={styles.subtitle}>
         AI일기 생성 퀄리티를 위해 각 사진의 포커스를 지정해주세요!
       </Text>
-
-      <DraggableFlatList
-        ref={flatListRef}
-        data={visiblePhotos}
-        keyExtractor={(item) => item.id.toString()}
-        onViewableItemsChanged={({ viewableItems }) => {
-          if (viewableItems.length > 0) {
-            setCurrentIndex(viewableItems[0].index ?? 0);
-          }
-        }}
-        viewabilityConfig={{ itemVisiblePercentThreshold: 70 }}
-        renderItem={({ item, drag }) => (
-          <ScaleDecorator>
-            <View style={styles.cardWrapper}>
-              <View style={styles.cardShadowWrapper}>
-                <TouchableOpacity onPressIn={drag} activeOpacity={1}>
-                  <View style={styles.card}>
-                    <Image
-                      source={{ uri: item.photoUrl }}
-                      style={styles.cardImage}
-                    />
-                    <TouchableOpacity
-                      style={[
-                        styles.badgeOverlay,
-                        item.id === mainPhotoId
-                          ? styles.badgeActive
-                          : styles.badgeInactive,
-                      ]}
-                      onPress={() => setMainPhotoId(item.id)}
-                    >
-                      <Text style={styles.badgeText}>대표 사진</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={styles.closeWrapper}
-                      onPress={() => handleHidePhoto(item.id)}
-                    >
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <DraggableFlatList
+          ref={flatListRef}
+          data={visiblePhotos}
+          keyExtractor={(item) => item?.id?.toString()}
+          onViewableItemsChanged={({ viewableItems }) => {
+            if (viewableItems.length > 0) {
+              setCurrentIndex(viewableItems[0].index ?? 0);
+            }
+          }}
+          viewabilityConfig={{ itemVisiblePercentThreshold: 70 }}
+          renderItem={({ item, drag }) => (
+            <ScaleDecorator>
+              <View style={styles.cardWrapper}>
+                <View style={styles.cardShadowWrapper}>
+                  <TouchableOpacity onPressIn={drag} delayLongPress={500}>
+                    <View style={styles.card}>
                       <Image
-                        source={require("../assets/icons/xicon.png")}
-                        style={styles.closeIconImg}
+                        source={{ uri: item.photoUrl }}
+                        style={styles.cardImage}
+                        onError={() => console.warn("❌ 이미지 로딩 실패:", item.photoUrl)}
                       />
-                    </TouchableOpacity>
-                  </View>
-                </TouchableOpacity>
-              </View>
 
-              <View style={styles.keywordContainer}>
-                {/* 🔹 공통 키워드 */}
-                {allKeywords.map((kw, i) => {
-                  const isSelected = keywords[item.id]?.includes(kw);
-                  return (
-                    <TouchableOpacity
-                      key={`common-${i}`}
-                      style={[
-                        styles.keywordTag,
-                        isSelected && styles.selectedKeywordTag,
-                      ]}
-                      onPress={() => toggleKeywordSelection(item.id, kw)}
-                    >
-                      <Text
+                      <TouchableOpacity
                         style={[
-                          styles.keywordText,
-                          isSelected && styles.selectedKeywordText,
+                          styles.badgeOverlay,
+                          item.id === mainPhotoId ? styles.badgeActive : styles.badgeInactive
                         ]}
+                        onPress={() => setMainPhotoId(item.id)}
                       >
-                        {kw}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+                        <Text style={styles.badgeText}>대표 사진</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.closeWrapper}
+                        onPress={() => {
+                          setTargetDeletePhotoId(item.id);
+                          setConfirmModalVisible(true);
+                        }}
+                      >
+                        <Image
+                          source={require("../assets/icons/xicon.png")}
+                          style={styles.closeIconImg}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableOpacity>
+                </View>
 
-                {(keywords[item.id] || [])
-                  .filter((kw) => !allKeywords.includes(kw))
-                  .map((kw, i) => {
+                <View style={styles.keywordContainer}>
+                  {allKeywords.map((kw, i) => {
+                    const isSelected = keywords[item.id]?.includes(kw);
                     return (
                       <TouchableOpacity
-                        key={`custom-${i}`}
-                        style={[styles.keywordTag, styles.selectedKeywordTag]}
-                        onPress={() => toggleKeywordSelection(item.id, kw)} // ← 토글 추가
+                        key={`common-${i}`}
+                        style={[styles.keywordTag, isSelected && styles.selectedKeywordTag]}
+                        onPress={() => toggleKeywordSelection(item.id, kw)}
                       >
-                        <Text style={styles.selectedKeywordText}>{kw}</Text>
+                        <Text
+                          style={[styles.keywordText, isSelected && styles.selectedKeywordText]}
+                        >
+                          {kw}
+                        </Text>
                       </TouchableOpacity>
                     );
                   })}
 
-                {editingKeywordPhotoId === item.id ? (
-                  <TextInput
-                    value={newKeyword}
-                    onChangeText={setNewKeyword}
-                    placeholder="새 키워드"
-                    style={styles.keywordInputInline}
-                    onSubmitEditing={handleKeywordSubmit}
-                    onBlur={handleKeywordSubmit}
-                    autoFocus
-                    returnKeyType="done"
-                  />
-                ) : (
-                  <TouchableOpacity
-                    style={styles.addKeyword}
-                    onPress={() => handleAddKeyword(item.id)}
-                  >
-                    <Text style={styles.addText}># +</Text>
-                  </TouchableOpacity>
-                )}
+                  {(keywords[item.id] || [])
+                    .filter((kw) => !allKeywords.includes(kw))
+                    .map((kw, i) => (
+                      <TouchableOpacity
+                        key={`custom-${i}`}
+                        style={[styles.keywordTag, styles.selectedKeywordTag]}
+                        onPress={() => toggleKeywordSelection(item.id, kw)}
+                      >
+                        <Text style={styles.selectedKeywordText}>{kw}</Text>
+                      </TouchableOpacity>
+                    ))}
+
+                  {editingKeywordPhotoId === item.id ? (
+                    <TextInput
+                      value={newKeyword}
+                      onChangeText={setNewKeyword}
+                      placeholder="새 키워드"
+                      style={styles.keywordInputInline}
+                      onSubmitEditing={handleKeywordSubmit}
+                      onBlur={handleKeywordSubmit}
+                      autoFocus
+                    />
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.addKeyword}
+                      onPress={() => handleAddKeyword(item.id)}
+                    >
+                      <Text style={styles.addText}># +</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
-            </View>
-          </ScaleDecorator>
-        )}
-        activationDistance={20}
-        onDragBegin={handleDragBegin}
-        onDragEnd={handleDragEnd}
-        scrollEnabled
-        dragItemOverflow
-        vertical
-        pagingEnabled={false}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 250 }}
-      />
+            </ScaleDecorator>
+          )}
+          activationDistance={20}
+          autoscrollThreshold={80}
+          autoscrollSpeed={25}
+          onDragEnd={handleDragEnd}
+          scrollEnabled={true}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 100, paddingTop: 20 }}
+        />
+      </KeyboardAvoidingView>
 
       <View style={styles.bottomRow}>
-        <TouchableOpacity
-          style={styles.nextButton}
-          onPress={isLast ? handleComplete : handleNext}
-        >
-          <Text style={styles.nextText}>{isLast ? "완료" : "다음"}</Text>
+        <TouchableOpacity style={styles.nextButton} onPress={isLast ? handleComplete : handleNext}>
+          <Text style={styles.nextText}>{isLast ? "AI 일기 생성하기" : "다음"}</Text>
         </TouchableOpacity>
       </View>
+
+      <ConfirmModal
+        visible={confirmModalVisible}
+        title="사진 삭제"
+        message="정말 이 사진을 삭제하시겠어요?"
+        cancelText="취소"
+        confirmText="삭제"
+        onCancel={() => {
+          setConfirmModalVisible(false);
+          setTargetDeletePhotoId(null);
+        }}
+        onConfirm={() => {
+          setConfirmModalVisible(false);
+          if (targetDeletePhotoId !== null) {
+            handleHidePhoto(targetDeletePhotoId);
+            setTargetDeletePhotoId(null);
+          }
+        }}
+      />
     </View>
   );
 }
@@ -346,52 +348,50 @@ const styles = StyleSheet.create({
   header: {
     width: "100%",
     paddingHorizontal: 30,
-    paddingTop: 60,
+    paddingTop: 75,
     flexDirection: "row",
     justifyContent: "space-between",
-    backgroundColor: "#FCF9F4",
-    alignItems: "center",
+    alignItems: "center"
   },
   title: {
-    fontSize: 16,
+    fontSize: 18,
     color: "#a78c7b",
     fontWeight: "bold",
     textAlign: "center",
-    flex: 1,
+    flex: 1
   },
   subtitle: {
     fontSize: 12,
     color: "#a78c7b",
     textAlign: "center",
-    marginBottom: 10,
-    marginTop: 5,
+    paddingTop: 5,
+    paddingBottom: 10
   },
   cardWrapper: {
     width: screenWidth,
     alignItems: "center",
-    marginBottom: 30,
+    marginBottom: 30
   },
   cardShadowWrapper: {
-    marginTop: 10,
     backgroundColor: "#fff",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
-    borderRadius: 30,
+    borderRadius: 30
   },
   card: {
     width: screenWidth * 0.8,
     aspectRatio: 1,
     borderRadius: 30,
     overflow: "hidden",
-    position: "relative",
+    position: "relative"
   },
   cardImage: {
     width: "100%",
     height: "100%",
-    resizeMode: "cover",
+    resizeMode: "cover"
   },
   badgeOverlay: {
     position: "absolute",
@@ -400,34 +400,30 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderWidth: 1,
+    borderWidth: 1
   },
   badgeActive: {
     backgroundColor: "#D68089",
-    borderColor: "#fff",
+    borderColor: "#fff"
   },
   badgeInactive: {
     backgroundColor: "rgba(0,0,0,0.2)",
-    borderColor: "#fff",
+    borderColor: "#fff"
   },
   badgeText: {
     fontSize: 12,
-    color: "#fff",
+    color: "#fff"
   },
   closeWrapper: {
     position: "absolute",
     top: 8,
     right: 8,
-    padding: 10,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.5,
-    shadowRadius: 2,
-    elevation: 3,
+    padding: 10
   },
   closeIconImg: {
     width: 16,
     height: 16,
-    tintColor: "#fff",
+    tintColor: "#fff"
   },
   keywordContainer: {
     flexDirection: "row",
@@ -435,7 +431,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginTop: 16,
     gap: 8,
-    paddingHorizontal: 45,
+    paddingHorizontal: 45
   },
   keywordTag: {
     paddingVertical: 6,
@@ -443,11 +439,19 @@ const styles = StyleSheet.create({
     backgroundColor: "#E8E6E3",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#ddd"
+  },
+  selectedKeywordTag: {
+    backgroundColor: "#D68089",
+    borderColor: "#D68089"
   },
   keywordText: {
     fontSize: 13,
-    color: "#3f3f3f",
+    color: "#3f3f3f"
+  },
+  selectedKeywordText: {
+    color: "#fff",
+    fontSize: 13
   },
   addKeyword: {
     paddingVertical: 6,
@@ -455,11 +459,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#E8E6E3",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#ddd"
   },
   addText: {
     fontSize: 13,
-    color: "#3f3f3f",
+    color: "#3f3f3f"
   },
   keywordInputInline: {
     paddingHorizontal: 12,
@@ -472,32 +476,23 @@ const styles = StyleSheet.create({
     textAlignVertical: "center",
     includeFontPadding: false,
     height: 30,
-    lineHeight: 16,
+    lineHeight: 16
   },
-  selectedKeywordTag: {
-    backgroundColor: "#D68089",
-    borderColor: "#D68089",
-  },
-  selectedKeywordText: {
-    color: "#fff",
-    fontSize: 13,
-  },
-
   bottomRow: {
     position: "absolute",
     bottom: 40,
     width: "100%",
-    paddingHorizontal: 30,
+    paddingHorizontal: 30
   },
   nextButton: {
-    backgroundColor: "#D9A2A8",
+    backgroundColor: colors.pinkpoint,
     paddingVertical: 16,
     borderRadius: 16,
-    alignItems: "center",
+    alignItems: "center"
   },
   nextText: {
     fontSize: 16,
     color: "#fff",
-    fontWeight: "bold",
-  },
+    fontWeight: "bold"
+  }
 });
