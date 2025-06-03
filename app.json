@@ -3,7 +3,7 @@
     "name": "DiaryPic",
     "slug": "diarypic-fe",
     "scheme": ["diarypic"],
-    "version": "1.0.1",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -15,14 +15,15 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "buildNumber": "2",
+      "buildNumber": "4",
       "supportsTablet": true,
       "bundleIdentifier": "com.apply.diarypic",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "사진을 업로드하기 위해 앨범 접근 권한이 필요합니다.",
         "NSCameraUsageDescription": "사진 촬영을 위해 카메라 접근 권한이 필요합니다.",
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "com.apply.diarypic",
@@ -56,13 +57,12 @@
             "compileSdkVersion": 35,
             "buildToolsVersion": "35.0.0",
             "usesCleartextTraffic": true,
-            "extraMavenRepos": [
-              "https://devrepo.kakao.com/nexus/content/groups/public/"
-            ]
+            "extraMavenRepos": ["https://devrepo.kakao.com/nexus/content/groups/public/"]
           }
         }
       ],
       "expo-router",
+      "expo-apple-authentication",
       [
         "@react-native-seoul/kakao-login",
         {

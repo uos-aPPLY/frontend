@@ -1,4 +1,4 @@
-// app/settings/waste.js
+// app/(tabs)/profile/settings/waste.js
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -7,16 +7,16 @@ import {
   FlatList,
   Image,
   ActivityIndicator,
-  TouchableOpacity,
+  TouchableOpacity
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as SecureStore from "expo-secure-store";
 import { useRouter } from "expo-router";
 import Constants from "expo-constants";
 import { LinearGradient } from "expo-linear-gradient";
-import ConfirmModal from "../../components/Modal/ConfirmModal";
-import CheckBox from "../../components/CheckBox";
-import HeaderSettings from "../../components/Header/HeaderSettings";
+import ConfirmModal from "../../../../components/Modal/ConfirmModal";
+import CheckBox from "../../../../components/CheckBox";
+import HeaderSettings from "../../../../components/Header/HeaderSettings";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
@@ -28,13 +28,15 @@ export default function WastePage() {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const fetchTrash = async () => {
     setLoading(true);
     try {
       const token = await SecureStore.getItemAsync("accessToken");
       const res = await fetch(`${BACKEND_URL}/api/diaries/trash`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` }
       });
       const json = await res.json();
       setDiaries(json.content);
@@ -67,35 +69,37 @@ export default function WastePage() {
           Array.from(selectedIds).map((id) =>
             fetch(`${BACKEND_URL}/api/diaries/trash/${id}`, {
               method: "DELETE",
-              headers: { Authorization: `Bearer ${token}` },
+              headers: { Authorization: `Bearer ${token}` }
             })
           )
         );
       } else {
         await fetch(`${BACKEND_URL}/api/diaries/trash/all`, {
           method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${token}` }
         });
       }
     } else if (confirmAction === "restore") {
-      if (selectedIds.size > 0) {
-        await Promise.all(
-          Array.from(selectedIds).map((id) =>
-            fetch(`${BACKEND_URL}/api/diaries/trash/${id}/restore`, {
-              method: "PATCH",
-              headers: { Authorization: `Bearer ${token}` },
-            })
-          )
-        );
-      } else {
-        await Promise.all(
-          diaries.map((item) =>
-            fetch(`${BACKEND_URL}/api/diaries/trash/${item.id}/restore`, {
-              method: "PATCH",
-              headers: { Authorization: `Bearer ${token}` },
-            })
-          )
-        );
+      const idsToRestore =
+        selectedIds.size > 0 ? Array.from(selectedIds) : diaries.map((item) => item.id);
+
+      for (const id of idsToRestore) {
+        try {
+          const res = await fetch(`${BACKEND_URL}/api/diaries/trash/${id}/restore`, {
+            method: "PATCH",
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (res.status === 409) {
+            const data = await res.json();
+            setErrorMessage(data.message);
+            setErrorModalVisible(true);
+            setSelectionMode(false);
+            setSelectedIds(new Set());
+            return;
+          }
+        } catch (e) {
+          console.error(e);
+        }
       }
     }
     setSelectionMode(false);
@@ -120,10 +124,7 @@ export default function WastePage() {
         )}
         <View style={styles.imageWrapper}>
           {item.representativePhotoUrl ? (
-            <Image
-              source={{ uri: item.representativePhotoUrl }}
-              style={styles.cardImage}
-            />
+            <Image source={{ uri: item.representativePhotoUrl }} style={styles.cardImage} />
           ) : (
             <LinearGradient
               colors={["#dad4ec", "#dad4ec", "#f3e7e9"]}
@@ -147,7 +148,7 @@ export default function WastePage() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#D68089" />
       </View>
     );
   }
@@ -163,9 +164,7 @@ export default function WastePage() {
         }
       }}
     >
-      <Text style={styles.headerActionText}>
-        {selectionMode ? "취소" : "선택"}
-      </Text>
+      <Text style={styles.headerActionText}>{selectionMode ? "취소" : "선택"}</Text>
     </TouchableOpacity>
   );
 
@@ -191,19 +190,30 @@ export default function WastePage() {
         onConfirm={handleConfirm}
       />
 
-      <HeaderSettings
-        title="휴지통"
-        rightComponent={rightHeaderTextComponent}
+      <ConfirmModal
+        visible={errorModalVisible}
+        title="복원 오류"
+        message={errorMessage}
+        cancelText="닫기"
+        confirmText="확인"
+        onCancel={() => {
+          setErrorModalVisible(false);
+          fetchTrash();
+        }}
+        onConfirm={() => {
+          setErrorModalVisible(false);
+          fetchTrash();
+        }}
       />
+
+      <HeaderSettings title="휴지통" rightComponent={rightHeaderTextComponent} />
 
       <FlatList
         data={diaries}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
         renderItem={renderItem}
-        ListEmptyComponent={() => (
-          <Text style={styles.emptyText}>휴지통이 비어있습니다.</Text>
-        )}
+        ListEmptyComponent={() => <Text style={styles.emptyText}>휴지통이 비어있습니다.</Text>}
       />
 
       {selectionMode && (
@@ -215,9 +225,7 @@ export default function WastePage() {
               setConfirmVisible(true);
             }}
           >
-            <Text style={styles.footerText}>
-              {selectedIds.size > 0 ? "삭제" : "전체 삭제"}
-            </Text>
+            <Text style={styles.footerText}>{selectedIds.size > 0 ? "삭제" : "전체 삭제"}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.footerButton}
@@ -226,9 +234,7 @@ export default function WastePage() {
               setConfirmVisible(true);
             }}
           >
-            <Text style={styles.footerText}>
-              {selectedIds.size > 0 ? "복구" : "전체 복구"}
-            </Text>
+            <Text style={styles.footerText}>{selectedIds.size > 0 ? "복구" : "전체 복구"}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -242,7 +248,7 @@ const styles = StyleSheet.create({
   headerActionText: {
     fontSize: 16,
     color: "#A78C7B",
-    fontWeight: "600",
+    fontWeight: "600"
   },
   listContent: { paddingHorizontal: 20, paddingBottom: 20 },
   card: {
@@ -254,23 +260,23 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2.5 },
     shadowOpacity: 0.2,
     shadowRadius: 1.6,
-    overflow: "visible",
+    overflow: "visible"
   },
   checkbox: {
     position: "absolute",
     top: 15,
     left: 15,
-    zIndex: 1,
+    zIndex: 1
   },
   imageWrapper: {
     width: 120,
     height: 120,
     borderTopLeftRadius: 30,
     borderBottomLeftRadius: 30,
-    overflow: "hidden",
+    overflow: "hidden"
   },
   gradientBackground: {
-    flex: 1,
+    flex: 1
   },
   cardImage: { width: "100%", height: "100%", resizeMode: "cover" },
   cardTextContainer: { flex: 1, padding: 18, justifyContent: "space-between" },
@@ -280,13 +286,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 50,
     fontSize: 16,
-    color: "#999",
+    color: "#999"
   },
   footer: {
     flexDirection: "row",
     justifyContent: "space-around",
     marginBottom: 60,
+    marginTop: 10
   },
   footerButton: { padding: 10 },
-  footerText: { fontSize: 16, color: "#A78C7B", fontWeight: "600" },
+  footerText: { fontSize: 16, color: "#A78C7B", fontWeight: "600" }
 });

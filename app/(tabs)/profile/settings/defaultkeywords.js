@@ -1,17 +1,11 @@
+// app/(tabs)/profile/settings/defaultkeywords.js
 import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  TextInput,
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
-import { useAuth } from "../../contexts/AuthContext";
-import Header from "../../components/Header/HeaderSettings";
+import { useAuth } from "../../../../contexts/AuthContext";
+import Header from "../../../../components/Header/HeaderSettings";
 
 export default function DefaultKeywordsPage() {
   const router = useRouter();
@@ -30,8 +24,8 @@ export default function DefaultKeywordsPage() {
     try {
       const res = await fetch(`${BACKEND_URL}/api/keywords`, {
         headers: {
-          Authorization: `Bearer ${token}`,
-        },
+          Authorization: `Bearer ${token}`
+        }
       });
       const json = await res.json();
       setKeywords(json);
@@ -47,9 +41,9 @@ export default function DefaultKeywordsPage() {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify({ name: newKeyword.trim() }),
+        body: JSON.stringify({ name: newKeyword.trim() })
       });
 
       const newItem = await res.json();
@@ -67,8 +61,8 @@ export default function DefaultKeywordsPage() {
       await fetch(`${BACKEND_URL}/api/keywords/${id}`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${token}`,
-        },
+          Authorization: `Bearer ${token}`
+        }
       });
       setKeywords((prev) => prev.filter((k) => k.id !== id));
     } catch (err) {
@@ -82,16 +76,12 @@ export default function DefaultKeywordsPage() {
         title="키워드 설정"
         rightComponent={
           <TouchableOpacity onPress={() => setIsEditMode((prev) => !prev)}>
-            <Text style={styles.headerEditText}>
-              {isEditMode ? "확인" : "수정"}
-            </Text>
+            <Text style={styles.headerEditText}>{isEditMode ? "확인" : "수정"}</Text>
           </TouchableOpacity>
         }
       />
 
-      <Text style={styles.description}>
-        포커스 키워드 설정 시 기본 키워드로 제공돼요.
-      </Text>
+      <Text style={styles.description}>포커스 키워드 설정 시 기본 키워드로 제공돼요.</Text>
 
       {/* 키워드 목록 */}
       <ScrollView contentContainerStyle={styles.keywordList}>
@@ -130,24 +120,24 @@ export default function DefaultKeywordsPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FCF9F4",
+    backgroundColor: "#FCF9F4"
   },
   headerEditText: {
     fontSize: 16,
-    color: "#A78C7B",
+    color: "#A78C7B"
   },
   description: {
     fontSize: 12,
     textAlign: "center",
     color: "#B3A9A0",
-    marginBottom: 15,
+    marginBottom: 15
   },
   keywordList: {
     flexDirection: "row",
     flexWrap: "wrap",
     paddingHorizontal: 45,
     gap: 8,
-    marginTop: 10,
+    marginTop: 10
   },
   keywordWrapper: {
     flexDirection: "row",
@@ -157,16 +147,16 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#ddd"
   },
   keywordText: {
     fontSize: 14,
-    color: "#444",
+    color: "#444"
   },
   removeIcon: {
     fontSize: 16,
     color: "#B76B6B",
-    marginLeft: 6,
+    marginLeft: 6
   },
   input: {
     fontSize: 14,
@@ -174,6 +164,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 4,
     minWidth: 40,
-    textAlign: "center",
-  },
+    textAlign: "center"
+  }
 });
