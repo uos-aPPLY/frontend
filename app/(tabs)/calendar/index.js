@@ -124,6 +124,7 @@ export default function Calendar({ onDatePress }) {
               refreshing={refreshing}
               onRefresh={onRefresh}
               progressViewOffset={Constants.statusBarHeight}
+              tintColor="#D68089"
             />
           }
         >
