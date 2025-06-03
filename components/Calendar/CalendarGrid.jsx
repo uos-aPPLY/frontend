@@ -78,14 +78,14 @@ const GeneratingProgressCircle = ({ size, duration, text }) => {
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#D68089" // 테두리 색상
+          stroke="#D68089"
           strokeWidth={STROKE_WIDTH}
           fill="transparent"
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
-          rotation="-90" // 12시 방향에서 시작하도록 -90도 회전
-          originX={size / 2} // 회전 중심 X
-          originY={size / 2} // 회전 중심 Y
+          rotation="-90"
+          originX={size / 2}
+          originY={size / 2}
         />
       </Svg>
       <Text style={[styles.generatingDayText, { position: "absolute" }]}>{text}</Text>
@@ -98,25 +98,22 @@ export default function CalendarGrid({ currentMonth, diariesByDate, onPrev, onNe
   const { selectedDate, setSelectedDate } = useDiary();
   const { showEmotion } = useContext(CalendarViewContext);
 
-  const slideX = useRef(new Animated.Value(0)).current; // 캘린더 전체 슬라이드용
+  const slideX = useRef(new Animated.Value(0)).current;
 
   const width = Dimensions.get("window").width;
 
-  const slideToMonth = (direction /* 1 = 이전, -1 = 다음 */) => {
+  const slideToMonth = (direction) => {
     Animated.timing(slideX, {
-      toValue: direction * width, // 화면 밖으로 밀어냄
+      toValue: direction * width,
       duration: 220,
       easing: Easing.out(Easing.ease),
       useNativeDriver: true
     }).start(() => {
-      // 월 교체
       if (direction === 1) onPrev?.();
       else onNext?.();
 
-      // 반대쪽에서 시작하도록 위치 재설정
       slideX.setValue(-direction * width);
 
-      // 다시 가운데로 끌어오기
       Animated.timing(slideX, {
         toValue: 0,
         duration: 220,
@@ -134,7 +131,7 @@ export default function CalendarGrid({ currentMonth, diariesByDate, onPrev, onNe
         onMoveShouldSetPanResponderCapture: (_, { dx, dy }) =>
           Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10,
         onPanResponderRelease: (_, { dx }) => {
-          if (dx > 50) slideToMonth(1); // 오른쪽 → 이전달
+          if (dx > 50) slideToMonth(1);
           else if (dx < -50) slideToMonth(-1);
         }
       }),
