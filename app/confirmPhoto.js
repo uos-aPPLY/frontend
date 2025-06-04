@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   Pressable,
   FlatList,
-  Dimensions
+  Dimensions,
+  Alert
 } from "react-native";
 import { useRouter } from "expo-router";
 import IconButton from "../components/IconButton";
@@ -23,7 +24,7 @@ const IMAGE_SIZE = (SCREEN_WIDTH - 4) / 3;
 
 export default function confirmPhoto() {
   const nav = useRouter();
-  const { photoList, setPhotoList, selected, setSelected, setMode, resetPhoto } = usePhoto();
+  const { photoList, setPhotoList, selected, setSelected, setMode, setClear } = usePhoto();
   const { token } = useAuth();
   const { selectedDate } = useDiary();
 
@@ -42,7 +43,7 @@ export default function confirmPhoto() {
       Alert.alert("사진 선택", "AI 추천을 위해 최소 한 장의 사진을 선택해주세요.");
       return;
     }
-
+    setClear(false);
     setPhotoList(photoList);
     setMode("select");
     nav.push("/loading/loadingBestShot");
@@ -53,6 +54,10 @@ export default function confirmPhoto() {
   }, [selected]);
   useEffect(() => {
     console.log("📅 confirmPhoto에서 selectedDate:", selectedDate);
+    if (selectedDate) {
+      setClear(false);
+      setSelected([]);
+    }
   }, [selectedDate]);
 
   useEffect(() => {

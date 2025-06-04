@@ -16,6 +16,7 @@ import { useRouter } from "expo-router";
 import DraggableFlatList, { ScaleDecorator } from "react-native-draggable-flatlist";
 import IconButton from "../components/IconButton";
 import { useAuth } from "../contexts/AuthContext";
+import { usePhoto } from "../contexts/PhotoContext";
 import Constants from "expo-constants";
 import { clearAllTempPhotos } from "../utils/clearTempPhotos";
 import ConfirmModal from "../components/Modal/ConfirmModal";
@@ -29,6 +30,8 @@ export default function GeneratePage() {
   const { token } = useAuth();
   const { BACKEND_URL } = Constants.expoConfig.extra;
 
+  const { resetPhoto, mode, setMode } = usePhoto(); // 🔧 추가
+
   const [photos, setPhotos] = useState([]);
   const [keywords, setKeywords] = useState({});
   const [hiddenIds, setHiddenIds] = useState([]);
@@ -39,6 +42,7 @@ export default function GeneratePage() {
   const [allKeywords, setAllKeywords] = useState([]);
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [targetDeletePhotoId, setTargetDeletePhotoId] = useState(null);
+  const [confirmBackModalVisible, setConfirmBackModalVisible] = useState(false); // 🔧 추가
 
   const visiblePhotos = useMemo(
     () => photos.filter((photo) => !hiddenIds.includes(photo.id)),
@@ -191,8 +195,13 @@ export default function GeneratePage() {
           hsize={22}
           wsize={22}
           onPress={async () => {
-            await clearAllTempPhotos(token);
-            nav.push("/customGallery");
+            if (mode === "ai" || mode === "manual") {
+              setConfirmBackModalVisible(true); // 🔧 모달 띄움
+            } else {
+              await clearAllTempPhotos(token);
+              resetPhoto();
+              nav.push("/customGallery");
+            }
           }}
         />
         <Text style={styles.title}>포커스 키워드 설정</Text>
@@ -336,6 +345,26 @@ export default function GeneratePage() {
           if (targetDeletePhotoId !== null) {
             handleHidePhoto(targetDeletePhotoId);
             setTargetDeletePhotoId(null);
+          }
+        }}
+      />
+      <ConfirmModal
+        visible={confirmBackModalVisible}
+        title="정말로 뒤로 가시겠어요?"
+        message="추천된 베스트샷과 키워드가 모두 초기화돼요."
+        cancelText="취소"
+        confirmText="뒤로가기"
+        onCancel={() => setConfirmBackModalVisible(false)}
+        onConfirm={async () => {
+          setConfirmBackModalVisible(false);
+          try {
+            await clearAllTempPhotos(token);
+          } catch (e) {
+            console.error("❌ 임시사진 삭제 실패:", e);
+          } finally {
+            resetPhoto();
+            setMode("bestshot");
+            nav.push("/customGallery");
           }
         }}
       />

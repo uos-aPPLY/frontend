@@ -20,7 +20,8 @@ export default function BestShotReorder() {
     setSelected,
     mainPhotoId,
     setMainPhotoId,
-    setSelectedAssets
+    setSelectedAssets,
+    setMode
   } = usePhoto();
 
   const [photos, setPhotos] = useState([]);
@@ -28,6 +29,7 @@ export default function BestShotReorder() {
   const [hiddenIds, setHiddenIds] = useState([]);
   const [isConfirmVisible, setIsConfirmVisible] = useState(false);
   const [targetPhotoId, setTargetPhotoId] = useState(null);
+  const [isBackConfirmVisible, setIsBackConfirmVisible] = useState(false);
 
   // ✅ selected ID 기반 필터링
   const effectivePhotos = useMemo(() => {
@@ -69,13 +71,13 @@ export default function BestShotReorder() {
     setTempPhotoList(null);
     setMainPhotoId(mainPhotoIdLocal);
     setSelectedAssets([]); // 선택된 자산 초기화
+    setMode(mode);
 
     router.push(mode === "manual" ? "/write" : "/generate");
   };
 
   const handleBack = () => {
-    setTempPhotoList(null);
-    router.back();
+    setIsBackConfirmVisible(true);
   };
 
   const handleHidePhoto = (id) => {
@@ -150,6 +152,20 @@ export default function BestShotReorder() {
                       message="정말 이 사진을 삭제하시겠어요?"
                       onCancel={onCancelDelete}
                       onConfirm={onConfirmDelete}
+                    />
+                    <ConfirmModal
+                      visible={isBackConfirmVisible}
+                      title="정말로 뒤로 가시겠어요?"
+                      message={"베스트샷 추천 결과가 초기화됩니다."}
+                      onCancel={() => setIsBackConfirmVisible(false)}
+                      onConfirm={() => {
+                        setTempPhotoList(null);
+                        setSelectedAssets([]);
+                        setMode("bestshot");
+                        router.replace("/customGallery");
+                      }}
+                      cancelText="취소"
+                      confirmText="뒤로가기"
                     />
                   </View>
                 </TouchableOpacity>

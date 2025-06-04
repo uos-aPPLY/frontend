@@ -5,24 +5,39 @@ import { useRouter } from "expo-router";
 import { usePhoto } from "../../contexts/PhotoContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { uploadPhotos } from "../../utils/uploadPhotos";
+import { clearAllTempPhotos } from "../../utils/clearTempPhotos";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as MediaLibrary from "expo-media-library";
+import { set } from "date-fns";
 
 export default function LoadingPicture() {
   const nav = useRouter();
   const {
+    setsSelected,
     selectedAssets,
     setPhotoList,
     setTempPhotoList,
     setMainPhotoId,
     setSelectedAssets,
-    mode
+    mode,
+    clear,
+    setClear
   } = usePhoto();
   const { token } = useAuth();
 
   useEffect(() => {
     const process = async () => {
       try {
+        if (clear && token) {
+          try {
+            await clearAllTempPhotos(token);
+            setClear(false);
+            setSelectedAssets([]);
+            console.log("🧹 기존 임시 사진 삭제 완료");
+          } catch (e) {
+            console.warn("⚠️ 임시 사진 삭제 실패:", e);
+          }
+        }
         if (!selectedAssets || selectedAssets.length === 0) {
           Alert.alert("오류", "선택된 사진이 없습니다.");
           nav.replace("/");

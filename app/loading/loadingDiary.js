@@ -133,7 +133,21 @@ export default function LoadingDiary() {
         body: JSON.stringify(body)
       });
 
-      const json = await res.json();
+      const text = await res.text();
+
+      if (!res.ok) {
+        console.error("❌ 응답 실패 상태:", res.status, text);
+        throw new Error("요청 실패");
+      }
+
+      let json = {};
+      try {
+        json = JSON.parse(text);
+      } catch (err) {
+        console.error("❌ JSON 파싱 실패:", err, text);
+        throw new Error("응답 파싱 실패");
+      }
+
       if (!isMounted.current) return;
 
       if (json?.status === "confirmed") {

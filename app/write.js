@@ -47,6 +47,8 @@ export default function WritePage() {
   const { BACKEND_URL } = Constants.expoConfig.extra;
   const [isPickerVisible, setIsPickerVisible] = useState(false);
   const [tempPhotos, setTempPhotos] = useState([]);
+  const [isBackConfirmVisible, setIsBackConfirmVisible] = useState(false);
+
   const {
     photoList,
     setPhotoList,
@@ -54,7 +56,8 @@ export default function WritePage() {
     setMainPhotoId,
     resetPhoto,
     setSelectedAssets,
-    setMode
+    setMode,
+    mode
   } = usePhoto();
   const photosToShow = photoList.length > 0 ? photoList : tempPhotos;
   const date = selectedDate instanceof Date ? selectedDate.toISOString().split("T")[0] : "";
@@ -228,18 +231,28 @@ export default function WritePage() {
       <View style={styles.all}>
         <HeaderDate
           date={date}
-          onBack={async () => {
-            try {
-              await clearAllTempPhotos(token);
-              resetDiary();
-              resetPhoto();
-              setMode("choose");
-              nav.push("/customGallery");
-            } catch (err) {
-              console.error("❌ 뒤로가기 중 임시 사진 삭제 실패:", err);
-              resetDiary();
-              resetPhoto();
-              nav.push("/calendar");
+          onBack={() => {
+            if (mode === "write" || mode === "manual" || mode === "ai") {
+              setIsBackConfirmVisible(true); // 모달만 띄움
+            } else {
+              // 기존대로 바로 뒤로가기
+              clearAllTempPhotos(token)
+                .then(() => {
+                  resetDiary();
+                  resetPhoto();
+                  if (mode === "manual" || mode === "ai") {
+                    setMode("bestshot");
+                  } else {
+                    setMode("choose");
+                  }
+                  nav.push("/customGallery");
+                })
+                .catch((err) => {
+                  console.error("❌ 뒤로가기 실패:", err);
+                  resetDiary();
+                  resetPhoto();
+                  nav.push("/calendar");
+                });
             }
           }}
           hasText={text.trim().length > 0}
@@ -306,6 +319,27 @@ export default function WritePage() {
                 message="정말 이 사진을 삭제하시겠어요?"
                 onCancel={onCancelDelete}
                 onConfirm={onConfirmDelete}
+              />
+              <ConfirmModal
+                visible={isBackConfirmVisible}
+                title="정말로 뒤로 가시겠어요?"
+                message={"베스트샷 추천이 초기화됩니다.\n작성 중인 일기도 사라져요."}
+                onCancel={() => setIsBackConfirmVisible(false)}
+                onConfirm={async () => {
+                  setIsBackConfirmVisible(false);
+                  try {
+                    await clearAllTempPhotos(token);
+                  } catch (e) {
+                    console.error("❌ 임시사진 삭제 실패:", e);
+                  } finally {
+                    resetDiary();
+                    resetPhoto();
+                    setMode("bestshot");
+                    nav.push("/customGallery");
+                  }
+                }}
+                cancelText="취소"
+                confirmText="뒤로가기"
               />
             </View>
           </ScrollView>

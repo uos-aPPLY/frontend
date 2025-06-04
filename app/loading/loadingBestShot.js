@@ -8,6 +8,7 @@ import colors from "../../constants/colors";
 import Constants from "expo-constants";
 import IconButton from "../../components/IconButton";
 import ConfirmModal from "../../components/Modal/ConfirmModal";
+import { clearAllTempPhotos } from "../../utils/clearTempPhotos";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as MediaLibrary from "expo-media-library";
 
@@ -24,7 +25,8 @@ export default function LoadingBestShot() {
     resetPhoto,
     selected,
     photoList,
-    mode
+    mode,
+    clear
   } = usePhoto();
   const { token } = useAuth();
   const nav = useRouter();
@@ -37,6 +39,15 @@ export default function LoadingBestShot() {
         console.log("🧭 mode:", mode);
         console.log("📸 selectedAssets:", selectedAssets);
         console.log("🛡 token:", token);
+
+        if (token && clear) {
+          try {
+            await clearAllTempPhotos(token);
+            console.log("🧹 기존 임시 사진 삭제 완료");
+          } catch (err) {
+            console.warn("⚠️ 임시 사진 삭제 실패:", err);
+          }
+        }
 
         if (!token) {
           Alert.alert("오류", "토큰이 없습니다.");
@@ -67,7 +78,17 @@ export default function LoadingBestShot() {
             })
           });
 
-          const result = await res.json();
+          const contentType = res.headers.get("content-type");
+          let result;
+
+          if (contentType && contentType.includes("application/json")) {
+            result = await res.json();
+          } else {
+            const text = await res.text();
+            console.error("❌ 예상치 못한 응답:", text);
+            throw new Error("서버에서 잘못된 응답을 보냈습니다.");
+          }
+
           console.log("🧠 추천 결과:", result);
 
           if (!res.ok || !Array.isArray(result.recommendedPhotoIds)) {
@@ -198,15 +219,19 @@ export default function LoadingBestShot() {
           source={require("../../assets/icons/backicon.png")}
           wsize={22}
           hsize={22}
-          onPress={() => {
-            setIsModalVisible(true), setSelectedAssets([]), resetPhoto();
+          onPress={async () => {
+            setIsModalVisible(true);
+            setSelectedAssets([]);
+            resetPhoto();
           }}
         />
       </View>
 
       <View style={styles.loadingArea}>
         <ActivityIndicator size="large" color={colors.pinkpoint} />
-        <Text style={styles.text}>AI가 베스트샷을 고르는 중이에요...</Text>
+        <Text style={styles.text}>
+          {"AI가 베스트샷을 고르는 중이에요...\n 생각보다 시간이 소요될 수 있어요💫"}
+        </Text>
       </View>
 
       <ConfirmModal
@@ -232,7 +257,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FCF9F4"
   },
   header: {
-    paddingTop: 60,
+    paddingTop: 75,
     paddingLeft: 30
   },
   loadingArea: {

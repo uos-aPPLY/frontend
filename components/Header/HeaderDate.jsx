@@ -2,7 +2,7 @@ import { View, Text, StyleSheet } from "react-native";
 import IconButton from "../IconButton";
 import { useEffect } from "react";
 import { useDiary } from "../../contexts/DiaryContext";
-import { isSameDay } from "date-fns"; // ✅ 추가
+import { isSameDay } from "date-fns";
 
 const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
 

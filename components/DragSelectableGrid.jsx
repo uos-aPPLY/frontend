@@ -20,7 +20,8 @@ export default function DragSelectableGrid({
   onSelect,
   multiSelectMode,
   onLongPressActivate,
-  selectedDate
+  selectedDate,
+  mode
 }) {
   const layoutMap = useRef({});
   const selectedDuringDrag = useRef(new Set());
@@ -112,7 +113,20 @@ export default function DragSelectableGrid({
   return (
     <View style={{ flex: 1 }}>
       <ScrollView scrollEnabled={!isDragging}>
-        <Text style={styles.headerTitle}>{formatDateToString(selectedDate)}의 순간들</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.headerTitle}>{formatDateToString(selectedDate)}의 순간들</Text>
+          {selectedDatePhotos.length > 0 && mode !== "choose" && (
+            <Text
+              style={styles.selectAllButton}
+              onPress={() => {
+                selectedDatePhotos.forEach((photo) => onSelect(photo));
+              }}
+            >
+              전체 선택
+            </Text>
+          )}
+        </View>
+
         {selectedDatePhotos.length === 0 ? (
           <Text style={styles.noPhotosText}>해당 날짜에 찍은 사진이 없습니다.</Text>
         ) : (
@@ -152,14 +166,26 @@ export default function DragSelectableGrid({
 }
 
 const styles = StyleSheet.create({
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 8
+  },
   headerTitle: {
     fontSize: 16,
     fontFamily: inter400Regular,
-    fontWeight: "500",
+    fontWeight: "600",
     marginTop: 10,
     marginBottom: 8,
     marginLeft: 16,
     color: colors.brown
+  },
+  selectAllButton: {
+    fontSize: 14,
+    color: colors.brown,
+    fontWeight: "400",
+    paddingHorizontal: 8
   },
   separatorLabelWrapper: {
     width: "100%",
@@ -169,8 +195,9 @@ const styles = StyleSheet.create({
   },
   separatorLabel: {
     fontSize: 16,
-    fontWeight: "500",
-    color: colors.brown
+    fontWeight: "600",
+    color: colors.brown,
+    paddingVertical: 8
   },
   dummyBox: {
     width: SIZE,

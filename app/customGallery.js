@@ -18,6 +18,7 @@ import { usePhoto } from "../contexts/PhotoContext";
 import IconButton from "../components/IconButton";
 import colors from "../constants/colors";
 import ConfirmModal from "../components/Modal/ConfirmModal";
+import { clearAllTempPhotos } from "../utils/clearTempPhotos";
 
 export default function CustomGalleryScreen() {
   const { token } = useAuth();
@@ -30,20 +31,32 @@ export default function CustomGalleryScreen() {
     setTempPhotoList,
     photoCount,
     selectedAssets,
-    setSelectedAssets
+    setSelectedAssets,
+    setClear
   } = usePhoto();
   const MAX_SELECTION = mode === "add" ? 9 - photoCount : mode === "choose" ? 9 : 160;
 
   const [allPhotos, setAllPhotos] = useState([]);
   const [multiSelectMode, setMultiSelectMode] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
   const [hasNextPage, setHasNextPage] = useState(true);
   const [endCursor, setEndCursor] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
-    fetchPhotos();
+    const init = async () => {
+      try {
+        if (token) {
+          // await clearAllTempPhotos(token);
+          // console.log("🧹 임시 사진 초기화 완료");
+        }
+      } catch (e) {
+        console.warn("⚠️ clearAllTempPhotos 실패:", e);
+      }
+      fetchPhotos(); // 기존 로딩 함수
+    };
+
+    init();
   }, []);
 
   const fetchPhotos = async () => {
@@ -166,6 +179,7 @@ export default function CustomGalleryScreen() {
           multiSelectMode={multiSelectMode}
           onLongPressActivate={() => setMultiSelectMode(true)}
           selectedDate={selectedDate}
+          mode={mode}
         />
       </View>
       <View style={styles.footerWrapper}>
@@ -240,6 +254,7 @@ export default function CustomGalleryScreen() {
                       setModalVisible(true);
                       return;
                     }
+                    setClear(true);
                     setMode("bestshot");
                     nav.push("/loading/loadingPicture");
                   }}
