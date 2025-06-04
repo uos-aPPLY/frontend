@@ -232,13 +232,13 @@ export default function GeneratePage() {
           wsize={22}
           onPress={async () => {
             if (mode === "ai" || mode === "manual") {
-              nav.push("bestshotReorder");
+              nav.back();
             } else if (mode === "choose") {
-              nav.push("/customGallery");
+              nav.back();
             } else {
               await clearAllTempPhotos(token);
               resetPhoto();
-              nav.push("/customGallery");
+              nav.back();
             }
           }}
         />

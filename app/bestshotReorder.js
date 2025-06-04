@@ -222,7 +222,7 @@ export default function BestShotReorder() {
           setTempPhotoList(null);
           setSelectedAssets([]);
           setMode("bestshot");
-          router.replace("/customGallery");
+          router.back();
         }}
         cancelText="취소"
         confirmText="뒤로가기"

@@ -83,39 +83,6 @@ export default function confirmPhoto() {
     fetchPhotos();
   }, [token]);
 
-<<<<<<< HEAD
-=======
-  const handleBack = async () => {
-    try {
-      const res = await fetch(`${BACKEND_URL}/api/photos/selection/temp`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      const data = await res.json();
-      const ids = data.map((photo) => photo.id);
-
-      await Promise.all(
-        ids.map((id) =>
-          fetch(`${BACKEND_URL}/api/photos/selection/${id}`, {
-            method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          })
-        )
-      );
-
-      console.log("모든 임시 사진 삭제 완료");
-      resetPhoto();
-    } catch (error) {
-      console.error("사진 삭제 중 오류:", error);
-    }
-    nav.back();
-  };
-
->>>>>>> main
   return (
     <View style={styles.container}>
       <View style={[styles.header, photoList.length <= 9 && { marginBottom: 30 }]}>
