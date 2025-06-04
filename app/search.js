@@ -1,12 +1,5 @@
 import { useState } from "react";
-import {
-  View,
-  FlatList,
-  StyleSheet,
-  Text,
-  Image,
-  TouchableOpacity,
-} from "react-native";
+import { View, FlatList, StyleSheet, Text, Image, TouchableOpacity } from "react-native";
 import HeaderSearch from "../components/Header/HeaderSearch";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { format, parse } from "date-fns";
@@ -18,13 +11,7 @@ export default function Search() {
   const [searchResults, setSearchResults] = useState([]);
 
   const handleBack = () => {
-    if (from === "main") {
-      nav.push("/");
-    } else if (from === "calendar") {
-      nav.push("/calendar");
-    } else {
-      nav.back();
-    }
+    nav.back();
   };
 
   return (
@@ -46,28 +33,20 @@ export default function Search() {
             style={styles.card}
           >
             <View style={styles.imageWrapper}>
-              <Image
-                source={{ uri: item.representativePhotoUrl }}
-                style={styles.cardImage}
-              />
+              <Image source={{ uri: item.representativePhotoUrl }} style={styles.cardImage} />
             </View>
             <View style={styles.cardTextContainer}>
               <Text style={styles.cardContent} numberOfLines={3}>
                 {item.content}
               </Text>
               <Text style={styles.cardDate}>
-                {format(
-                  parse(item.diaryDate, "yyyy-MM-dd", new Date()),
-                  "yyyy년 M월 d일 (E)"
-                )}
+                {format(parse(item.diaryDate, "yyyy-MM-dd", new Date()), "yyyy년 M월 d일 (E)")}
               </Text>
             </View>
           </TouchableOpacity>
         )}
         ListEmptyComponent={
-          keyword.length >= 2 && (
-            <Text style={styles.emptyText}>검색 결과가 없습니다.</Text>
-          )
+          keyword.length >= 2 && <Text style={styles.emptyText}>검색 결과가 없습니다.</Text>
         }
       />
     </View>
@@ -77,35 +56,35 @@ export default function Search() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FCF9F4",
+    backgroundColor: "#FCF9F4"
   },
   resultContainer: {
-    padding: 20,
+    padding: 20
   },
   resultItem: {
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
+    borderBottomColor: "#ddd"
   },
   resultText: {
     fontSize: 16,
     fontWeight: "500",
-    color: "#5C4033",
+    color: "#5C4033"
   },
   date: {
     fontSize: 12,
     color: "#888",
-    marginTop: 4,
+    marginTop: 4
   },
   noResult: {
     marginTop: 30,
     textAlign: "center",
-    color: "#A78C7B",
+    color: "#A78C7B"
   },
   listContent: {
     marginTop: 14,
     paddingBottom: 20,
-    paddingHorizontal: 20,
+    paddingHorizontal: 20
   },
   card: {
     flexDirection: "row",
@@ -116,39 +95,39 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2.5 },
     shadowOpacity: 0.2,
     shadowRadius: 1.6,
-    overflow: "visible",
+    overflow: "visible"
   },
   imageWrapper: {
     width: 120,
     height: 120,
     borderTopLeftRadius: 30,
     borderBottomLeftRadius: 30,
-    overflow: "hidden",
+    overflow: "hidden"
   },
   cardImage: {
     width: 120,
     height: 120,
-    resizeMode: "cover",
+    resizeMode: "cover"
   },
   cardTextContainer: {
     flex: 1,
     padding: 18,
-    justifyContent: "space-between",
+    justifyContent: "space-between"
   },
   cardContent: {
     fontSize: 16,
     color: "#A78C7B",
-    lineHeight: 22,
+    lineHeight: 22
   },
   cardDate: {
     fontSize: 14,
     color: "#C7C7CC",
-    textAlign: "right",
+    textAlign: "right"
   },
   emptyText: {
     textAlign: "center",
     marginTop: 50,
     fontSize: 16,
-    color: "#999",
-  },
+    color: "#999"
+  }
 });

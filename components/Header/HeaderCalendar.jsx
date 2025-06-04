@@ -1,6 +1,7 @@
 // components/Header/HeaderCalendar.jsx
 import React, { useEffect, useContext } from "react";
 import { View, Image, TouchableOpacity, StyleSheet, Text } from "react-native";
+import * as Haptics from "expo-haptics";
 import { useFonts, Caveat_600SemiBold } from "@expo-google-fonts/caveat";
 import { format } from "date-fns";
 import { useRouter } from "expo-router";
@@ -15,7 +16,7 @@ export default function Header() {
   const { showEmotion, setShowEmotion } = useContext(CalendarViewContext);
 
   const [fontsLoaded] = useFonts({
-    Caveat_600SemiBold,
+    Caveat_600SemiBold
   });
 
   useEffect(() => {
@@ -35,10 +36,7 @@ export default function Header() {
   return (
     <View style={styles.container}>
       <View style={styles.left}>
-        <Image
-          source={require("../../assets/character/char2.png")}
-          style={styles.char2}
-        />
+        <Image source={require("../../assets/character/char2.png")} style={styles.char2} />
         <View style={styles.dateWrapper}>
           <Text style={styles.dateText}>{dateStr}</Text>
           <Text style={styles.dayText}>{dayStr}</Text>
@@ -47,7 +45,10 @@ export default function Header() {
 
       <View style={styles.right}>
         <TouchableOpacity
-          onPress={() => setShowEmotion((prev) => !prev)}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowEmotion((prev) => !prev);
+          }}
           style={styles.toggleWrapper}
         >
           <Image
@@ -79,50 +80,50 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: 55,
+    paddingTop: 55
   },
   char2: {
     width: 44,
     height: 40,
     resizeMode: "contain",
-    marginTop: 5,
+    marginTop: 5
   },
   dateWrapper: {
     flex: 1,
     flexDirection: "column",
-    justifyContent: "center",
+    justifyContent: "center"
   },
   dateText: {
     fontFamily: "Caveat_600SemiBold",
     fontSize: 28,
     color: "#AC8B78",
-    marginBottom: -10,
+    marginBottom: -10
   },
   dayText: {
     fontFamily: "Caveat_600SemiBold",
     fontSize: 20,
-    color: "#AC8B78",
+    color: "#AC8B78"
   },
   left: {
     flexDirection: "row",
     alignItems: "center",
     flex: 1,
-    gap: 15,
+    gap: 15
   },
   right: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-end",
-    gap: 20,
+    gap: 20
   },
   toggleWrapper: {
     padding: 5,
     justifyContent: "center",
-    alignItems: "center",
+    alignItems: "center"
   },
   toggleImage: {
     width: 30,
     height: 20,
-    resizeMode: "contain",
-  },
+    resizeMode: "contain"
+  }
 });

@@ -9,7 +9,7 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
-  Alert,
+  Alert
 } from "react-native";
 import { useRouter } from "expo-router";
 import Constants from "expo-constants";
@@ -18,16 +18,15 @@ import * as SecureStore from "expo-secure-store";
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
 const HEADER_HEIGHT_REFERENCE = 50;
-const BUTTON_PADDING = 8; // 각 파일의 backButton 스타일에 있는 padding 값과 일치해야 함
-const ICON_HEIGHT = 22; // 각 파일의 backicon 스타일에 있는 height 값과 일치해야 함
-const ICON_WIDTH = 12; // 각 파일의 backicon 스타일에 있는 width 값과 일치해야 함
-const ICON_HORIZONTAL_POSITION_REFERENCE = 30; // 아이콘이 화면 가장자리로부터 떨어지는 시각적 목표 거리
+const BUTTON_PADDING = 8;
+const ICON_HEIGHT = 22;
+const ICON_WIDTH = 12;
+const ICON_HORIZONTAL_POSITION_REFERENCE = 30;
 
 const touchableAreaHeight = ICON_HEIGHT + BUTTON_PADDING * 2;
 const topOffsetInHeader = (HEADER_HEIGHT_REFERENCE - touchableAreaHeight) / 2;
 const absoluteTopPosition = Constants.statusBarHeight + topOffsetInHeader;
-const absoluteLeftPosition =
-  ICON_HORIZONTAL_POSITION_REFERENCE - BUTTON_PADDING;
+const absoluteLeftPosition = ICON_HORIZONTAL_POSITION_REFERENCE - BUTTON_PADDING;
 
 const Nickname = () => {
   const router = useRouter();
@@ -35,7 +34,7 @@ const Nickname = () => {
   const [loading, setLoading] = useState(false);
 
   const goBack = () => {
-    router.replace("/terms");
+    router.back();
   };
 
   const onSubmit = async () => {
@@ -49,9 +48,9 @@ const Nickname = () => {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ nickname: nickname.trim() }),
+        body: JSON.stringify({ nickname: nickname.trim() })
       });
 
       if (!res.ok) {
@@ -59,7 +58,7 @@ const Nickname = () => {
         throw new Error(`닉네임 업데이트 실패: ${errText}`);
       }
 
-      router.replace("/speechstyle");
+      router.push("/speechstyle");
     } catch (error) {
       console.error(error);
       Alert.alert("오류", error.message || "닉네임 설정에 실패했습니다.");
@@ -84,9 +83,7 @@ const Nickname = () => {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
       >
-        <Text style={styles.title}>
-          DiaryPic에서 사용할{"\n"}닉네임을 작성해주세요.
-        </Text>
+        <Text style={styles.title}>DiaryPic에서 사용할{"\n"}닉네임을 작성해주세요.</Text>
 
         <TextInput
           style={styles.input}
@@ -99,14 +96,12 @@ const Nickname = () => {
       <TouchableOpacity
         style={[
           styles.confirmButton,
-          isValid ? styles.confirmButtonEnabled : styles.confirmButtonDisabled,
+          isValid ? styles.confirmButtonEnabled : styles.confirmButtonDisabled
         ]}
         onPress={onSubmit}
         disabled={!isValid}
       >
-        <Text style={styles.confirmButtonText}>
-          {loading ? "저장 중..." : "확인"}
-        </Text>
+        <Text style={styles.confirmButtonText}>{loading ? "저장 중..." : "확인"}</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -117,28 +112,28 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fcf9f4",
     paddingTop: 30,
-    paddingHorizontal: 30,
+    paddingHorizontal: 30
   },
   keyboardContainer: {
-    flex: 1,
+    flex: 1
   },
   backButton: {
     position: "absolute",
     top: absoluteTopPosition, // 수정된 top 값
     left: absoluteLeftPosition, // 수정된 left 값
     padding: BUTTON_PADDING, // 상수 값 사용
-    zIndex: 1, // 다른 요소 위에 오도록 설정
+    zIndex: 1 // 다른 요소 위에 오도록 설정
   },
   backicon: {
     width: ICON_WIDTH, // 상수 값 사용
-    height: ICON_HEIGHT, // 상수 값 사용
+    height: ICON_HEIGHT // 상수 값 사용
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
     marginTop: 20,
     marginBottom: 20,
-    lineHeight: 36,
+    lineHeight: 36
   },
   input: {
     borderColor: "#C7C7CC",
@@ -146,31 +141,31 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 4,
     backgroundColor: "#fcf9f4",
-    fontSize: 16,
+    fontSize: 16
   },
   helper: {
     marginTop: 8,
     fontSize: 12,
-    color: "black",
+    color: "black"
   },
   confirmButton: {
     alignItems: "center",
     justifyContent: "center",
     height: 50,
     borderRadius: 14,
-    marginBottom: 60,
+    marginBottom: 60
   },
   confirmButtonEnabled: {
-    backgroundColor: "rgba(214, 128, 137, 0.7)",
+    backgroundColor: "rgba(214, 128, 137, 0.7)"
   },
   confirmButtonDisabled: {
-    backgroundColor: "#D9D9D9",
+    backgroundColor: "#D9D9D9"
   },
   confirmButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "600",
-  },
+    fontWeight: "600"
+  }
 });
 
 export default Nickname;

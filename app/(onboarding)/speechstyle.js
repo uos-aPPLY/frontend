@@ -9,7 +9,7 @@ import {
   ScrollView,
   Image,
   Alert,
-  ActivityIndicator,
+  ActivityIndicator
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import Constants from "expo-constants";
@@ -28,8 +28,7 @@ const touchableAreaHeight = ICON_HEIGHT + BUTTON_PADDING * 2;
 const topOffsetInHeader = (HEADER_HEIGHT_REFERENCE - touchableAreaHeight) / 2;
 const absoluteTopPosition = Constants.statusBarHeight + topOffsetInHeader;
 
-const absoluteLeftPosition =
-  ICON_HORIZONTAL_POSITION_REFERENCE - BUTTON_PADDING;
+const absoluteLeftPosition = ICON_HORIZONTAL_POSITION_REFERENCE - BUTTON_PADDING;
 
 const templates = {
   기록형:
@@ -43,7 +42,7 @@ const templates = {
   관찰형:
     "오늘은 하늘의 색이 특별했다. 회색 구름 사이로 파란 하늘이 조금씩 보였고, 길가의 은행나무 잎들은 바람에 흔들렸다. 지하철에서 만난 할머니는 따뜻한 미소를 지어주셨고, 회사 앞 카페에서는 새로운 원두 향이 났다. 사소한 순간들이 모여 하루를 완성했다.",
   계획형:
-    "오늘 할 일 중 세 가지를 완료했다. 프로젝트 기획안 제출, 저녁 식사 준비, 30분 운동. 내일은 반드시 책 50페이지를 읽고, 영어 단어 20개를 외우고, 빨래를 완료해야 한다. 주말까지 보고서를 마무리하려면 매일 조금씩 진행해야 할 것이다. 계획대로 차근차근 해나가자.",
+    "오늘 할 일 중 세 가지를 완료했다. 프로젝트 기획안 제출, 저녁 식사 준비, 30분 운동. 내일은 반드시 책 50페이지를 읽고, 영어 단어 20개를 외우고, 빨래를 완료해야 한다. 주말까지 보고서를 마무리하려면 매일 조금씩 진행해야 할 것이다. 계획대로 차근차근 해나가자."
 };
 
 export default function SpeechStyle() {
@@ -54,7 +53,6 @@ export default function SpeechStyle() {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalText, setModalText] = useState(text);
 
   useEffect(() => {
     if (from === "settings") {
@@ -65,7 +63,7 @@ export default function SpeechStyle() {
           if (!token) throw new Error("인증 토큰이 없습니다.");
 
           const res = await fetch(`${BACKEND_URL}/api/users/me`, {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: { Authorization: `Bearer ${token}` }
           });
           if (!res.ok) throw new Error("사용자 정보 조회 실패");
 
@@ -85,26 +83,23 @@ export default function SpeechStyle() {
     }
   }, [from]);
 
-  useEffect(() => {
-    setModalText(text);
-  }, [text]);
-
   const onSelect = (style) => {
     setSelected(style);
     setText(templates[style]);
   };
 
   const goBack = () => {
-    if (from === "settings") {
-      router.back();
-    } else {
-      router.replace("/nickname");
-    }
+    router.back();
   };
 
   const onConfirm = async () => {
-    if (!selected || loading) return;
+    if (!selected && text.trim() === "") {
+      Alert.alert("알림", "말투를 선택하거나 직접 입력해주세요.");
+      return;
+    }
+    if (loading) return;
     setLoading(true);
+
     try {
       const token = await SecureStore.getItemAsync("accessToken");
       if (!token) throw new Error("인증 토큰이 없습니다.");
@@ -114,9 +109,9 @@ export default function SpeechStyle() {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ prompt: text.trim(), writingStyleNumber }),
+        body: JSON.stringify({ prompt: text.trim(), writingStyleNumber })
       });
 
       if (!response.ok) {
@@ -125,9 +120,9 @@ export default function SpeechStyle() {
       }
 
       if (from === "settings") {
-        router.replace("/settings");
+        router.back();
       } else {
-        router.replace("/tutorial");
+        router.push("/tutorial");
       }
     } catch (err) {
       console.error(err);
@@ -137,12 +132,12 @@ export default function SpeechStyle() {
     }
   };
 
-  const isValid = selected !== null && !loading;
+  const isValid = (selected !== null || text.trim() !== "") && !loading;
 
-  if (loading && from === "settings" && !selected) {
+  if (loading && from === "settings" && !selected && text.trim() === "") {
     return (
       <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#D68089" />
       </View>
     );
   }
@@ -157,9 +152,7 @@ export default function SpeechStyle() {
         />
       </TouchableOpacity>
       <View style={styles.header}>
-        <Text style={styles.title}>
-          DiaryPic에서 사용할{"\n"}말투를 선택 및 수정해 주세요.
-        </Text>
+        <Text style={styles.title}>DiaryPic에서 사용할{"\n"}말투를 선택 및 수정해 주세요.</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -170,17 +163,11 @@ export default function SpeechStyle() {
               style={[
                 styles.styleButton,
                 idx % 2 === 0 ? { marginRight: 8 } : null,
-                selected === styleName && styles.styleButtonSelected,
+                selected === styleName && styles.styleButtonSelected
               ]}
               onPress={() => onSelect(styleName)}
             >
-              <Text
-                style={
-                  selected === styleName
-                    ? styles.styleTextSelected
-                    : styles.styleText
-                }
-              >
+              <Text style={selected === styleName ? styles.styleTextSelected : styles.styleText}>
                 {styleName}
               </Text>
             </TouchableOpacity>
@@ -188,40 +175,38 @@ export default function SpeechStyle() {
         </View>
       </ScrollView>
 
-      {isValid && (
+      {(selected !== null || text.trim() !== "") && (
         <View style={styles.editorContainer}>
-          <Text style={styles.descriptionText}>
-            아래의 말투를 누르면 커스터마이징이 가능해요.
-          </Text>
-
+          <Text style={styles.descriptionText}>아래의 말투를 누르면 커스터마이징이 가능해요.</Text>
           <TouchableOpacity
-            style={styles.textInput}
+            style={styles.textInputDisplay}
             activeOpacity={0.7}
             onPress={() => setModalVisible(true)}
           >
-            <Text>{text}</Text>
+            <Text numberOfLines={5} ellipsizeMode="tail">
+              {text || "말투를 선택하거나 직접 입력해주세요."}
+            </Text>
           </TouchableOpacity>
         </View>
       )}
 
       <TouchableOpacity
-        style={[
-          styles.confirmButton,
-          isValid ? styles.confirmEnabled : styles.confirmDisabled,
-        ]}
+        style={[styles.confirmButton, isValid ? styles.confirmEnabled : styles.confirmDisabled]}
         onPress={onConfirm}
         disabled={!isValid}
       >
-        <Text style={styles.confirmText}>
-          {loading ? "저장 중..." : "확인"}
-        </Text>
+        <Text style={styles.confirmText}>{loading ? "저장 중..." : "확인"}</Text>
       </TouchableOpacity>
 
       <TextEditorModal
         visible={modalVisible}
         initialText={text}
-        onSave={(edited) => setText(edited)}
+        onSave={(editedText) => {
+          setText(editedText.trim());
+          return true;
+        }}
         onCancel={() => setModalVisible(false)}
+        hintText="자유롭게 말투를 수정해보세요!"
       />
     </SafeAreaView>
   );
@@ -232,37 +217,37 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fcf9f4",
     paddingTop: 50,
-    paddingHorizontal: 30,
+    paddingHorizontal: 30
   },
   loaderContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fcf9f4",
+    backgroundColor: "#fcf9f4"
   },
   header: { marginBottom: 20 },
   backButton: {
     position: "absolute",
-    top: absoluteTopPosition, // 수정된 top 값
-    left: absoluteLeftPosition, // 수정된 left 값
-    padding: BUTTON_PADDING, // 상수 값 사용
-    zIndex: 1,
+    top: absoluteTopPosition,
+    left: absoluteLeftPosition,
+    padding: BUTTON_PADDING,
+    zIndex: 1
   },
   backicon: {
-    width: ICON_WIDTH, // 상수 값 사용
-    height: ICON_HEIGHT, // 상수 값 사용
+    width: ICON_WIDTH,
+    height: ICON_HEIGHT
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
     lineHeight: 36,
-    textAlign: "left",
+    textAlign: "left"
   },
   scrollContent: {},
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
+    justifyContent: "space-between"
   },
   styleButton: {
     width: "48%",
@@ -271,46 +256,46 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     borderRadius: 20,
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "center"
   },
   styleButtonSelected: {
     borderWidth: 7,
-    borderColor: "rgba(214, 128, 137, 0.7)",
+    borderColor: "rgba(214, 128, 137, 0.7)"
   },
   styleText: { fontSize: 16, color: "black" },
   styleTextSelected: {
     fontSize: 16,
     color: "rgba(214, 128, 137, 0.7)",
-    fontWeight: "600",
+    fontWeight: "600"
   },
   descriptionText: {
     fontSize: 12,
     color: "#000000",
     marginLeft: 5,
-    marginBottom: 5,
+    marginBottom: 5
   },
   editorContainer: { paddingTop: 10 },
-  textInput: {
+  textInputDisplay: {
     height: 120,
     borderRadius: 20,
     padding: 15,
     backgroundColor: "#fff",
     fontSize: 14,
-    marginBottom: 10,
+    marginBottom: 10
   },
   confirmButton: {
     marginBottom: 60,
     alignItems: "center",
     justifyContent: "center",
     height: 50,
-    borderRadius: 14,
+    borderRadius: 14
   },
   confirmEnabled: { backgroundColor: "rgba(214, 128, 137, 0.7)" },
   confirmDisabled: { backgroundColor: "#D9D9D9" },
   confirmText: { color: "#fff", fontSize: 16, fontWeight: "600" },
   modal: {
     justifyContent: "flex-end",
-    margin: 0,
+    margin: 0
   },
   modalContent: {
     backgroundColor: "#fff",
@@ -318,7 +303,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 20,
     borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopRightRadius: 20
   },
   modalHandle: {
     width: 40,
@@ -326,13 +311,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#ccc",
     borderRadius: 2.5,
     alignSelf: "center",
-    marginBottom: 10,
+    marginBottom: 10
   },
   modalTextInput: {
     minHeight: 100,
     borderRadius: 20,
     padding: 15,
     backgroundColor: "#f9f9f9",
-    fontSize: 14,
-  },
+    fontSize: 14
+  }
 });

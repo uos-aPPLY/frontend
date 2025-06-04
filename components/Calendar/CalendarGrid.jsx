@@ -43,21 +43,53 @@ const toSeoulDate = (date) =>
     })
   );
 
-const GeneratingProgressCircle = ({ size, duration, text }) => {
+const GeneratingProgressCircle = ({ size, duration, text, startTime }) => {
   const progress = useRef(new Animated.Value(0)).current;
+  const animationRef = useRef(null);
   const STROKE_WIDTH = 3;
   const radius = size / 2 - STROKE_WIDTH / 2;
   const circumference = 2 * Math.PI * radius;
 
   useEffect(() => {
-    progress.setValue(0);
-    Animated.timing(progress, {
-      toValue: 1,
-      duration: duration,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false
-    }).start();
-  }, [duration, progress]);
+    if (animationRef.current) {
+      animationRef.current.stop();
+      animationRef.current = null;
+    }
+
+    if (typeof startTime !== "number" || startTime <= 0 || duration <= 0) {
+      progress.setValue(0);
+      return;
+    }
+
+    const now = Date.now();
+    const elapsedTime = now - startTime;
+    let initialProgressValue = 0;
+
+    if (elapsedTime > 0) {
+      initialProgressValue = Math.min(elapsedTime / duration, 1);
+    }
+
+    progress.setValue(initialProgressValue);
+
+    if (initialProgressValue < 1) {
+      const remainingDuration = duration * (1 - initialProgressValue);
+      const newAnimation = Animated.timing(progress, {
+        toValue: 1,
+        duration: remainingDuration > 0 ? remainingDuration : 0,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false
+      });
+      animationRef.current = newAnimation;
+      newAnimation.start();
+    }
+
+    return () => {
+      if (animationRef.current) {
+        animationRef.current.stop();
+        animationRef.current = null;
+      }
+    };
+  }, [duration, startTime, progress]);
 
   const strokeDashoffset = progress.interpolate({
     inputRange: [0, 1],
@@ -78,14 +110,14 @@ const GeneratingProgressCircle = ({ size, duration, text }) => {
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#D68089" // 테두리 색상
+          stroke="#D68089"
           strokeWidth={STROKE_WIDTH}
           fill="transparent"
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
-          rotation="-90" // 12시 방향에서 시작하도록 -90도 회전
-          originX={size / 2} // 회전 중심 X
-          originY={size / 2} // 회전 중심 Y
+          rotation="-90"
+          originX={size / 2}
+          originY={size / 2}
         />
       </Svg>
       <Text style={[styles.generatingDayText, { position: "absolute" }]}>{text}</Text>
@@ -98,6 +130,31 @@ export default function CalendarGrid({ currentMonth, diariesByDate, onPrev, onNe
   const { selectedDate, setSelectedDate } = useDiary();
   const { showEmotion } = useContext(CalendarViewContext);
 
+  const slideX = useRef(new Animated.Value(0)).current;
+
+  const width = Dimensions.get("window").width;
+
+  const slideToMonth = (direction) => {
+    Animated.timing(slideX, {
+      toValue: direction * width,
+      duration: 220,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: true
+    }).start(() => {
+      if (direction === 1) onPrev?.();
+      else onNext?.();
+
+      slideX.setValue(-direction * width);
+
+      Animated.timing(slideX, {
+        toValue: 0,
+        duration: 220,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true
+      }).start();
+    });
+  };
+
   const panResponder = React.useMemo(
     () =>
       PanResponder.create({
@@ -106,11 +163,11 @@ export default function CalendarGrid({ currentMonth, diariesByDate, onPrev, onNe
         onMoveShouldSetPanResponderCapture: (_, { dx, dy }) =>
           Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10,
         onPanResponderRelease: (_, { dx }) => {
-          if (dx > 50) onPrev?.();
-          else if (dx < -50) onNext?.();
+          if (dx > 50) slideToMonth(1);
+          else if (dx < -50) slideToMonth(-1);
         }
       }),
-    [onPrev, onNext]
+    [onPrev, onNext, slideX]
   );
 
   const [fontsCaveatLoaded] = useCaveatFonts({
@@ -154,132 +211,161 @@ export default function CalendarGrid({ currentMonth, diariesByDate, onPrev, onNe
           </Text>
         ))}
       </View>
+      <View style={styles.clipper}>
+        <Animated.View style={{ transform: [{ translateX: slideX }] }}>
+          {generateCalendar().map((week, wi) => (
+            <View key={wi} style={styles.weekRow}>
+              {week.map((day, di) => {
+                const daySeoul = toSeoulDate(day);
+                const dateStr = format(daySeoul, "yyyy-MM-dd");
+                const entry = diariesByDate[dateStr] || null;
+                const hasDiary = Boolean(entry);
+                const isGenerating = entry?.status === "generating";
 
-      {generateCalendar().map((week, wi) => (
-        <View key={wi} style={styles.weekRow}>
-          {week.map((day, di) => {
-            const daySeoul = toSeoulDate(day);
-            const dateStr = format(daySeoul, "yyyy-MM-dd");
-            const entry = diariesByDate[dateStr] || null;
-            const hasDiary = Boolean(entry);
-            const isGenerating = entry?.status === "generating";
-            const isCurrentMonth = isSameMonth(daySeoul, currentMonth);
-            const isToday = dateStr === todayStr;
-            const isFuture = daySeoul > todaySeoul;
-            const isPast = !isFuture && !isToday;
-            const isPastNoDiary = isPast && !hasDiary;
-            const opacityStyle = isFuture ? { opacity: 0.3 } : null;
+                let numericGenerationStartTime = null;
+                const createdAtRaw = entry?.createdAt;
 
-            let emotionSource = null;
-            if (showEmotion && hasDiary && entry.emotionIcon) {
-              const found = characterList.find((c) => c.name === entry.emotionIcon);
-              emotionSource = found?.source ?? null;
-            }
-
-            const hasPhoto = hasDiary && entry.representativePhotoUrl;
-            const isUnconfirmed = hasPhoto && entry.status === "unconfirmed";
-
-            const handlePress = () => {
-              if (isGenerating) {
-                router.push(`/loading/loadingDiary?date=${dateStr}`);
-                return;
-              }
-              if (hasDiary) {
-                router.push(`/diary/${dateStr}`);
-              } else if (isPastNoDiary) {
-                if (selectedDate === dateStr) {
-                  setSelectedDate(dateStr);
-                  router.push(`/create?date=${dateStr}&from=calendar`);
-                } else {
-                  setSelectedDate(dateStr);
+                if (isGenerating && createdAtRaw) {
+                  if (typeof createdAtRaw === "string") {
+                    const isoFormattedString = createdAtRaw.replace(" ", "T") + "Z";
+                    const dateObject = new Date(isoFormattedString);
+                    if (!isNaN(dateObject.getTime())) {
+                      numericGenerationStartTime = dateObject.getTime();
+                    } else {
+                      console.warn(`[CalendarGrid] 날짜 문자열 파싱 실패: ${createdAtRaw}`);
+                    }
+                  } else if (typeof createdAtRaw === "number") {
+                    numericGenerationStartTime = createdAtRaw;
+                  } else {
+                    console.warn(
+                      `[CalendarGrid] 예상치 못한 createdAt 형식: ${typeof createdAtRaw}`,
+                      createdAtRaw
+                    );
+                  }
                 }
-              } else if (isToday) {
-                if (todayHasDiary) {
-                  router.push(`/diary/${dateStr}`);
-                } else {
-                  router.push(`/create?date=${dateStr}&from=calendar`);
+
+                const isCurrentMonth = isSameMonth(daySeoul, currentMonth);
+                const isToday = dateStr === todayStr;
+                const isFuture = daySeoul > todaySeoul;
+                const isPast = !isFuture && !isToday;
+                const isPastNoDiary = isPast && !hasDiary;
+                const opacityStyle = isFuture ? { opacity: 0.3 } : null;
+
+                let emotionSource = null;
+                if (showEmotion && hasDiary && entry.emotionIcon) {
+                  const found = characterList.find((c) => c.name === entry.emotionIcon);
+                  emotionSource = found?.source ?? null;
                 }
-              }
-            };
 
-            const showText =
-              (!showEmotion || !hasDiary) &&
-              selectedDate !== dateStr &&
-              !(isToday && !todayHasDiary);
+                const hasPhoto = hasDiary && entry.representativePhotoUrl;
+                const isUnconfirmed = hasPhoto && entry.status === "unconfirmed";
 
-            return (
-              <TouchableOpacity
-                key={di}
-                style={[styles.dayContainer, opacityStyle]}
-                onPress={handlePress}
-                disabled={!isCurrentMonth}
-              >
-                {isGenerating ? (
-                  <View style={styles.generatingWrapper}>
-                    <GeneratingProgressCircle
-                      size={DAY_ITEM_SIZE * 0.9}
-                      duration={25000}
-                      text={format(daySeoul, "d")}
-                    />
-                  </View>
-                ) : showEmotion && emotionSource ? (
-                  <Image source={emotionSource} style={styles.dayEmotionIcon} />
-                ) : isToday && !todayHasDiary && selectedDate !== dateStr ? (
-                  <Image
-                    source={require("../../assets/icons/bigpinkplusicon.png")}
-                    style={styles.plusIcon}
-                  />
-                ) : hasDiary ? (
-                  hasPhoto ? (
-                    isUnconfirmed ? (
-                      <LinearGradient
-                        colors={["#D68089", "#FFBB91"]}
-                        locations={[1, 0]}
-                        start={{ x: 0, y: 1 }}
-                        end={{ x: 0, y: 0 }}
-                        style={styles.gradientBorderWrapper}
-                      >
-                        <View style={styles.imageContainerForGradientBorder}>
-                          <Image
-                            source={{ uri: entry.representativePhotoUrl }}
-                            style={styles.imageItselfInGradient}
-                          />
-                          <View style={styles.overlayItselfInGradient} />
-                        </View>
-                      </LinearGradient>
-                    ) : (
-                      <View style={styles.dayImageWrapper}>
-                        <Image
-                          source={{ uri: entry.representativePhotoUrl }}
-                          style={styles.dayImage}
+                const handlePress = () => {
+                  if (isGenerating) {
+                    router.push(`/loading/loadingDiary?date=${dateStr}`);
+                    return;
+                  }
+                  if (hasDiary) {
+                    router.push(`/diary/${dateStr}`);
+                  } else if (isPastNoDiary) {
+                    if (selectedDate === dateStr) {
+                      setSelectedDate(dateStr);
+                      router.push(`/create?date=${dateStr}&from=calendar`);
+                    } else {
+                      setSelectedDate(dateStr);
+                    }
+                  } else if (isToday) {
+                    if (todayHasDiary) {
+                      router.push(`/diary/${dateStr}`);
+                    } else {
+                      router.push(`/create?date=${dateStr}&from=calendar`);
+                    }
+                  }
+                };
+
+                const showText =
+                  (!showEmotion || !hasDiary) &&
+                  selectedDate !== dateStr &&
+                  !(isToday && !todayHasDiary);
+
+                return (
+                  <TouchableOpacity
+                    key={di}
+                    style={[styles.dayContainer, opacityStyle]}
+                    onPress={handlePress}
+                    disabled={!isCurrentMonth}
+                  >
+                    {isGenerating ? (
+                      <View style={styles.generatingWrapper}>
+                        <GeneratingProgressCircle
+                          size={DAY_ITEM_SIZE * 0.9}
+                          duration={25000}
+                          text={format(daySeoul, "d")}
+                          startTime={numericGenerationStartTime}
                         />
-                        <View style={styles.dayImageOverlay} />
                       </View>
-                    )
-                  ) : (
-                    <View style={styles.dayStandardBackground} />
-                  )
-                ) : selectedDate === dateStr ? (
-                  <Image
-                    source={require("../../assets/icons/grayplusicon.png")}
-                    style={styles.plusIcon}
-                  />
-                ) : (
-                  <View style={styles.dayPlaceholder} />
-                )}
+                    ) : showEmotion && emotionSource ? (
+                      <Image source={emotionSource} style={styles.dayEmotionIcon} />
+                    ) : isToday && !todayHasDiary && selectedDate !== dateStr ? (
+                      <Image
+                        source={require("../../assets/icons/bigpinkplusicon.png")}
+                        style={styles.plusIcon}
+                      />
+                    ) : hasDiary ? (
+                      hasPhoto ? (
+                        isUnconfirmed ? (
+                          <LinearGradient
+                            colors={["#D68089", "#FFBB91"]}
+                            locations={[1, 0]}
+                            start={{ x: 0, y: 1 }}
+                            end={{ x: 0, y: 0 }}
+                            style={styles.gradientBorderWrapper}
+                          >
+                            <View style={styles.imageContainerForGradientBorder}>
+                              <Image
+                                source={{ uri: entry.representativePhotoUrl }}
+                                style={styles.imageItselfInGradient}
+                              />
+                              <View style={styles.overlayItselfInGradient} />
+                            </View>
+                          </LinearGradient>
+                        ) : (
+                          <View style={styles.dayImageWrapper}>
+                            <Image
+                              source={{ uri: entry.representativePhotoUrl }}
+                              style={styles.dayImage}
+                            />
+                            <View style={styles.dayImageOverlay} />
+                          </View>
+                        )
+                      ) : (
+                        <View style={styles.dayStandardBackground} />
+                      )
+                    ) : selectedDate === dateStr ? (
+                      <Image
+                        source={require("../../assets/icons/grayplusicon.png")}
+                        style={styles.plusIcon}
+                      />
+                    ) : (
+                      <View style={styles.dayPlaceholder} />
+                    )}
 
-                {showText && (
-                  <View style={styles.dayTextWrapper}>
-                    <Text style={[styles.actualDayText, !isCurrentMonth && styles.inactiveDayText]}>
-                      {format(daySeoul, "d")}
-                    </Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      ))}
+                    {showText && (
+                      <View style={styles.dayTextWrapper}>
+                        <Text
+                          style={[styles.actualDayText, !isCurrentMonth && styles.inactiveDayText]}
+                        >
+                          {format(daySeoul, "d")}
+                        </Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ))}
+        </Animated.View>
+      </View>
     </View>
   );
 }
@@ -407,5 +493,9 @@ const styles = StyleSheet.create({
   overlayItselfInGradient: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.2)"
+  },
+  clipper: {
+    overflow: "hidden",
+    borderRadius: 30
   }
 });

@@ -215,7 +215,10 @@ export default function WritePage() {
       }
 
       console.log("✅ 일기 생성 성공:", result);
-      nav.push("/calendar");
+      nav.push({
+        pathname: "/calendar",
+        params: { date }
+      });
     } catch (err) {
       console.error("❌ 일기 생성 중 에러:", err);
     } finally {

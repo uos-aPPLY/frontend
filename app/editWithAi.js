@@ -165,7 +165,7 @@ export default function EditWithAIPage() {
   const handleSave = () => {
     setText(localText);
     if (localCharacter) setSelectedCharacter(localCharacter); // ✅ 추가
-    nav.replace({ pathname: "/edit", params: { id: diaryId } });
+    nav.back();
   };
 
   const onWebViewLoadEnd = () => {
@@ -205,7 +205,7 @@ export default function EditWithAIPage() {
             <HeaderDate
               date={selectedDate}
               hasText={false}
-              onBack={() => nav.replace({ pathname: "/edit", params: { id: diaryId } })}
+              onBack={() => nav.back()}
               onSave={undefined}
             />
 

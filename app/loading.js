@@ -11,14 +11,7 @@ const { BACKEND_URL } = Constants.expoConfig.extra;
 
 export default function LoadingPage() {
   const nav = useRouter();
-  const {
-    photoList,
-    selected,
-    setPhotoList,
-    setSelected,
-    setMainPhotoId,
-    mode,
-  } = usePhoto();
+  const { photoList, selected, setPhotoList, setSelected, setMainPhotoId, mode } = usePhoto();
   const { token } = useAuth();
 
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -42,28 +35,25 @@ export default function LoadingPage() {
                   pathname: "/generate",
                   params: {
                     photos: JSON.stringify(selectedIds),
-                    fullPhotoList: JSON.stringify(photoList),
-                  },
+                    fullPhotoList: JSON.stringify(photoList)
+                  }
                 };
 
-          nav.push(destination);
+          nav.replace(destination);
           return;
         }
 
-        const res = await fetch(
-          `${BACKEND_URL}/api/photos/selection/ai-recommend`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              uploadedPhotoIds: photoList.map((p) => p.id),
-              mandatoryPhotoIds: selected.map((p) => p.id),
-            }),
-          }
-        );
+        const res = await fetch(`${BACKEND_URL}/api/photos/selection/ai-recommend`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            uploadedPhotoIds: photoList.map((p) => p.id),
+            mandatoryPhotoIds: selected.map((p) => p.id)
+          })
+        });
 
         const result = await res.json();
         if (isCancelledRef.current) return;
@@ -84,15 +74,15 @@ export default function LoadingPage() {
                   pathname: "/generate",
                   params: {
                     photos: JSON.stringify(result.recommendedPhotoIds),
-                    fullPhotoList: JSON.stringify(photoList),
-                  },
+                    fullPhotoList: JSON.stringify(photoList)
+                  }
                 };
-          nav.push(destination);
+          nav.replace(destination);
         }
       } catch (err) {
         console.error("AI 추천 실패:", err);
         if (!isCancelledRef.current) {
-          nav.push(`/${mode}`);
+          nav.replace(`/${mode}`);
         }
       }
     };
@@ -124,7 +114,7 @@ export default function LoadingPage() {
         onConfirm={() => {
           isCancelledRef.current = true;
           setIsModalVisible(false);
-          nav.replace("/confirmPhoto");
+          nav.back();
         }}
         cancelText="취소"
         confirmText="뒤로가기"
@@ -136,20 +126,20 @@ export default function LoadingPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FCF9F4",
+    backgroundColor: "#FCF9F4"
   },
   header: {
     paddingTop: 60,
-    paddingLeft: 30,
+    paddingLeft: 30
   },
   loadingArea: {
     flex: 1,
     justifyContent: "center",
-    alignItems: "center",
+    alignItems: "center"
   },
   text: {
     marginTop: 16,
     fontSize: 16,
-    color: "#a78c7b",
-  },
+    color: "#a78c7b"
+  }
 });

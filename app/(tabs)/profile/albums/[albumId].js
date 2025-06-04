@@ -7,7 +7,7 @@ import {
   FlatList,
   Image,
   ActivityIndicator,
-  TouchableOpacity,
+  TouchableOpacity
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as SecureStore from "expo-secure-store";
@@ -15,7 +15,7 @@ import Constants from "expo-constants";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { parse, format } from "date-fns";
 import { LinearGradient } from "expo-linear-gradient";
-import HeaderSettings from "../../components/Header/HeaderSettings";
+import HeaderSettings from "../../../../components/Header/HeaderSettings";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
@@ -35,7 +35,7 @@ export default function AlbumDiaryList() {
             ? `${BACKEND_URL}/api/albums/favorites`
             : `${BACKEND_URL}/api/albums/${albumId}/diaries`;
         const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${token}` }
         });
         const json = await res.json();
         setDiaries(json);
@@ -47,12 +47,12 @@ export default function AlbumDiaryList() {
     })();
   }, [albumId]);
 
-  const goBack = () => router.replace("/profile");
+  const goBack = () => router.back();
 
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#D68089" />
       </View>
     );
   }
@@ -72,10 +72,7 @@ export default function AlbumDiaryList() {
           >
             <View style={styles.imageWrapper}>
               {item.representativePhotoUrl ? (
-                <Image
-                  source={{ uri: item.representativePhotoUrl }}
-                  style={styles.cardImage}
-                />
+                <Image source={{ uri: item.representativePhotoUrl }} style={styles.cardImage} />
               ) : (
                 <LinearGradient
                   colors={["#dad4ec", "#dad4ec", "#f3e7e9"]}
@@ -91,17 +88,12 @@ export default function AlbumDiaryList() {
                 {item.content}
               </Text>
               <Text style={styles.cardDate}>
-                {format(
-                  parse(item.diaryDate, "yyyy-MM-dd", new Date()),
-                  "yyyy년 M월 d일 (E)"
-                )}
+                {format(parse(item.diaryDate, "yyyy-MM-dd", new Date()), "yyyy년 M월 d일 (E)")}
               </Text>
             </View>
           </TouchableOpacity>
         )}
-        ListEmptyComponent={() => (
-          <Text style={styles.emptyText}>작성된 일기가 없습니다.</Text>
-        )}
+        ListEmptyComponent={() => <Text style={styles.emptyText}>작성된 일기가 없습니다.</Text>}
       />
     </SafeAreaView>
   );
@@ -113,11 +105,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FCF9F4",
+    backgroundColor: "#FCF9F4"
   },
   listContent: {
     paddingBottom: 20,
-    paddingHorizontal: 20,
+    paddingHorizontal: 20
   },
   card: {
     flexDirection: "row",
@@ -128,20 +120,20 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2.5 },
     shadowOpacity: 0.2,
     shadowRadius: 1.6,
-    overflow: "visible",
+    overflow: "visible"
   },
   imageWrapper: {
     width: 120,
     height: 120,
     borderTopLeftRadius: 30,
     borderBottomLeftRadius: 30,
-    overflow: "hidden",
+    overflow: "hidden"
   },
   cardImage: { width: 120, height: 120, resizeMode: "cover" },
   cardTextContainer: {
     flex: 1,
     padding: 18,
-    justifyContent: "space-between",
+    justifyContent: "space-between"
   },
   cardContent: { fontSize: 16, color: "#A78C7B", lineHeight: 22 },
   cardDate: { fontSize: 14, color: "#C7C7CC", textAlign: "right" },
@@ -149,9 +141,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 50,
     fontSize: 16,
-    color: "#999",
+    color: "#999"
   },
   dayStandardBackground: {
-    flex: 1,
-  },
+    flex: 1
+  }
 });

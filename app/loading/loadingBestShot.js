@@ -242,7 +242,7 @@ export default function LoadingBestShot() {
         onConfirm={() => {
           isCancelledRef.current = true;
           setIsModalVisible(false);
-          nav.replace("/customGallery");
+          nav.back();
         }}
         cancelText="취소"
         confirmText="뒤로가기"

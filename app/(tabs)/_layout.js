@@ -1,11 +1,15 @@
 // app/(tabs)/_layout.js
-import { Tabs } from "expo-router";
+import { Tabs, useSegments } from "expo-router";
 import { Image } from "react-native";
 import HomeIcon from "../../assets/icons/homeicon.png";
 import CalendarIcon from "../../assets/icons/calendaricon.png";
 import ProfileIcon from "../../assets/icons/profileicon.png";
 
 export default function TabsLayout() {
+  const segments = useSegments();
+  const isSettingsScreen =
+    segments.length >= 3 && segments[1] === "profile" && segments[2] === "settings";
+
   return (
     <Tabs
       screenOptions={{
@@ -19,7 +23,8 @@ export default function TabsLayout() {
           height: 100,
           paddingBottom: 60,
           paddingTop: 15,
-        },
+          display: isSettingsScreen ? "none" : "flex"
+        }
       }}
     >
       <Tabs.Screen
@@ -27,11 +32,8 @@ export default function TabsLayout() {
         options={{
           title: "Home",
           tabBarIcon: ({ color, size }) => (
-            <Image
-              source={HomeIcon}
-              style={{ width: size, height: size, tintColor: color }}
-            />
-          ),
+            <Image source={HomeIcon} style={{ width: size, height: size, tintColor: color }} />
+          )
         }}
       />
       <Tabs.Screen
@@ -39,11 +41,8 @@ export default function TabsLayout() {
         options={{
           title: "Calendar",
           tabBarIcon: ({ color, size }) => (
-            <Image
-              source={CalendarIcon}
-              style={{ width: size, height: size, tintColor: color }}
-            />
-          ),
+            <Image source={CalendarIcon} style={{ width: size, height: size, tintColor: color }} />
+          )
         }}
       />
       <Tabs.Screen
@@ -51,11 +50,8 @@ export default function TabsLayout() {
         options={{
           title: "Profile",
           tabBarIcon: ({ color, size }) => (
-            <Image
-              source={ProfileIcon}
-              style={{ width: size, height: size, tintColor: color }}
-            />
-          ),
+            <Image source={ProfileIcon} style={{ width: size, height: size, tintColor: color }} />
+          )
         }}
       />
     </Tabs>

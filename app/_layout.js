@@ -2,7 +2,7 @@
 import React, { useEffect } from "react";
 import "react-native-reanimated";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { Slot, useRouter, useSegments } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { DiaryProvider } from "../contexts/DiaryContext";
@@ -28,9 +28,7 @@ function RootLayoutNav() {
       // 1) 비로그인 시
       if (
         !user &&
-        !["login", "terms", "nickname", "speechstyle", "tutorial"].includes(
-          openSegment
-        )
+        !["login", "terms", "nickname", "speechstyle", "tutorial"].includes(openSegment)
       ) {
         router.replace("/login");
         return;
@@ -46,11 +44,7 @@ function RootLayoutNav() {
       }
 
       // 3) 로그인 & 필수약관 동의 완료 시, 루트 또는 login 접근은 home으로
-      if (
-        user &&
-        requiredAgreed &&
-        (openSegment === "" || openSegment === "login")
-      ) {
+      if (user && requiredAgreed && (openSegment === "" || openSegment === "login")) {
         router.replace("/home");
       }
     };
@@ -61,12 +55,18 @@ function RootLayoutNav() {
   if (loading) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#D68089" />
       </View>
     );
   }
 
-  return <Slot />;
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false
+      }}
+    />
+  );
 }
 
 export default function RootLayout() {

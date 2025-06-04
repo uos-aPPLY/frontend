@@ -1,13 +1,6 @@
-// components/Settings/NotificationSettings.js
+// components/Settings/NotificationSettings.jsx
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-  Alert,
-  Platform,
-} from "react-native";
+import { View, Text, StyleSheet, Pressable, Alert, Platform } from "react-native";
 import Constants from "expo-constants";
 import DatePicker from "react-native-date-picker";
 import * as Notifications from "expo-notifications";
@@ -26,12 +19,11 @@ export default function NotificationSettings() {
 
   const authHeader = { Authorization: `Bearer ${token}` };
 
-  /* ───────── 권한 & 채널 ───────── */
   async function ensurePermissionAndChannel() {
     const { status } = await Notifications.getPermissionsAsync();
     if (status !== "granted") {
-      const req = await Notifications.requestPermissionsAsync();
-      if (req.status !== "granted") {
+      const { status: requestedStatus } = await Notifications.requestPermissionsAsync();
+      if (requestedStatus !== "granted") {
         Alert.alert("알림 권한 필요", "설정에서 알림 권한을 허용해 주세요.");
         return false;
       }
@@ -39,54 +31,34 @@ export default function NotificationSettings() {
     if (Platform.OS === "android") {
       await Notifications.setNotificationChannelAsync("default", {
         name: "Default",
-        importance: Notifications.AndroidImportance.MAX,
+        importance: Notifications.AndroidImportance.MAX
       });
     }
     return true;
   }
 
-  /* ───────── 알림 예약 ───────── */
   async function scheduleDailyNotification(date) {
     const ok = await ensurePermissionAndChannel();
     if (!ok) return false;
 
-    // 기존 예약 제거
     await Notifications.cancelAllScheduledNotificationsAsync();
 
-    /* ① 매일 반복되는 캘린더 트리거 */
     await Notifications.scheduleNotificationAsync({
       content: {
         title: "📸 사진 찍을 시간이에요!",
         body: "오늘의 소중한 순간을 기록해보세요 ✨",
-        sound: "default",
+        sound: "default"
       },
       trigger: {
         hour: date.getHours(),
         minute: date.getMinutes(),
-        second: 0,
         repeats: true,
-        ...(Platform.OS === "android" && { channelId: "default" }),
-      },
+        ...(Platform.OS === "android" && { channelId: "default" })
+      }
     });
-
-    /* ② 오늘 남은 시간이 60초 이상이면 한 번만 추가 */
-    const now = new Date();
-    const first = new Date(now);
-    first.setHours(date.getHours(), date.getMinutes(), 0, 0);
-
-    let secondsLeft = Math.floor((first - now) / 1000);
-    if (secondsLeft < 0) secondsLeft += 86400; // 이미 지났으면 내일
-    if (secondsLeft < 60) secondsLeft = 60; // 60초 미만은 실패 → 60초로 보정
-
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "📸 사진 찍을 시간이에요!",
-        body: "오늘의 소중한 순간을 기록해보세요 ✨",
-        sound: "default",
-      },
-      trigger: { seconds: secondsLeft },
-    });
-
+    console.log(
+      `알림이 ${date.getHours()}시 ${date.getMinutes()}분에 매일 반복되도록 예약되었습니다.`
+    );
     return true;
   }
 
@@ -94,37 +66,39 @@ export default function NotificationSettings() {
     await Notifications.cancelAllScheduledNotificationsAsync();
   }
 
-  /* ───────── 서버 PATCH ───────── */
   async function patchAlarm(enabled, date) {
     try {
-      const res = await fetch(
-        `${Constants.expoConfig.extra.BACKEND_URL}/api/users/alarm`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json", ...authHeader },
-          body: JSON.stringify({
-            enabled,
-            hour: date.getHours(),
-            minute: date.getMinutes(),
-          }),
-        }
-      );
+      const res = await fetch(`${Constants.expoConfig.extra.BACKEND_URL}/api/users/alarm`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeader },
+        body: JSON.stringify({
+          enabled,
+          hour: date.getHours(),
+          minute: date.getMinutes()
+        })
+      });
       if (!res.ok) throw new Error();
     } catch {
       Alert.alert("서버 오류", "알림 설정 저장에 실패했습니다.");
     }
   }
 
-  /* ───────── 초기 로드 ───────── */
   useEffect(() => {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false
+      })
+    });
+
     (async () => {
       if (!token) return;
       try {
-        const r = await fetch(
-          `${Constants.expoConfig.extra.BACKEND_URL}/api/users/me`,
-          { headers: authHeader }
-        );
-        if (!r.ok) throw new Error();
+        const r = await fetch(`${Constants.expoConfig.extra.BACKEND_URL}/api/users/me`, {
+          headers: authHeader
+        });
+        if (!r.ok) throw new Error("Failed to fetch user data");
         const data = await r.json();
 
         const enabled = !!data.alarmEnabled;
@@ -132,19 +106,24 @@ export default function NotificationSettings() {
         if (data.alarmTime) {
           const [h, m] = data.alarmTime.split(":").map(Number);
           time.setHours(h, m, 0, 0);
+        } else {
+          time.setHours(12, 0, 0, 0);
         }
 
         setPhotoAlertEnabled(enabled);
         setAlertTime(time);
 
-        if (enabled) await scheduleDailyNotification(time);
-      } catch {
+        if (enabled) {
+          console.log("초기 로드: 알림 활성화 상태, 알림 예약 시도.");
+          await scheduleDailyNotification(time);
+        }
+      } catch (error) {
+        console.error("알림 설정 로드 오류:", error);
         Alert.alert("오류", "알림 설정을 불러오지 못했습니다.");
       }
     })();
   }, [token]);
 
-  /* ───────── 토글 ───────── */
   const handleToggle = async (enabled) => {
     setPhotoAlertEnabled(enabled);
     if (enabled) {
@@ -159,7 +138,6 @@ export default function NotificationSettings() {
     patchAlarm(enabled, alertTime);
   };
 
-  /* ───────── 시간 선택 ───────── */
   const handleTimeConfirm = (newTime) => {
     setIsTimePickerVisible(false);
     setAlertTime(newTime);
@@ -169,7 +147,6 @@ export default function NotificationSettings() {
     }
   };
 
-  /* ───────── UI ───────── */
   return (
     <View style={styles.section}>
       <DatePicker
@@ -199,10 +176,7 @@ export default function NotificationSettings() {
       </View>
 
       {photoAlertEnabled && (
-        <Pressable
-          style={styles.itemRow}
-          onPress={() => setIsTimePickerVisible(true)}
-        >
+        <Pressable style={styles.itemRow} onPress={() => setIsTimePickerVisible(true)}>
           <Text style={styles.itemText}>알림 시간</Text>
           <Text style={styles.itemText}>
             {alertTime.getHours() < 12 ? "오전 " : "오후 "}
@@ -223,7 +197,7 @@ const styles = StyleSheet.create({
     color: "#AC8B78",
     borderBottomWidth: 2,
     borderBottomColor: "#A78C7B",
-    paddingBottom: 12,
+    paddingBottom: 12
   },
   itemRow: {
     flexDirection: "row",
@@ -231,7 +205,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 18,
     borderBottomWidth: 1,
-    borderBottomColor: "#A78C7B",
+    borderBottomColor: "#A78C7B"
   },
-  itemText: { fontSize: 16, color: "#A78C78" },
+  itemText: { fontSize: 16, color: "#A78C78" }
 });
