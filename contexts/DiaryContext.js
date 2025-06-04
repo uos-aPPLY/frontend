@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useCallback } from "react";
 import characterList from "../assets/characterList";
 
 const DiaryContext = createContext();
@@ -10,11 +10,11 @@ export function DiaryProvider({ children }) {
   const [diaryId, setDiaryId] = useState(null);
   const [diaryMapById, setDiaryMapById] = useState({});
 
-  const resetDiary = () => {
+  const resetDiary = useCallback(() => {
     setText("");
     setDiaryId(null);
     setSelectedCharacter(characterList[0]);
-  };
+  }, []);
 
   return (
     <DiaryContext.Provider
@@ -29,7 +29,7 @@ export function DiaryProvider({ children }) {
         setDiaryId,
         diaryMapById,
         setDiaryMapById,
-        resetDiary,
+        resetDiary
       }}
     >
       {children}

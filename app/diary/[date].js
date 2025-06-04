@@ -203,9 +203,10 @@ export default function DiaryPage() {
           setSelectedCharacter(characterFound);
         }
 
-        const [year, month, day] = data.diaryDate.split("-").map(Number);
-        const localDate = new Date(year, month - 1, day);
-        setSelectedDate(localDate);
+        if (data.diaryDate) {
+          const diaryDateObject = parseISO(data.diaryDate);
+          setSelectedDate(diaryDateObject);
+        }
 
         setPhotoList(data.photos || []);
         setTempPhotoList(data.photos || []);
@@ -226,7 +227,20 @@ export default function DiaryPage() {
     };
 
     if (date && token) fetchDiary();
-  }, [date, token, setMainPhotoId, confirmDiaryStatus]);
+  }, [
+    date,
+    token,
+    setPhotoList,
+    setMainPhotoId,
+    setTempPhotoList,
+    resetDiary,
+    setDiaryId,
+    setDiaryMapById,
+    setText,
+    setSelectedCharacter,
+    setSelectedDate,
+    confirmDiaryStatus
+  ]);
 
   if (loading) {
     return (

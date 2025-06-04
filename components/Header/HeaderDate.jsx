@@ -18,20 +18,6 @@ function formatDateWithDay(dateString) {
 
 export default function HeaderDate({ date, onBack, hasText = false, onSave }) {
   const formatted = formatDateWithDay(date);
-  const { selectedDate, setSelectedDate } = useDiary(); // ✅ selectedDate 추가
-
-  useEffect(() => {
-    if (date) {
-      const parsed = new Date(date);
-      if (!isNaN(parsed)) {
-        // ✅ 동일 날짜면 무시
-        if (!selectedDate || !isSameDay(parsed, selectedDate)) {
-          console.log("📌 HeaderDate에서 selectedDate 설정:", parsed.toISOString());
-          setSelectedDate(parsed);
-        }
-      }
-    }
-  }, [date, selectedDate]);
 
   return (
     <View style={styles.header}>

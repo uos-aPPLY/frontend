@@ -93,8 +93,8 @@ export default function Login() {
       const requiredAgreed = await checkRequiredAgreed();
       router.replace(requiredAgreed ? "/home" : "/terms");
     } catch (e) {
-      console.error("Apple 로그인 오류:", e);
-      Alert.alert("Apple 로그인 실패", e.message ?? "알 수 없는 오류");
+      // console.error("Apple 로그인 오류:", e);
+      // Alert.alert("Apple 로그인 실패", e.message ?? "알 수 없는 오류");
     } finally {
       setLoading(false);
     }
@@ -137,8 +137,8 @@ export default function Login() {
       console.log("약관 동의 상태: ", requiredAgreed);
       router.replace(requiredAgreed ? "/home" : "/terms");
     } catch (e) {
-      console.error("네이버 로그인 처리 오류:", e);
-      Alert.alert("네이버 로그인 실패", e.message ?? "알 수 없는 오류");
+      // console.error("네이버 로그인 처리 오류:", e);
+      // Alert.alert("네이버 로그인 실패", e.message ?? "알 수 없는 오류");
     } finally {
       setLoading(false);
     }
@@ -176,8 +176,8 @@ export default function Login() {
       const requiredAgreed = await checkRequiredAgreed();
       router.replace(requiredAgreed ? "/home" : "/terms");
     } catch (e) {
-      console.error("Kakao login error", e);
-      Alert.alert("카카오 로그인 실패", e.message ?? "알 수 없는 오류");
+      // console.error("Kakao login error", e);
+      // Alert.alert("카카오 로그인 실패", e.message ?? "알 수 없는 오류");
     } finally {
       setLoading(false);
     }

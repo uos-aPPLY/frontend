@@ -236,7 +236,7 @@ export default function WritePage() {
           date={date}
           onBack={() => {
             if (mode === "manual" || mode === "ai") {
-              nav.push("/bestshotReorder");
+              nav.back();
             } else {
               // 기존대로 바로 뒤로가기
               clearAllTempPhotos(token)
@@ -248,7 +248,7 @@ export default function WritePage() {
                   } else {
                     setMode("choose");
                   }
-                  nav.push("/customGallery");
+                  nav.back();
                 })
                 .catch((err) => {
                   console.error("❌ 뒤로가기 실패:", err);

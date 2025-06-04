@@ -82,7 +82,6 @@ export default function EditPage() {
     content: text,
     emotionIcon: selectedCharacter?.name,
     photoIds: photos.filter((p) => p.type !== "add" && typeof p.id === "number").map((p) => p.id),
-
     representativePhotoId:
       typeof mainPhotoId === "string" && !isNaN(Number(mainPhotoId)) ? Number(mainPhotoId) : null
   };

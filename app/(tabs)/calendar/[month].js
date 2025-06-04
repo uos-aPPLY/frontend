@@ -14,7 +14,7 @@ import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 import { useLocalSearchParams } from "expo-router";
 import { useRouter } from "expo-router";
-import { parse, format } from "date-fns";
+import { parse, format, getYear, getMonth } from "date-fns";
 import { LinearGradient } from "expo-linear-gradient";
 import HeaderSettings from "../../../components/Header/HeaderSettings";
 
@@ -36,21 +36,30 @@ export default function DiaryList() {
   useEffect(() => {
     (async () => {
       try {
+        setLoading(true);
         const token = await SecureStore.getItemAsync("accessToken");
-        const response = await fetch(`${BACKEND_URL}/api/diaries`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const json = await response.json();
+        const year = getYear(monthDate);
+        const monthParam = getMonth(monthDate) + 1;
 
-        const filtered = json.content.filter((d) => d.diaryDate.startsWith(month));
-        setDiaries(filtered);
+        const response = await fetch(
+          `${BACKEND_URL}/api/diaries/calendar?year=${year}&month=${monthParam}`,
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+        const json = await response.json();
+        if (response.ok) {
+          setDiaries(json);
+        } else {
+          console.error("Failed to fetch diaries:", json);
+        }
       } catch (err) {
         console.error(err);
       } finally {
         setLoading(false);
       }
     })();
-  }, [month]);
+  }, [month, monthDate]);
 
   if (loading) {
     return (
@@ -66,7 +75,7 @@ export default function DiaryList() {
 
       <FlatList
         data={diaries}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => item.diaryId.toString()}
         contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
           <TouchableOpacity
