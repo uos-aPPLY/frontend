@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from "react";
-import { View, Text, Image, StyleSheet, Dimensions, TouchableOpacity } from "react-native";
+import { View, Text, Image, StyleSheet, Dimensions, TouchableOpacity, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import DraggableFlatList, { ScaleDecorator } from "react-native-draggable-flatlist";
 import { usePhoto } from "../contexts/PhotoContext";
@@ -44,6 +44,17 @@ export default function BestShotReorder() {
     [photos, hiddenIds]
   );
 
+  const handleRequestDelete = (id) => {
+    const remaining = photos.filter((p) => !hiddenIds.includes(p.id));
+    if (remaining.length <= 1) {
+      Alert.alert("삭제 불가", "마지막 사진은 삭제할 수 없습니다.");
+      return;
+    }
+
+    setTargetPhotoId(id);
+    setIsConfirmVisible(true);
+  };
+
   useEffect(() => {
     setPhotos(effectivePhotos);
     const fallbackMain =
@@ -80,14 +91,41 @@ export default function BestShotReorder() {
     setIsBackConfirmVisible(true);
   };
 
-  const handleHidePhoto = (id) => {
-    setTargetPhotoId(id);
-    setIsConfirmVisible(true);
+  const handleHidePhoto = async (id) => {
+    const remaining = photos.filter((p) => !hiddenIds.includes(p.id));
+    if (remaining.length <= 1) {
+      Alert.alert("삭제 불가", "마지막 사진은 삭제할 수 없습니다.");
+      return;
+    }
+
+    const nextHiddenIds = [...hiddenIds, id];
+    const nextVisiblePhotos = photos.filter((p) => !nextHiddenIds.includes(p.id));
+
+    if (id === mainPhotoId) {
+      setMainPhotoId(nextVisiblePhotos[0]?.id ?? null);
+    }
+
+    if (nextVisiblePhotos.length === 0) {
+      await clearAllTempPhotos(token);
+      nav.replace("/customGallery");
+      return;
+    }
+
+    setHiddenIds(nextHiddenIds);
   };
 
   const onConfirmDelete = () => {
-    if (targetPhotoId) {
-      setHiddenIds((prev) => [...prev, targetPhotoId]);
+    if (targetPhotoId !== null) {
+      const updatedHidden = [...hiddenIds, targetPhotoId];
+      const updatedVisiblePhotos = photos.filter((p) => !updatedHidden.includes(p.id));
+
+      // 👇 대표사진이 삭제되는 경우 새 대표사진 지정
+      if (String(targetPhotoId) === String(mainPhotoIdLocal)) {
+        const newMain = updatedVisiblePhotos[0]?.id ?? null;
+        setMainPhotoIdLocal(newMain);
+      }
+
+      setHiddenIds(updatedHidden);
       setTargetPhotoId(null);
       setIsConfirmVisible(false);
     }
@@ -138,35 +176,13 @@ export default function BestShotReorder() {
 
                     <TouchableOpacity
                       style={styles.closeWrapper}
-                      onPress={() => handleHidePhoto(item.id)}
+                      onPress={() => handleRequestDelete(item.id)}
                     >
                       <Image
                         source={require("../assets/icons/xicon.png")}
                         style={styles.closeIconImg}
                       />
                     </TouchableOpacity>
-
-                    <ConfirmModal
-                      visible={isConfirmVisible}
-                      title="사진 삭제"
-                      message="정말 이 사진을 삭제하시겠어요?"
-                      onCancel={onCancelDelete}
-                      onConfirm={onConfirmDelete}
-                    />
-                    <ConfirmModal
-                      visible={isBackConfirmVisible}
-                      title="정말로 뒤로 가시겠어요?"
-                      message={"베스트샷 추천 결과가 초기화됩니다."}
-                      onCancel={() => setIsBackConfirmVisible(false)}
-                      onConfirm={() => {
-                        setTempPhotoList(null);
-                        setSelectedAssets([]);
-                        setMode("bestshot");
-                        router.replace("/customGallery");
-                      }}
-                      cancelText="취소"
-                      confirmText="뒤로가기"
-                    />
                   </View>
                 </TouchableOpacity>
               </View>
@@ -190,6 +206,27 @@ export default function BestShotReorder() {
           <Text style={styles.saveButtonText}>AI 일기 작성</Text>
         </TouchableOpacity>
       </View>
+      <ConfirmModal
+        visible={isConfirmVisible}
+        title="사진 삭제"
+        message="정말 이 사진을 삭제하시겠어요?"
+        onCancel={onCancelDelete}
+        onConfirm={onConfirmDelete}
+      />
+      <ConfirmModal
+        visible={isBackConfirmVisible}
+        title="정말로 뒤로 가시겠어요?"
+        message={"베스트샷 추천 결과가 초기화됩니다."}
+        onCancel={() => setIsBackConfirmVisible(false)}
+        onConfirm={() => {
+          setTempPhotoList(null);
+          setSelectedAssets([]);
+          setMode("bestshot");
+          router.replace("/customGallery");
+        }}
+        cancelText="취소"
+        confirmText="뒤로가기"
+      />
     </View>
   );
 }
@@ -206,7 +243,7 @@ const styles = StyleSheet.create({
     paddingBottom: 10
   },
   title: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "bold",
     color: "#a78c7b"
   },

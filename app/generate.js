@@ -10,7 +10,8 @@ import {
   Image,
   KeyboardAvoidingView,
   TextInput,
-  Platform
+  Platform,
+  Alert
 } from "react-native";
 import { useRouter } from "expo-router";
 import DraggableFlatList, { ScaleDecorator } from "react-native-draggable-flatlist";
@@ -30,7 +31,7 @@ export default function GeneratePage() {
   const { token } = useAuth();
   const { BACKEND_URL } = Constants.expoConfig.extra;
 
-  const { resetPhoto, mode, setMode } = usePhoto(); // 🔧 추가
+  const { resetPhoto, mode, setMode, selected, setSelected } = usePhoto(); // 🔧 추가
 
   const [photos, setPhotos] = useState([]);
   const [keywords, setKeywords] = useState({});
@@ -42,14 +43,30 @@ export default function GeneratePage() {
   const [allKeywords, setAllKeywords] = useState([]);
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [targetDeletePhotoId, setTargetDeletePhotoId] = useState(null);
-  const [confirmBackModalVisible, setConfirmBackModalVisible] = useState(false); // 🔧 추가
+  const [confirmBackModalVisible, setConfirmBackModalVisible] = useState(false);
 
-  const visiblePhotos = useMemo(
-    () => photos.filter((photo) => !hiddenIds.includes(photo.id)),
-    [photos, hiddenIds]
+  console.log("selected:", selected);
+  console.log(
+    "visiblePhoto IDs:",
+    photos.filter((p) => !hiddenIds.includes(p.id)).map((p) => p.id)
   );
+  console.log("mode:", mode);
 
-  const isLast = currentIndex === visiblePhotos.length - 1;
+  useEffect(() => {
+    console.log("🖼️ 현재 대표사진 ID:", mainPhotoId);
+  }, [mainPhotoId]);
+
+  const visiblePhotos = useMemo(() => {
+    const filtered = selected
+      .map((selId) => photos.find((p) => p.id === Number(selId)))
+      .filter((p) => p && !hiddenIds.includes(p.id));
+    return filtered;
+  }, [photos, hiddenIds, selected]);
+
+  const isLast = useMemo(
+    () => currentIndex >= visiblePhotos.length - 1,
+    [currentIndex, visiblePhotos.length]
+  );
 
   const handleNext = () => {
     const nextIdx = currentIndex + 1;
@@ -63,13 +80,23 @@ export default function GeneratePage() {
     }
   };
 
+  const filteredKeywords = useMemo(() => {
+    const filtered = {};
+    visiblePhotos.forEach((p) => {
+      filtered[p.id] = keywords[p.id] || [];
+    });
+    return filtered;
+  }, [visiblePhotos, keywords]);
+
   const handleComplete = () => {
     nav.push({
       pathname: "/loading/loadingDiary",
       params: {
-        photos: JSON.stringify(visiblePhotos),
-        keywords: JSON.stringify(keywords),
-        mainPhotoId
+        photos: JSON.stringify(visiblePhotos), // ✅ 숨겨지지 않은 것만
+        keywords: JSON.stringify(filteredKeywords), // ✅ 숨겨진 사진 키워드 제외
+        mainPhotoId: visiblePhotos.some((p) => p.id === mainPhotoId)
+          ? mainPhotoId
+          : visiblePhotos[0]?.id // ✅ 대표사진도 유효성 체크
       }
     });
   };
@@ -108,7 +135,7 @@ export default function GeneratePage() {
       console.log("✅ 가져온 임시 사진:", tempPhotos);
 
       setPhotos(tempPhotos);
-      setMainPhotoId(tempPhotos[0].id);
+      setMainPhotoId(Number(selected[0]));
 
       const fetchedKeywords = await fetchKeywordsFromAPI();
       setAllKeywords(fetchedKeywords);
@@ -126,6 +153,13 @@ export default function GeneratePage() {
   useEffect(() => {
     initialize();
   }, []);
+
+  useEffect(() => {
+    const visible = photos.filter((p) => !hiddenIds.includes(p.id));
+    if (!visible.some((p) => p.id === mainPhotoId)) {
+      setMainPhotoId(visible[0]?.id ?? null);
+    }
+  }, [hiddenIds, photos]);
 
   const handleAddKeyword = (id) => {
     setEditingKeywordPhotoId(id);
@@ -160,12 +194,14 @@ export default function GeneratePage() {
   };
 
   const handleHidePhoto = async (id) => {
+    const remaining = photos.filter((p) => !hiddenIds.includes(p.id));
+    if (remaining.length <= 1) {
+      Alert.alert("삭제 불가", "마지막 사진은 삭제할 수 없습니다.");
+      return;
+    }
+
     const nextHiddenIds = [...hiddenIds, id];
     const nextVisiblePhotos = photos.filter((p) => !nextHiddenIds.includes(p.id));
-
-    if (id === mainPhotoId) {
-      setMainPhotoId(nextVisiblePhotos[0]?.id ?? null);
-    }
 
     if (nextVisiblePhotos.length === 0) {
       await clearAllTempPhotos(token);
@@ -196,7 +232,9 @@ export default function GeneratePage() {
           wsize={22}
           onPress={async () => {
             if (mode === "ai" || mode === "manual") {
-              setConfirmBackModalVisible(true); // 🔧 모달 띄움
+              nav.push("bestshotReorder");
+            } else if (mode === "choose") {
+              nav.push("/customGallery");
             } else {
               await clearAllTempPhotos(token);
               resetPhoto();
@@ -242,7 +280,10 @@ export default function GeneratePage() {
                           styles.badgeOverlay,
                           item.id === mainPhotoId ? styles.badgeActive : styles.badgeInactive
                         ]}
-                        onPress={() => setMainPhotoId(item.id)}
+                        onPress={() => {
+                          console.log("✅ 대표사진 설정:", item.id);
+                          setMainPhotoId(item.id);
+                        }}
                       >
                         <Text style={styles.badgeText}>대표 사진</Text>
                       </TouchableOpacity>
@@ -320,7 +361,7 @@ export default function GeneratePage() {
           onDragEnd={handleDragEnd}
           scrollEnabled={true}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 100, paddingTop: 20 }}
+          contentContainerStyle={{ paddingBottom: 260 }}
         />
       </KeyboardAvoidingView>
 
@@ -345,26 +386,6 @@ export default function GeneratePage() {
           if (targetDeletePhotoId !== null) {
             handleHidePhoto(targetDeletePhotoId);
             setTargetDeletePhotoId(null);
-          }
-        }}
-      />
-      <ConfirmModal
-        visible={confirmBackModalVisible}
-        title="정말로 뒤로 가시겠어요?"
-        message="추천된 베스트샷과 키워드가 모두 초기화돼요."
-        cancelText="취소"
-        confirmText="뒤로가기"
-        onCancel={() => setConfirmBackModalVisible(false)}
-        onConfirm={async () => {
-          setConfirmBackModalVisible(false);
-          try {
-            await clearAllTempPhotos(token);
-          } catch (e) {
-            console.error("❌ 임시사진 삭제 실패:", e);
-          } finally {
-            resetPhoto();
-            setMode("bestshot");
-            nav.push("/customGallery");
           }
         }}
       />
@@ -399,7 +420,8 @@ const styles = StyleSheet.create({
   cardWrapper: {
     width: screenWidth,
     alignItems: "center",
-    marginBottom: 30
+    marginTop: 20,
+    marginBottom: 40
   },
   cardShadowWrapper: {
     backgroundColor: "#fff",

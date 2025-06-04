@@ -230,7 +230,7 @@ export default function LoadingBestShot() {
       <View style={styles.loadingArea}>
         <ActivityIndicator size="large" color={colors.pinkpoint} />
         <Text style={styles.text}>
-          {"AI가 베스트샷을 고르는 중이에요...\n 생각보다 시간이 소요될 수 있어요💫"}
+          {"AI가 베스트샷을 고르는 중이에요...\n 20초 정도 소요될 수 있어요💫"}
         </Text>
       </View>
 

@@ -13,7 +13,7 @@ import { set } from "date-fns";
 export default function LoadingPicture() {
   const nav = useRouter();
   const {
-    setsSelected,
+    setSelected,
     selectedAssets,
     setPhotoList,
     setTempPhotoList,
@@ -24,6 +24,7 @@ export default function LoadingPicture() {
     setClear
   } = usePhoto();
   const { token } = useAuth();
+  console.log("📦 로딩 페이지 mode:", mode);
 
   useEffect(() => {
     const process = async () => {
@@ -79,6 +80,7 @@ export default function LoadingPicture() {
         setTempPhotoList(formatted);
         setMainPhotoId(String(formatted[0].id));
         setSelectedAssets([]);
+        setSelected(formatted.map((p) => String(p.id)));
 
         // 4. 경로 분기
         if (mode === "bestshot") {

@@ -232,8 +232,8 @@ export default function WritePage() {
         <HeaderDate
           date={date}
           onBack={() => {
-            if (mode === "write" || mode === "manual" || mode === "ai") {
-              setIsBackConfirmVisible(true); // 모달만 띄움
+            if (mode === "manual" || mode === "ai") {
+              nav.push("/bestshotReorder");
             } else {
               // 기존대로 바로 뒤로가기
               clearAllTempPhotos(token)
@@ -319,27 +319,6 @@ export default function WritePage() {
                 message="정말 이 사진을 삭제하시겠어요?"
                 onCancel={onCancelDelete}
                 onConfirm={onConfirmDelete}
-              />
-              <ConfirmModal
-                visible={isBackConfirmVisible}
-                title="정말로 뒤로 가시겠어요?"
-                message={"베스트샷 추천이 초기화됩니다.\n작성 중인 일기도 사라져요."}
-                onCancel={() => setIsBackConfirmVisible(false)}
-                onConfirm={async () => {
-                  setIsBackConfirmVisible(false);
-                  try {
-                    await clearAllTempPhotos(token);
-                  } catch (e) {
-                    console.error("❌ 임시사진 삭제 실패:", e);
-                  } finally {
-                    resetDiary();
-                    resetPhoto();
-                    setMode("bestshot");
-                    nav.push("/customGallery");
-                  }
-                }}
-                cancelText="취소"
-                confirmText="뒤로가기"
               />
             </View>
           </ScrollView>

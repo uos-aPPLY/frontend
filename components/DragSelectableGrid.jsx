@@ -1,3 +1,5 @@
+// DragSelectableGrid.jsx
+
 import React, { useRef, useState, useMemo } from "react";
 import {
   View,
@@ -44,19 +46,27 @@ export default function DragSelectableGrid({
     return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
   };
 
-  const selectedDatePhotos = useMemo(
+  const selectedDatePhotoIds = useMemo(
     () =>
       assets
         .filter((asset) => asset.creationTime && isSameDate(asset.creationTime, selectedDate))
-        .map((item) => ({ ...item, type: "selected" })),
+        .map((item) => item.id),
     [assets, selectedDate]
+  );
+
+  const selectedDatePhotos = useMemo(
+    () =>
+      assets
+        .filter((asset) => selectedDatePhotoIds.includes(asset.id))
+        .map((item) => ({ ...item, type: "selected" })),
+    [assets, selectedDatePhotoIds]
   );
 
   const otherPhotos = useMemo(() => {
     return assets
-      .filter((asset) => !selectedDatePhotos.find((s) => s.id === asset.id))
+      .filter((asset) => !selectedDatePhotoIds.includes(asset.id))
       .map((item) => ({ ...item, type: "normal" }));
-  }, [assets, selectedDatePhotos]);
+  }, [assets, selectedDatePhotoIds]);
 
   const handleLayout = (id, e) => {
     layoutMap.current[id] = e.nativeEvent.layout;
@@ -133,7 +143,7 @@ export default function DragSelectableGrid({
           <FlatList
             data={selectedDatePhotos}
             numColumns={3}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => `${item.id}-${item.type}`} // ✅ 수정된 key
             scrollEnabled={false}
             renderItem={renderItem}
             extraData={selectedAssets}
@@ -147,7 +157,7 @@ export default function DragSelectableGrid({
         <FlatList
           data={otherPhotos}
           numColumns={3}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => `${item.id}-${item.type}`} // ✅ 수정된 key
           scrollEnabled={false}
           renderItem={renderItem}
           extraData={selectedAssets}

@@ -118,11 +118,12 @@ export default function LoadingDiary() {
     try {
       const body = {
         diaryDate,
-        representativePhotoId: mainPhotoId,
+        representativePhotoId: Number(mainPhotoId),
         finalizedPhotos
       };
 
       console.log("📤 일기 생성 요청:", body);
+      console.log("🔑 현재 토큰:", token);
 
       const res = await fetch(`${BACKEND_URL}/api/diaries/auto`, {
         method: "POST",
