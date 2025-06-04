@@ -180,7 +180,7 @@ export default function AddPhotoGalleryScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.backgorund,
+    backgroundColor: colors.background,
     paddingTop: 75
   },
   container: {

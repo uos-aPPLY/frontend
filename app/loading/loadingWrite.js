@@ -101,7 +101,7 @@ export default function loadingWrite() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgorund,
+    backgroundColor: colors.background,
     justifyContent: "center",
     alignItems: "center"
   },

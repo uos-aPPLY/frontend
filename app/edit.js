@@ -222,7 +222,7 @@ export default function EditPage() {
                 wsize={28}
                 hsize={24}
                 onPress={photos.length === 0 ? null : () => nav.push("/photoReorder")}
-                style={{ opacity: photos.length === 0 ? 0.3 : 1 }}
+                style={{ opacity: photos.length <= 1 ? 0.3 : 1 }}
               />
             </View>
           </View>
