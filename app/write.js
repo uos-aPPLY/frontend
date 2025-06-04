@@ -47,6 +47,8 @@ export default function WritePage() {
   const { BACKEND_URL } = Constants.expoConfig.extra;
   const [isPickerVisible, setIsPickerVisible] = useState(false);
   const [tempPhotos, setTempPhotos] = useState([]);
+  const [isBackConfirmVisible, setIsBackConfirmVisible] = useState(false);
+
   const {
     photoList,
     setPhotoList,
@@ -54,7 +56,8 @@ export default function WritePage() {
     setMainPhotoId,
     resetPhoto,
     setSelectedAssets,
-    setMode
+    setMode,
+    mode
   } = usePhoto();
   const photosToShow = photoList.length > 0 ? photoList : tempPhotos;
   const date = selectedDate instanceof Date ? selectedDate.toISOString().split("T")[0] : "";
@@ -231,18 +234,28 @@ export default function WritePage() {
       <View style={styles.all}>
         <HeaderDate
           date={date}
-          onBack={async () => {
-            try {
-              await clearAllTempPhotos(token);
-              resetDiary();
-              resetPhoto();
-              setMode("choose");
-              nav.back();
-            } catch (err) {
-              console.error("❌ 뒤로가기 중 임시 사진 삭제 실패:", err);
-              resetDiary();
-              resetPhoto();
-              nav.back();
+          onBack={() => {
+            if (mode === "manual" || mode === "ai") {
+              nav.push("/bestshotReorder");
+            } else {
+              // 기존대로 바로 뒤로가기
+              clearAllTempPhotos(token)
+                .then(() => {
+                  resetDiary();
+                  resetPhoto();
+                  if (mode === "manual" || mode === "ai") {
+                    setMode("bestshot");
+                  } else {
+                    setMode("choose");
+                  }
+                  nav.push("/customGallery");
+                })
+                .catch((err) => {
+                  console.error("❌ 뒤로가기 실패:", err);
+                  resetDiary();
+                  resetPhoto();
+                  nav.push("/calendar");
+                });
             }
           }}
           hasText={text.trim().length > 0}

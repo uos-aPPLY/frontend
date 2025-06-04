@@ -1,3 +1,5 @@
+// DragSelectableGrid.jsx
+
 import React, { useRef, useState, useMemo } from "react";
 import {
   View,
@@ -20,7 +22,8 @@ export default function DragSelectableGrid({
   onSelect,
   multiSelectMode,
   onLongPressActivate,
-  selectedDate
+  selectedDate,
+  mode
 }) {
   const layoutMap = useRef({});
   const selectedDuringDrag = useRef(new Set());
@@ -43,19 +46,27 @@ export default function DragSelectableGrid({
     return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
   };
 
-  const selectedDatePhotos = useMemo(
+  const selectedDatePhotoIds = useMemo(
     () =>
       assets
         .filter((asset) => asset.creationTime && isSameDate(asset.creationTime, selectedDate))
-        .map((item) => ({ ...item, type: "selected" })),
+        .map((item) => item.id),
     [assets, selectedDate]
+  );
+
+  const selectedDatePhotos = useMemo(
+    () =>
+      assets
+        .filter((asset) => selectedDatePhotoIds.includes(asset.id))
+        .map((item) => ({ ...item, type: "selected" })),
+    [assets, selectedDatePhotoIds]
   );
 
   const otherPhotos = useMemo(() => {
     return assets
-      .filter((asset) => !selectedDatePhotos.find((s) => s.id === asset.id))
+      .filter((asset) => !selectedDatePhotoIds.includes(asset.id))
       .map((item) => ({ ...item, type: "normal" }));
-  }, [assets, selectedDatePhotos]);
+  }, [assets, selectedDatePhotoIds]);
 
   const handleLayout = (id, e) => {
     layoutMap.current[id] = e.nativeEvent.layout;
@@ -112,14 +123,27 @@ export default function DragSelectableGrid({
   return (
     <View style={{ flex: 1 }}>
       <ScrollView scrollEnabled={!isDragging}>
-        <Text style={styles.headerTitle}>{formatDateToString(selectedDate)}의 순간들</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.headerTitle}>{formatDateToString(selectedDate)}의 순간들</Text>
+          {selectedDatePhotos.length > 0 && mode !== "choose" && (
+            <Text
+              style={styles.selectAllButton}
+              onPress={() => {
+                selectedDatePhotos.forEach((photo) => onSelect(photo));
+              }}
+            >
+              전체 선택
+            </Text>
+          )}
+        </View>
+
         {selectedDatePhotos.length === 0 ? (
           <Text style={styles.noPhotosText}>해당 날짜에 찍은 사진이 없습니다.</Text>
         ) : (
           <FlatList
             data={selectedDatePhotos}
             numColumns={3}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => `${item.id}-${item.type}`} // ✅ 수정된 key
             scrollEnabled={false}
             renderItem={renderItem}
             extraData={selectedAssets}
@@ -133,7 +157,7 @@ export default function DragSelectableGrid({
         <FlatList
           data={otherPhotos}
           numColumns={3}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => `${item.id}-${item.type}`} // ✅ 수정된 key
           scrollEnabled={false}
           renderItem={renderItem}
           extraData={selectedAssets}
@@ -152,14 +176,26 @@ export default function DragSelectableGrid({
 }
 
 const styles = StyleSheet.create({
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 8
+  },
   headerTitle: {
     fontSize: 16,
     fontFamily: inter400Regular,
-    fontWeight: "500",
+    fontWeight: "600",
     marginTop: 10,
     marginBottom: 8,
     marginLeft: 16,
     color: colors.brown
+  },
+  selectAllButton: {
+    fontSize: 14,
+    color: colors.brown,
+    fontWeight: "400",
+    paddingHorizontal: 8
   },
   separatorLabelWrapper: {
     width: "100%",
@@ -169,8 +205,9 @@ const styles = StyleSheet.create({
   },
   separatorLabel: {
     fontSize: 16,
-    fontWeight: "500",
-    color: colors.brown
+    fontWeight: "600",
+    color: colors.brown,
+    paddingVertical: 8
   },
   dummyBox: {
     width: SIZE,

@@ -20,8 +20,6 @@ import { useAuth } from "../contexts/AuthContext";
 import Constants from "expo-constants";
 import ConfirmModal from "../components/Modal/ConfirmModal";
 
-const API_BASE_URL = Constants?.expoConfig?.extra?.BACKEND_URL;
-
 export default function EditPage() {
   const { token } = useAuth();
   const nav = useRouter();
@@ -44,7 +42,6 @@ export default function EditPage() {
     setSelected,
     resetPhoto,
     setMode,
-    photoCount,
     setPhotoCount
   } = usePhoto();
 
@@ -55,8 +52,19 @@ export default function EditPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    setPhotoCount(photos.length);
-    console.log("📸 사진 목록 업데이트:", photos.length);
+    const realPhotos = photos.filter((p) => p.type !== "add");
+    setPhotoCount(realPhotos.length);
+
+    console.log("📸 현재 사진 개수:", realPhotos.length);
+    console.log("📸 현재 대표 사진 ID:", mainPhotoId);
+
+    if (realPhotos.length === 0) {
+      setMainPhotoId(null);
+      console.log("📸 대표 사진이 없어 null로 초기화됨");
+    } else if (mainPhotoId == null) {
+      setMainPhotoId(String(realPhotos[0].id));
+      console.log("✅ 대표 사진 자동 지정됨:", realPhotos[0].id);
+    }
   }, [photos]);
 
   const API_URL =
@@ -73,8 +81,10 @@ export default function EditPage() {
     diaryDate: formatDateToYMD(selectedDate),
     content: text,
     emotionIcon: selectedCharacter?.name,
-    photoIds: photos.map((p) => Number(p.id)),
-    representativePhotoId: Number(mainPhotoId)
+    photoIds: photos.filter((p) => p.type !== "add" && typeof p.id === "number").map((p) => p.id),
+
+    representativePhotoId:
+      typeof mainPhotoId === "string" && !isNaN(Number(mainPhotoId)) ? Number(mainPhotoId) : null
   };
 
   console.log("📦 PATCH 요청 body:", JSON.stringify(payload, null, 2));
@@ -96,7 +106,7 @@ export default function EditPage() {
       setPhotoCount(updated.length);
       console.log("📸 사진 삭제 완료:", updated.length);
 
-      if (String(photoToDelete) === String(mainPhotoId)) {
+      if (String(photoToDelete) === String(mainPhotoId) || updated.length === 0) {
         setMainPhotoId(updated.length > 0 ? String(updated[0].id) : null);
       }
 
@@ -122,13 +132,7 @@ export default function EditPage() {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({
-          diaryDate: formatDateToYMD(selectedDate),
-          content: text,
-          emotionIcon: selectedCharacter?.name,
-          photoIds: photos.map((p) => Number(p.id)),
-          representativePhotoId: Number(mainPhotoId)
-        })
+        body: JSON.stringify(payload)
       });
 
       const resText = await response.text();
@@ -154,7 +158,7 @@ export default function EditPage() {
     setMode("add");
 
     nav.push({
-      pathname: "/customGallery",
+      pathname: "/addPhotoGallery",
       params: { mode: "add" }
     });
   };
@@ -209,7 +213,8 @@ export default function EditPage() {
                 source={require("../assets/icons/pictureinfoicon.png")}
                 wsize={28}
                 hsize={24}
-                onPress={() => nav.push("/photoReorder")}
+                onPress={photos.length === 0 ? null : () => nav.push("/photoReorder")}
+                style={{ opacity: photos.length <= 1 ? 0.3 : 1 }}
               />
             </View>
           </View>

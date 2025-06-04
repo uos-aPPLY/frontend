@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import {
   View,
   Image,
@@ -28,6 +28,12 @@ export default function EditImageSlider({
 
   const isEmpty = photos.length === 1 && photos[0].type === "add";
 
+  useEffect(() => {
+    if (realPhotos.length === 0) {
+      setMainPhotoId(null);
+    }
+  }, [realPhotos]);
+
   return (
     <View style={styles.wrapper}>
       {/* ✅ Indicator - 진짜 사진만 */}
@@ -35,7 +41,7 @@ export default function EditImageSlider({
         <View style={styles.pageIndicator}>
           {realPhotos.map((photo, index) => (
             <TouchableOpacity
-              key={index}
+              key={photo.id?.toString() ?? `photo-${index}`}
               onPress={() => {
                 flatListRef.current?.scrollToIndex({ index, animated: true });
                 setCurrentIndex(index);
@@ -56,7 +62,9 @@ export default function EditImageSlider({
       <FlatList
         ref={flatListRef}
         data={photos}
-        keyExtractor={(item, index) => item.id?.toString() ?? index.toString()}
+        keyExtractor={(item, index) =>
+          item.type === "add" ? "add-button" : item.id?.toString() ?? `${index}`
+        }
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}

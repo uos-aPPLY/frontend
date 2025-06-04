@@ -18,6 +18,7 @@ import { usePhoto } from "../contexts/PhotoContext";
 import IconButton from "../components/IconButton";
 import colors from "../constants/colors";
 import ConfirmModal from "../components/Modal/ConfirmModal";
+import { clearAllTempPhotos } from "../utils/clearTempPhotos";
 
 export default function CustomGalleryScreen() {
   const { token } = useAuth();
@@ -30,14 +31,14 @@ export default function CustomGalleryScreen() {
     setTempPhotoList,
     photoCount,
     selectedAssets,
-    setSelectedAssets
+    setSelectedAssets,
+    setClear
   } = usePhoto();
-  const MAX_SELECTION = mode === "add" ? 9 - photoCount : mode === "choose" ? 9 : 160;
+  const MAX_SELECTION = mode === "choose" ? 9 : 160;
 
   const [allPhotos, setAllPhotos] = useState([]);
   const [multiSelectMode, setMultiSelectMode] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
   const [hasNextPage, setHasNextPage] = useState(true);
   const [endCursor, setEndCursor] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -123,11 +124,7 @@ export default function CustomGalleryScreen() {
         />
 
         <Text style={styles.headerText}>
-          {mode === "choose"
-            ? "직접 사진 선택(9장)"
-            : mode === "add"
-            ? "사진 추가"
-            : "베스트샷 추천 받기"}
+          {mode === "choose" ? "직접 사진 선택(9장)" : "베스트샷 추천 받기"}
         </Text>
         <View style={{ width: 22 }} />
       </View>
@@ -135,8 +132,6 @@ export default function CustomGalleryScreen() {
         <Text style={styles.modeText}>
           {mode === "choose"
             ? "9장까지 선택할 수 있어요."
-            : mode === "add"
-            ? "일기에는 최대 9장의 사진을 추가할 수 있어요."
             : "베스트샷 기능을 통해서 9장이 선택돼요."}
         </Text>
       </View>
@@ -163,84 +158,80 @@ export default function CustomGalleryScreen() {
           multiSelectMode={multiSelectMode}
           onLongPressActivate={() => setMultiSelectMode(true)}
           selectedDate={selectedDate}
+          mode={mode}
         />
       </View>
       <View style={styles.footerWrapper}>
-        {mode === "add" ? (
-          <TouchableOpacity
-            style={styles.singleButtonWrapper}
-            onPress={() => {
-              const formatted = selectedAssets.map((asset) => ({
-                id: asset.id,
-                photoUrl: asset.uri
-              }));
-              setPhotoList((prev) => [...prev, ...formatted]);
-              setTempPhotoList((prev) => [...prev, ...formatted]);
-              nav.back();
-            }}
-          >
-            <Text style={styles.commonButtonText}>사진 추가</Text>
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.doubleButtonWrapper}>
-            {mode === "choose" ? (
-              <>
-                <TouchableOpacity
-                  style={styles.commonButton}
-                  onPress={async () => {
-                    const success = await handleUpload();
-                    if (success) {
-                      nav.push("/loading/loadingWrite");
-                    }
-                  }}
-                >
-                  <Text style={styles.commonButtonText}>직접 쓰기</Text>
-                </TouchableOpacity>
+        <View style={styles.doubleButtonWrapper}>
+          {mode === "choose" ? (
+            <>
+              <TouchableOpacity
+                style={styles.commonButton}
+                onPress={async () => {
+                  const success = await handleUpload();
+                  if (success) {
+                    nav.push("/loading/loadingWrite");
+                  }
+                }}
+              >
+                <Text style={styles.commonButtonText}>직접 쓰기</Text>
+              </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.commonButton}
-                  onPress={async () => {
-                    const success = await handleUpload();
-                    if (success) {
-                      nav.push("/loading/loadingPicture");
-                    }
-                  }}
-                >
-                  <Text style={styles.commonButtonText}>AI 생성 일기</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <TouchableOpacity
-                  style={styles.commonButton}
-                  onPress={async () => {
-                    const success = await handleUpload();
-                    if (!success) return;
+              <TouchableOpacity
+                style={styles.commonButton}
+                onPress={async () => {
+                  const success = await handleUpload();
+                  setMode("choose");
+                  if (success) {
+                    nav.push("/loading/loadingPicture");
+                  }
+                }}
+              >
+                <Text style={styles.commonButtonText}>AI 생성 일기</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <TouchableOpacity
+                style={styles.commonButton}
+                onPress={async () => {
+                  const success = await handleUpload();
+                  if (!success) return;
 
-                    if (selectedAssets.length < 9) {
-                      setModalVisible(true); // ✅ 여기서만 모달 띄우기
-                      return;
-                    }
+                  if (selectedAssets.length < 10) {
+                    setModalVisible(true);
+                    return;
+                  }
 
-                    nav.push("/loading/loadingBestShot");
-                  }}
-                >
-                  <Text style={styles.commonButtonText}>베스트샷 추천</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.commonButton}
-                  onPress={() => nav.push("manualWrite")}
-                >
-                  <Text style={styles.commonButtonText}>필수 사진 선택</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
-        )}
+                  nav.push("/loading/loadingBestShot");
+                }}
+              >
+                <Text style={styles.commonButtonText}>베스트샷 추천</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.commonButton}
+                onPress={async () => {
+                  const success = await handleUpload();
+                  if (!success) return;
+
+                  if (selectedAssets.length < 10) {
+                    setModalVisible(true);
+                    return;
+                  }
+                  setClear(true);
+                  setMode("bestshot");
+                  nav.push("/loading/loadingPicture");
+                }}
+              >
+                <Text style={styles.commonButtonText}>필수 사진 선택</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
       </View>
       <ConfirmModal
         visible={modalVisible}
-        title="사진이 부족해요."
+        title="사진이 부족해요(9장 이상 필요)."
         message={"아니면 베스트샷 추천을 포기하고\n바로 일기를 작성하시겠어요?"}
         cancelText="취소"
         confirmText="포기 및 작성"

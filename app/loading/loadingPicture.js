@@ -5,32 +5,58 @@ import { useRouter } from "expo-router";
 import { usePhoto } from "../../contexts/PhotoContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { uploadPhotos } from "../../utils/uploadPhotos";
+import { clearAllTempPhotos } from "../../utils/clearTempPhotos";
 import * as ImageManipulator from "expo-image-manipulator";
+import * as MediaLibrary from "expo-media-library";
+import { set } from "date-fns";
 
 export default function LoadingPicture() {
   const nav = useRouter();
   const {
+    setSelected,
     selectedAssets,
     setPhotoList,
     setTempPhotoList,
     setMainPhotoId,
     setSelectedAssets,
-    mode
+    mode,
+    clear,
+    setClear
   } = usePhoto();
   const { token } = useAuth();
+  console.log("📦 로딩 페이지 mode:", mode);
 
   useEffect(() => {
     const process = async () => {
       try {
+        if (clear && token) {
+          try {
+            await clearAllTempPhotos(token);
+            setClear(false);
+            setSelectedAssets([]);
+            console.log("🧹 기존 임시 사진 삭제 완료");
+          } catch (e) {
+            console.warn("⚠️ 임시 사진 삭제 실패:", e);
+          }
+        }
         if (!selectedAssets || selectedAssets.length === 0) {
           Alert.alert("오류", "선택된 사진이 없습니다.");
           nav.replace("/");
           return;
         }
+        const resolvedAssets = await Promise.all(
+          selectedAssets.map(async (asset) => {
+            const info = await MediaLibrary.getAssetInfoAsync(asset.id);
+            return {
+              ...asset,
+              uri: info.localUri || asset.uri
+            };
+          })
+        );
 
         // 1. 이미지 리사이징
         const resized = await Promise.all(
-          selectedAssets.map((asset) =>
+          resolvedAssets.map((asset) =>
             ImageManipulator.manipulateAsync(asset.uri, [{ resize: { width: 400 } }], {
               compress: 0.5,
               format: ImageManipulator.SaveFormat.JPEG
@@ -39,6 +65,7 @@ export default function LoadingPicture() {
         );
 
         // 2. 서버 업로드
+        console.log("📤 업로드 시작:", resized.length, "개의 사진");
         const uploaded = await uploadPhotos(resized, token, selectedAssets);
 
         if (!uploaded || uploaded.length === 0) throw new Error("업로드 실패");
@@ -53,8 +80,13 @@ export default function LoadingPicture() {
         setTempPhotoList(formatted);
         setMainPhotoId(String(formatted[0].id));
         setSelectedAssets([]);
+        setSelected(formatted.map((p) => String(p.id)));
 
         // 4. 경로 분기
+        if (mode === "bestshot") {
+          nav.replace("/confirmPhoto");
+          return;
+        }
         nav.replace("/generate");
       } catch (err) {
         console.error("❌ 업로드 오류:", err);

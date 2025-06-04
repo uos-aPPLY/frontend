@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   Pressable,
   FlatList,
-  Dimensions
+  Dimensions,
+  Alert
 } from "react-native";
 import { useRouter } from "expo-router";
 import IconButton from "../components/IconButton";
@@ -23,8 +24,7 @@ const IMAGE_SIZE = (SCREEN_WIDTH - 4) / 3;
 
 export default function confirmPhoto() {
   const nav = useRouter();
-  const { photoList, setPhotoList, selected, setSelected, setMode, setMainPhotoId, resetPhoto } =
-    usePhoto();
+  const { photoList, setPhotoList, selected, setSelected, setMode, setClear } = usePhoto();
   const { token } = useAuth();
   const { selectedDate } = useDiary();
 
@@ -38,11 +38,26 @@ export default function confirmPhoto() {
     }
   };
 
+  const handleBestshot = () => {
+    if (selected.length === 0) {
+      Alert.alert("사진 선택", "AI 추천을 위해 최소 한 장의 사진을 선택해주세요.");
+      return;
+    }
+    setClear(false);
+    setPhotoList(photoList);
+    setMode("select");
+    nav.push("/loading/loadingBestShot");
+  };
+
   useEffect(() => {
     console.log("✅ selected 변경됨:", selected);
   }, [selected]);
   useEffect(() => {
     console.log("📅 confirmPhoto에서 selectedDate:", selectedDate);
+    if (selectedDate) {
+      setClear(false);
+      setSelected([]);
+    }
   }, [selectedDate]);
 
   useEffect(() => {
@@ -68,6 +83,8 @@ export default function confirmPhoto() {
     fetchPhotos();
   }, [token]);
 
+<<<<<<< HEAD
+=======
   const handleBack = async () => {
     try {
       const res = await fetch(`${BACKEND_URL}/api/photos/selection/temp`, {
@@ -98,6 +115,7 @@ export default function confirmPhoto() {
     nav.back();
   };
 
+>>>>>>> main
   return (
     <View style={styles.container}>
       <View style={[styles.header, photoList.length <= 9 && { marginBottom: 30 }]}>
@@ -106,16 +124,12 @@ export default function confirmPhoto() {
           hsize={22}
           wsize={22}
           style={styles.back}
-          onPress={handleBack}
+          onPress={nav.back}
         />
-        <Text style={styles.letter}>
-          {photoList.length <= 9
-            ? "원하는 일기 방식을 선택해주세요."
-            : "일기에 꼭 넣고 싶은 사진을 고르세요"}
-        </Text>
+        <Text style={styles.letter}>일기에 꼭 넣고 싶은 사진을 고르세요</Text>
         <View style={{ width: 24 }} />
       </View>
-      {photoList.length > 9 && <Text style={styles.count}>{`${selected.length}/9`}</Text>}
+      <Text style={styles.count}>{`${selected.length}/9`}</Text>
 
       <FlatList
         data={formatGridData(photoList, 3)}
@@ -125,13 +139,12 @@ export default function confirmPhoto() {
           if (!item) return <View style={{ width: IMAGE_SIZE + 2, height: IMAGE_SIZE }} />;
 
           const isSelected = selected.some((p) => p.id === item.id);
-          const isSelectable = photoList.length > 9;
 
           return (
-            <Pressable onPress={() => isSelectable && toggleSelect(item)}>
+            <Pressable onPress={() => toggleSelect(item)}>
               <View style={styles.imageWrapper}>
                 <Image source={{ uri: item.photoUrl }} style={styles.image} />
-                {isSelectable && isSelected && (
+                {isSelected && (
                   <>
                     <View style={styles.overlay} />
                     <Image
@@ -148,35 +161,8 @@ export default function confirmPhoto() {
       />
 
       <View style={styles.buttonRow}>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => {
-            if (photoList.length > 9) {
-              // ✅ 베스트샷 고르기 → loading 이동
-              setMode("write");
-              // nav.push("/loading");
-            } else {
-              setPhotoList(photoList);
-              setSelected(photoList.map((p) => p));
-              setMainPhotoId(photoList.length > 0 ? String(photoList[0].id) : null);
-              setMode("write");
-              nav.push("/write");
-            }
-          }}
-        >
-          <Text style={styles.buttonText}>직접 쓰기</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => {
-            setPhotoList(photoList);
-            setSelected(selected);
-            setMode("generate");
-            // nav.push("/loading");
-          }}
-        >
-          <Text style={styles.buttonText}>AI 생성 일기</Text>
+        <TouchableOpacity style={styles.button} onPress={handleBestshot}>
+          <Text style={styles.buttonText}>베스트샷 추천 받기</Text>
         </TouchableOpacity>
       </View>
     </View>
