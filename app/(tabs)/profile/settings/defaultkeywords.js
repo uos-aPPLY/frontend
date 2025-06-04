@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     borderColor: "#ddd"
   },
   keywordText: {
-    fontSize: 16,
+    fontSize: 14,
     color: "#444"
   },
   removeIcon: {
