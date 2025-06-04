@@ -77,7 +77,6 @@ export default function DefaultKeywordsPage() {
         title="키워드 설정"
         descriptionText={pageDescription}
         rightComponent={
-<<<<<<< HEAD:app/settings/defaultkeywords.js
           <TouchableOpacity
             onPress={async () => {
               if (newKeyword.trim()) {
@@ -86,19 +85,13 @@ export default function DefaultKeywordsPage() {
               setIsEditMode((prev) => !prev);
             }}
           >
-=======
-          <TouchableOpacity onPress={() => setIsEditMode((prev) => !prev)}>
->>>>>>> main:app/(tabs)/profile/settings/defaultkeywords.js
             <Text style={styles.headerEditText}>{isEditMode ? "확인" : "수정"}</Text>
           </TouchableOpacity>
         }
       />
 
-<<<<<<< HEAD:app/settings/defaultkeywords.js
       <Text style={styles.description}>포커스 키워드 설정 시 기본 키워드로 제공돼요.</Text>
 
-=======
->>>>>>> main:app/(tabs)/profile/settings/defaultkeywords.js
       {/* 키워드 목록 */}
       <ScrollView contentContainerStyle={styles.keywordList}>
         {keywords.map((item) => (
@@ -142,26 +135,19 @@ const styles = StyleSheet.create({
   headerEditText: {
     fontSize: 16,
     color: "#A78C7B"
-<<<<<<< HEAD:app/settings/defaultkeywords.js
   },
   description: {
     fontSize: 12,
     textAlign: "center",
     color: "#B3A9A0",
     marginBottom: 15
-=======
->>>>>>> main:app/(tabs)/profile/settings/defaultkeywords.js
   },
   keywordList: {
     flexDirection: "row",
     flexWrap: "wrap",
     paddingHorizontal: 45,
-<<<<<<< HEAD:app/settings/defaultkeywords.js
     gap: 12,
     marginTop: 10
-=======
-    gap: 8
->>>>>>> main:app/(tabs)/profile/settings/defaultkeywords.js
   },
   keywordWrapper: {
     flexDirection: "row",
@@ -174,11 +160,8 @@ const styles = StyleSheet.create({
     borderColor: "#ddd"
   },
   keywordText: {
-<<<<<<< HEAD:app/settings/defaultkeywords.js
     fontSize: 16,
-=======
-    fontSize: 14,
->>>>>>> main:app/(tabs)/profile/settings/defaultkeywords.js
+
     color: "#444"
   },
   removeIcon: {

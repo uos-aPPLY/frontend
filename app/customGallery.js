@@ -117,7 +117,10 @@ export default function CustomGalleryScreen() {
 
             const formattedDate = selectedDate.toISOString().split("T")[0];
 
-            nav.back();
+            nav.push({
+              pathname: "/create",
+              params: { date: formattedDate }
+            });
           }}
           wsize={22}
           hsize={22}
@@ -249,7 +252,7 @@ export default function CustomGalleryScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.backgorund,
+    backgroundColor: "#FCF9F4",
     paddingTop: 75
   },
   container: {
