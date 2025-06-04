@@ -43,21 +43,53 @@ const toSeoulDate = (date) =>
     })
   );
 
-const GeneratingProgressCircle = ({ size, duration, text }) => {
+const GeneratingProgressCircle = ({ size, duration, text, startTime }) => {
   const progress = useRef(new Animated.Value(0)).current;
+  const animationRef = useRef(null);
   const STROKE_WIDTH = 3;
   const radius = size / 2 - STROKE_WIDTH / 2;
   const circumference = 2 * Math.PI * radius;
 
   useEffect(() => {
-    progress.setValue(0);
-    Animated.timing(progress, {
-      toValue: 1,
-      duration: duration,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false
-    }).start();
-  }, [duration, progress]);
+    if (animationRef.current) {
+      animationRef.current.stop();
+      animationRef.current = null;
+    }
+
+    if (typeof startTime !== "number" || startTime <= 0 || duration <= 0) {
+      progress.setValue(0);
+      return;
+    }
+
+    const now = Date.now();
+    const elapsedTime = now - startTime;
+    let initialProgressValue = 0;
+
+    if (elapsedTime > 0) {
+      initialProgressValue = Math.min(elapsedTime / duration, 1);
+    }
+
+    progress.setValue(initialProgressValue);
+
+    if (initialProgressValue < 1) {
+      const remainingDuration = duration * (1 - initialProgressValue);
+      const newAnimation = Animated.timing(progress, {
+        toValue: 1,
+        duration: remainingDuration > 0 ? remainingDuration : 0,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false
+      });
+      animationRef.current = newAnimation;
+      newAnimation.start();
+    }
+
+    return () => {
+      if (animationRef.current) {
+        animationRef.current.stop();
+        animationRef.current = null;
+      }
+    };
+  }, [duration, startTime, progress]);
 
   const strokeDashoffset = progress.interpolate({
     inputRange: [0, 1],
@@ -189,6 +221,29 @@ export default function CalendarGrid({ currentMonth, diariesByDate, onPrev, onNe
                 const entry = diariesByDate[dateStr] || null;
                 const hasDiary = Boolean(entry);
                 const isGenerating = entry?.status === "generating";
+
+                let numericGenerationStartTime = null;
+                const createdAtRaw = entry?.createdAt;
+
+                if (isGenerating && createdAtRaw) {
+                  if (typeof createdAtRaw === "string") {
+                    const isoFormattedString = createdAtRaw.replace(" ", "T") + "Z";
+                    const dateObject = new Date(isoFormattedString);
+                    if (!isNaN(dateObject.getTime())) {
+                      numericGenerationStartTime = dateObject.getTime();
+                    } else {
+                      console.warn(`[CalendarGrid] 날짜 문자열 파싱 실패: ${createdAtRaw}`);
+                    }
+                  } else if (typeof createdAtRaw === "number") {
+                    numericGenerationStartTime = createdAtRaw;
+                  } else {
+                    console.warn(
+                      `[CalendarGrid] 예상치 못한 createdAt 형식: ${typeof createdAtRaw}`,
+                      createdAtRaw
+                    );
+                  }
+                }
+
                 const isCurrentMonth = isSameMonth(daySeoul, currentMonth);
                 const isToday = dateStr === todayStr;
                 const isFuture = daySeoul > todaySeoul;
@@ -246,6 +301,7 @@ export default function CalendarGrid({ currentMonth, diariesByDate, onPrev, onNe
                           size={DAY_ITEM_SIZE * 0.9}
                           duration={25000}
                           text={format(daySeoul, "d")}
+                          startTime={numericGenerationStartTime}
                         />
                       </View>
                     ) : showEmotion && emotionSource ? (
