@@ -77,14 +77,7 @@ export default function DefaultKeywordsPage() {
         title="키워드 설정"
         descriptionText={pageDescription}
         rightComponent={
-          <TouchableOpacity
-            onPress={async () => {
-              if (newKeyword.trim()) {
-                await addKeyword();
-              }
-              setIsEditMode((prev) => !prev);
-            }}
-          >
+          <TouchableOpacity onPress={() => setIsEditMode((prev) => !prev)}>
             <Text style={styles.headerEditText}>{isEditMode ? "확인" : "수정"}</Text>
           </TouchableOpacity>
         }
