@@ -15,6 +15,7 @@ export default function DefaultKeywordsPage() {
   const [newKeyword, setNewKeyword] = useState("");
 
   const BACKEND_URL = Constants.expoConfig.extra.BACKEND_URL;
+  const pageDescription = "포커스 키워드 설정 시 기본 키워드로 제공돼요.";
 
   useEffect(() => {
     fetchKeywords();
@@ -74,14 +75,13 @@ export default function DefaultKeywordsPage() {
     <SafeAreaView style={styles.container} edges={["top"]}>
       <Header
         title="키워드 설정"
+        descriptionText={pageDescription}
         rightComponent={
           <TouchableOpacity onPress={() => setIsEditMode((prev) => !prev)}>
             <Text style={styles.headerEditText}>{isEditMode ? "확인" : "수정"}</Text>
           </TouchableOpacity>
         }
       />
-
-      <Text style={styles.description}>포커스 키워드 설정 시 기본 키워드로 제공돼요.</Text>
 
       {/* 키워드 목록 */}
       <ScrollView contentContainerStyle={styles.keywordList}>
@@ -126,18 +126,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#A78C7B"
   },
-  description: {
-    fontSize: 12,
-    textAlign: "center",
-    color: "#B3A9A0",
-    marginBottom: 15
-  },
   keywordList: {
     flexDirection: "row",
     flexWrap: "wrap",
     paddingHorizontal: 45,
-    gap: 8,
-    marginTop: 10
+    gap: 8
   },
   keywordWrapper: {
     flexDirection: "row",
