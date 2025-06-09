@@ -1,7 +1,7 @@
 //app/loading/loadingPicture.js
 import { useEffect } from "react";
 import { View, ActivityIndicator, StyleSheet, Text, SafeAreaView } from "react-native";
-import { useRouter } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { useNavigation } from "@react-navigation/native";
 
 export default function LoadingPage() {
