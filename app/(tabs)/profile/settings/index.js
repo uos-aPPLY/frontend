@@ -20,6 +20,11 @@ export default function SettingsPage() {
     router.replace("/login");
   };
 
+  const handleWithdrawalSuccess = () => {
+    signOut();
+    router.replace("/login");
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <ConfirmModal
@@ -88,7 +93,11 @@ export default function SettingsPage() {
               <Text style={[styles.itemText, pressed && { opacity: 0.5 }]}>로그아웃</Text>
             )}
           </Pressable>
-          <Withdrawal style={styles.item} textStyle={styles.itemText} />
+          <Withdrawal
+            style={styles.item}
+            textStyle={styles.itemText}
+            onWithdrawalSuccess={handleWithdrawalSuccess}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
