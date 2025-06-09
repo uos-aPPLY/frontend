@@ -273,7 +273,7 @@ export default function DiaryPage() {
           setPhotoList([]);
           setTempPhotoList([]);
           setMainPhotoId(null);
-          nav.replace("/calendar");
+          nav.back();
         }}
         onTrashPress={() => setShowConfirmModal(true)}
       />

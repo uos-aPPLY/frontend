@@ -1,5 +1,16 @@
-import { useState, useEffect } from "react";
-import { KeyboardAvoidingView, Platform, View, StyleSheet, ScrollView, Text } from "react-native";
+import { useState, useEffect, useRef } from "react";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Image,
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  FlatList,
+  Dimensions,
+  Text
+} from "react-native";
 import { useRouter } from "expo-router";
 import CharacterPickerOverlay from "../components/CharacterPickerOverlay";
 import HeaderDate from "../components/Header/HeaderDate";
@@ -14,53 +25,72 @@ import Constants from "expo-constants";
 import EditImageSlider from "../components/EditImageSlider";
 import { openGalleryAndAdd } from "../utils/openGalleryAndAdd";
 import ConfirmModal from "../components/Modal/ConfirmModal";
+import { clearAllTempPhotos } from "../utils/clearTempPhotos";
 
+const screenWidth = Dimensions.get("window").width;
 const MAX_PHOTO_COUNT = 9;
 
 export default function WritePage() {
+  const flatListRef = useRef(null);
   const nav = useRouter();
-  const { text, setText, selectedCharacter, setSelectedCharacter, selectedDate, resetDiary } =
-    useDiary();
+
+  const {
+    text,
+    setText,
+    selectedCharacter,
+    setSelectedCharacter,
+    selectedDate,
+    setSelectedDate,
+    resetDiary
+  } = useDiary();
   const { token } = useAuth();
   const { BACKEND_URL } = Constants.expoConfig.extra;
+  const [isPickerVisible, setIsPickerVisible] = useState(false);
+  const [tempPhotos, setTempPhotos] = useState([]);
+  const [isBackConfirmVisible, setIsBackConfirmVisible] = useState(false);
+
   const {
     photoList,
     setPhotoList,
-    setSelected,
-    originalPhotoList,
     mainPhotoId,
     setMainPhotoId,
     resetPhoto,
-    setSelectedAssets
+    setSelectedAssets,
+    setMode,
+    mode
   } = usePhoto();
+  const photosToShow = photoList.length > 0 ? photoList : tempPhotos;
+  const date = selectedDate instanceof Date ? selectedDate.toISOString().split("T")[0] : "";
+
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPickerVisible, setIsPickerVisible] = useState(false);
   const [isConfirmVisible, setIsConfirmVisible] = useState(false);
   const [targetPhotoId, setTargetPhotoId] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const date = selectedDate instanceof Date ? selectedDate.toISOString().split("T")[0] : "";
-
   useEffect(() => {
     setSelectedAssets([]);
-  }, []);
+    if (tempPhotos.length > 0 && photoList.length === 0) {
+      setPhotoList(tempPhotos);
+      setMainPhotoId(String(tempPhotos[0].id));
+    }
+  }, [tempPhotos]);
 
   useEffect(() => {
-    return () => {
-      // 페이지 unmount 시 selected 초기화
-      setSelected([]);
-      setPhotoList(originalPhotoList); // 이전 사진 복원도 같이
-    };
-  }, []);
+    if (!mainPhotoId) {
+      if (photoList.length > 0) {
+        setMainPhotoId(String(photoList[0].id));
+      } else if (tempPhotos.length > 0) {
+        setMainPhotoId(String(tempPhotos[0].id));
+      }
+    }
+  }, [photoList, tempPhotos]);
 
-  const photosToRender = [...photoList];
+  const photosToRender = [...photosToShow];
   if (photosToRender.length < MAX_PHOTO_COUNT) {
-    photosToRender.push({ id: "add", type: "add" });
+    photosToRender.push({ id: "add", type: "add" }); // 가상 항목
   }
-
   const handleAddPhoto = async () => {
-    const existingCount = photoList.filter((p) => p.id && p.id !== "add").length;
-    const addedAssets = await openGalleryAndAdd(token, existingCount);
+    const addedAssets = await openGalleryAndAdd(token);
     if (!addedAssets || addedAssets.length === 0) return;
 
     const newPhotos = addedAssets.map((asset) => ({
@@ -68,8 +98,11 @@ export default function WritePage() {
       photoUrl: asset.photoUrl
     }));
 
-    const updated = [...photoList.filter((p) => p.id && p.id !== "add"), ...newPhotos];
+    const updated = [...photosToShow, ...newPhotos];
+
+    // ✅ 항상 전역 상태도 같이 설정
     setPhotoList(updated);
+    setTempPhotos(updated); // 여전히 로컬도 유지
 
     if (!mainPhotoId || !updated.some((p) => String(p.id) === String(mainPhotoId))) {
       setMainPhotoId(String(newPhotos[0].id));
@@ -85,11 +118,21 @@ export default function WritePage() {
     if (!targetPhotoId) return;
 
     try {
-      const updated = photoList.filter((p) => p.id !== targetPhotoId);
+      await deletePhotoById(targetPhotoId, token);
+
+      const updated = photosToShow.filter((p) => p.id !== targetPhotoId);
+
       setPhotoList(updated);
+      setTempPhotos(updated);
 
       if (String(targetPhotoId) === String(mainPhotoId)) {
-        setMainPhotoId(updated.length > 0 ? String(updated[0].id) : null);
+        if (updated.length > 0) {
+          setMainPhotoId(String(updated[0].id));
+          console.log("📸 대표 사진 삭제됨 → 새 대표:", updated[0].id);
+        } else {
+          setMainPhotoId(null);
+          console.log("📸 모든 사진 삭제됨 → 대표 사진 없음");
+        }
       }
 
       if (currentIndex >= updated.length) {
@@ -109,17 +152,50 @@ export default function WritePage() {
     setIsConfirmVisible(false);
   };
 
+  useEffect(() => {
+    const fetchTempPhotos = async () => {
+      try {
+        console.log("📡 fetchTempPhotos 호출됨");
+        const res = await fetch(`${BACKEND_URL}/api/photos/selection/temp`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        const data = await res.json();
+        console.log("📷 fetchTempPhotos 결과:", data);
+        console.log("🧪 현재 대표 사진 상태:", mainPhotoId, typeof mainPhotoId);
+
+        setTempPhotos(data);
+
+        if (
+          data.length > 0 &&
+          (!mainPhotoId || !data.some((p) => String(p.id) === String(mainPhotoId)))
+        ) {
+          console.log("📸 대표 사진 초기 세팅:", data[0].id);
+          setMainPhotoId(String(data[0].id));
+        }
+      } catch (error) {
+        console.error("임시 사진 불러오기 실패:", error);
+      }
+    };
+
+    if (token) fetchTempPhotos();
+  }, [token]);
+
   const createDiary = async () => {
-    setIsSaving(true);
+    setIsSaving(true); // 👈 로딩 시작
 
     try {
       const payload = {
         diaryDate: date,
         content: text,
         emotionIcon: selectedCharacter.name,
-        photoIds: photoList.filter((p) => p.id && p.id !== "add").map((p) => Number(p.id)),
+        photoIds: photosToShow.filter((p) => p.id && p.id !== "add").map((p) => Number(p.id)),
         representativePhotoId: Number(mainPhotoId)
       };
+
+      console.log("📝 일기 생성 요청 페이로드:", payload);
 
       const res = await fetch(`${BACKEND_URL}/api/diaries`, {
         method: "POST",
@@ -134,15 +210,19 @@ export default function WritePage() {
 
       if (!res.ok) {
         console.error("❌ 일기 생성 실패:", result);
-        setIsSaving(false);
+        setIsSaving(false); // ❌ 실패 시 로딩 종료
         return;
       }
 
-      nav.push({ pathname: "/calendar", params: { date } });
+      console.log("✅ 일기 생성 성공:", result);
+      nav.push({
+        pathname: "/calendar",
+        params: { date }
+      });
     } catch (err) {
       console.error("❌ 일기 생성 중 에러:", err);
     } finally {
-      setIsSaving(false);
+      setIsSaving(false); // ✅ 항상 종료
     }
   };
 
@@ -155,16 +235,34 @@ export default function WritePage() {
         <HeaderDate
           date={date}
           onBack={() => {
-            setPhotoList(originalPhotoList);
-            setSelected([]);
-            nav.back();
+            if (mode === "manual" || mode === "ai") {
+              nav.back();
+            } else {
+              // 기존대로 바로 뒤로가기
+              clearAllTempPhotos(token)
+                .then(() => {
+                  resetDiary();
+                  resetPhoto();
+                  if (mode === "manual" || mode === "ai") {
+                    setMode("bestshot");
+                  } else {
+                    setMode("choose");
+                  }
+                  nav.back();
+                })
+                .catch((err) => {
+                  console.error("❌ 뒤로가기 실패:", err);
+                  resetDiary();
+                  resetPhoto();
+                  nav.push("/calendar");
+                });
+            }
           }}
           hasText={text.trim().length > 0}
           onSave={() => {
             resetDiary();
             createDiary();
             resetPhoto();
-            setSelected([]);
           }}
         />
 
@@ -227,7 +325,6 @@ export default function WritePage() {
               />
             </View>
           </ScrollView>
-
           {isSaving && (
             <View style={styles.loadingOverlay}>
               <Text style={styles.loadingText}>저장 중...</Text>
