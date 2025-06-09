@@ -9,14 +9,11 @@ export async function uploadPhotos(resizedAssets, token, originalAssets) {
 
   resizedAssets.forEach((resized, index) => {
     const fileType = resized.uri.split(".").pop();
-
-    const file = {
+    formData.append("files", {
       uri: resized.uri,
       name: `photo_${index}.${fileType}`,
       type: `image/${fileType}`
-    };
-
-    formData.append("files", file);
+    });
 
     const original = originalAssets[index];
     const exif = original.exif || {};
@@ -34,15 +31,12 @@ export async function uploadPhotos(resizedAssets, token, originalAssets) {
       }
     }
 
-    const metadata = {
+    metadataArray.push({
       location,
       shootingDateTime
-    };
-
-    metadataArray.push(metadata); // ✅ 배열에 누적
+    });
   });
 
-  // ✅ metadata를 한 번에 배열로 전송
   formData.append("metadata", JSON.stringify(metadataArray));
 
   for (const pair of formData.entries()) {

@@ -6,16 +6,23 @@ import { useAuth } from "../contexts/AuthContext";
 import IconButton from "../components/IconButton";
 import { usePhoto } from "../contexts/PhotoContext";
 import ConfirmModal from "../components/Modal/ConfirmModal";
+import { useNavigation } from "@react-navigation/native";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
 export default function LoadingPage() {
   const nav = useRouter();
+  const navigation = useNavigation();
   const { photoList, selected, setPhotoList, setSelected, setMainPhotoId, mode } = usePhoto();
   const { token } = useAuth();
 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const isCancelledRef = useRef(false);
+
+  useEffect(() => {
+    // ✅ iOS 슬라이딩 뒤로가기 막기
+    navigation.setOptions({ gestureEnabled: false });
+  }, [navigation]);
 
   useEffect(() => {
     const recommend = async () => {
@@ -66,19 +73,21 @@ export default function LoadingPage() {
         setSelected(recommended);
         setMainPhotoId(String(recommended[0]?.id || null));
 
-        if (!isCancelledRef.current) {
-          const destination =
-            mode === "write"
-              ? "/write"
-              : {
-                  pathname: "/generate",
-                  params: {
-                    photos: JSON.stringify(result.recommendedPhotoIds),
-                    fullPhotoList: JSON.stringify(photoList)
-                  }
-                };
-          nav.replace(destination);
-        }
+        setTimeout(() => {
+          if (!isCancelledRef.current) {
+            const destination =
+              mode === "write"
+                ? "/write"
+                : {
+                    pathname: "/generate",
+                    params: {
+                      photos: JSON.stringify(result.recommendedPhotoIds),
+                      fullPhotoList: JSON.stringify(photoList)
+                    }
+                  };
+            nav.replace(destination);
+          }
+        }, 0);
       } catch (err) {
         console.error("AI 추천 실패:", err);
         if (!isCancelledRef.current) {
@@ -92,15 +101,6 @@ export default function LoadingPage() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <IconButton
-          source={require("../assets/icons/backicon.png")}
-          wsize={22}
-          hsize={22}
-          onPress={() => setIsModalVisible(true)}
-        />
-      </View>
-
       <View style={styles.loadingArea}>
         <ActivityIndicator size="large" color="#D68089" />
         <Text style={styles.text}>AI가 베스트샷 선정 중 입니다...</Text>
@@ -139,7 +139,10 @@ const styles = StyleSheet.create({
   },
   text: {
     marginTop: 16,
-    fontSize: 16,
-    color: "#a78c7b"
+    fontSize: 15,
+    color: "#A78C7B",
+    fontWeight: "500",
+    textAlign: "center",
+    lineHeight: 22
   }
 });

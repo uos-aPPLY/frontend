@@ -36,7 +36,15 @@ export default function DefaultKeywordsPage() {
   };
 
   const addKeyword = async () => {
-    if (!newKeyword.trim()) return;
+    const trimmed = newKeyword.trim();
+    if (!trimmed) return;
+
+    // 🔒 중복 방지
+    if (keywords.some((k) => k.name === trimmed)) {
+      setNewKeyword("");
+      return;
+    }
+
     try {
       const res = await fetch(`${BACKEND_URL}/api/keywords`, {
         method: "POST",
@@ -44,13 +52,13 @@ export default function DefaultKeywordsPage() {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ name: newKeyword.trim() })
+        body: JSON.stringify({ name: trimmed })
       });
 
       const newItem = await res.json();
       if (!res.ok) throw new Error("추가 실패");
 
-      setKeywords((prev) => [...prev, newItem]); // ⬅️ 뒤에 추가
+      setKeywords((prev) => [...prev, newItem]);
       setNewKeyword("");
     } catch (err) {
       console.error("❌ 키워드 추가 실패:", err);
@@ -85,8 +93,8 @@ export default function DefaultKeywordsPage() {
 
       {/* 키워드 목록 */}
       <ScrollView contentContainerStyle={styles.keywordList}>
-        {keywords.map((item) => (
-          <View key={item.id} style={styles.keywordWrapper}>
+        {keywords.map((item, index) => (
+          <View key={`${item.id || item.name}-${index}`} style={styles.keywordWrapper}>
             <Text style={styles.keywordText}>#{item.name}</Text>
             {isEditMode && (
               <TouchableOpacity onPress={() => deleteKeyword(item.id)}>
@@ -105,7 +113,6 @@ export default function DefaultKeywordsPage() {
               onChangeText={setNewKeyword}
               placeholder="추가"
               style={styles.input}
-              onSubmitEditing={addKeyword}
               onBlur={addKeyword}
               returnKeyType="done"
               placeholderTextColor="#aaa"

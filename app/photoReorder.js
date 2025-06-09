@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   cardWrapper: {
     width: screenWidth,
     alignItems: "center",
-    marginBottom: 30
+    marginBottom: 20
   },
   cardShadowWrapper: {
     marginTop: 10,
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     borderRadius: 30
   },
   card: {
-    width: screenWidth * 0.8,
+    width: screenWidth * 0.6,
     aspectRatio: 1,
     borderRadius: 30,
     overflow: "hidden",

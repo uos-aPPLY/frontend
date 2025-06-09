@@ -1,5 +1,5 @@
 // app/create.js
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Menu, Divider } from "react-native-paper";
 import { KeyboardAvoidingView, Platform, View, StyleSheet, ScrollView } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -7,32 +7,26 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import HeaderDate from "../components/Header/HeaderDate";
 import IconButton from "../components/IconButton";
 import TextBox from "../components/TextBox";
-import CharacterPickerOverlay from "../components/CharacterPickerOverlay";
 import characterList from "../assets/characterList";
 import { useDiary } from "../contexts/DiaryContext";
-import { usePhoto } from "../contexts/PhotoContext";
+import { usePhoto } from "../contexts/PhotoContext"; // ✅ 추가
 import { useAuth } from "../contexts/AuthContext";
 import { clearAllTempPhotos } from "../utils/clearTempPhotos";
+import { openGalleryAndUpload } from "../utils/openGalleryAndUpload";
+import CharacterPickerOverlay from "../components/CharacterPickerOverlay";
 import Constants from "expo-constants";
 
 export default function CreatePage() {
   const nav = useRouter();
-  const { token } = useAuth();
-  const { date: dateParam } = useLocalSearchParams();
-  const [isPickerVisible, setIsPickerVisible] = useState(false);
-  const { resetPhoto, setMode } = usePhoto();
-  const {
-    text,
-    setText,
-    selectedCharacter,
-    setSelectedCharacter,
-    selectedDate,
-    setSelectedDate,
-    resetDiary
-  } = useDiary();
+  const { date: dateParam, from = "calendar" } = useLocalSearchParams();
+  const { text, setText, selectedCharacter, setSelectedCharacter, selectedDate, setSelectedDate } =
+    useDiary();
+  const { resetPhoto, setMode, mode } = usePhoto();
 
-  const { BACKEND_URL } = Constants.expoConfig.extra;
   const [menuVisible, setMenuVisible] = useState(false);
+  const [isPickerVisible, setIsPickerVisible] = useState(false);
+  const { resetDiary } = useDiary();
+  const { BACKEND_URL } = Constants.expoConfig.extra;
 
   const createDiary = async () => {
     try {
@@ -40,8 +34,8 @@ export default function CreatePage() {
         diaryDate: date,
         content: text,
         emotionIcon: selectedCharacter.name,
-        photoIds: null,
-        representativePhotoId: null
+        photoIds: null, // ✅ 사진 없음
+        representativePhotoId: null // ✅ 대표 사진 없음
       };
 
       const res = await fetch(`${BACKEND_URL}/api/diaries`, {
@@ -61,8 +55,8 @@ export default function CreatePage() {
       }
 
       console.log("✅ 저장 성공:", result);
-      resetDiary();
-      nav.back();
+      resetDiary(); // 상태 초기화
+      nav.replace("/calendar");
     } catch (err) {
       console.error("❌ 저장 중 에러:", err);
     }
@@ -70,7 +64,7 @@ export default function CreatePage() {
 
   useEffect(() => {
     if (dateParam) {
-      setSelectedDate(new Date(dateParam));
+      setSelectedDate(new Date(dateParam)); // 📌 이거 추가!
     }
   }, [dateParam]);
 
@@ -79,10 +73,12 @@ export default function CreatePage() {
   if (selectedDate instanceof Date && !isNaN(selectedDate)) {
     date = selectedDate.toISOString().split("T")[0];
   } else if (typeof selectedDate === "string") {
-    date = selectedDate;
+    date = selectedDate; // 이미 yyyy-MM-dd 일 수도 있음
   } else {
-    date = "";
+    date = ""; // fallback
   }
+
+  const { token } = useAuth();
 
   useEffect(() => {
     if (token) {
@@ -102,7 +98,7 @@ export default function CreatePage() {
           onBack={() => {
             resetDiary();
             resetPhoto();
-            nav.back();
+            nav.replace("/calendar");
           }}
           hasText={text.trim().length > 0}
           onSave={createDiary}
@@ -141,7 +137,7 @@ export default function CreatePage() {
                     onPress={() => {
                       setMode("choose");
                       setMenuVisible(false);
-                      nav.push("/customGallery");
+                      openGalleryAndUpload(token, nav, "choose");
                     }}
                     title="직접 사진 선택(9장)"
                     titleStyle={{ fontSize: 16 }}
@@ -151,7 +147,7 @@ export default function CreatePage() {
                     onPress={() => {
                       setMode("recommend");
                       setMenuVisible(false);
-                      nav.push("/customGallery");
+                      openGalleryAndUpload(token, nav, "recommend");
                     }}
                     title="베스트샷 추천 받기"
                     titleStyle={{ fontSize: 16 }}
