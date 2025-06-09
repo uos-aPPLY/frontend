@@ -125,8 +125,23 @@ const GeneratingProgressCircle = ({ size, duration, text, startTime }) => {
   );
 };
 
-export default function CalendarGrid({ currentMonth, diariesByDate, onPrev, onNext }) {
+const useSingleNavigate = () => {
   const router = useRouter();
+  const lockRef = useRef(false);
+
+  return (path) => {
+    if (lockRef.current) return;
+    lockRef.current = true;
+    router.push(path);
+
+    setTimeout(() => {
+      lockRef.current = false;
+    }, 400);
+  };
+};
+
+export default function CalendarGrid({ currentMonth, diariesByDate, onPrev, onNext }) {
+  const singleNavigate = useSingleNavigate();
   const { selectedDate, setSelectedDate } = useDiary();
   const { showEmotion } = useContext(CalendarViewContext);
 
@@ -262,23 +277,23 @@ export default function CalendarGrid({ currentMonth, diariesByDate, onPrev, onNe
 
                 const handlePress = () => {
                   if (isGenerating) {
-                    router.push(`/loading/loadingDiary?date=${dateStr}`);
+                    singleNavigate(`/loading/loadingDiary?date=${dateStr}`);
                     return;
                   }
                   if (hasDiary) {
-                    router.push(`/diary/${dateStr}`);
+                    singleNavigate(`/diary/${dateStr}`);
                   } else if (isPastNoDiary) {
                     if (selectedDate === dateStr) {
                       setSelectedDate(dateStr);
-                      router.push(`/create?date=${dateStr}&from=calendar`);
+                      singleNavigate(`/create?date=${dateStr}&from=calendar`);
                     } else {
                       setSelectedDate(dateStr);
                     }
                   } else if (isToday) {
                     if (todayHasDiary) {
-                      router.push(`/diary/${dateStr}`);
+                      singleNavigate(`/diary/${dateStr}`);
                     } else {
-                      router.push(`/create?date=${dateStr}&from=calendar`);
+                      singleNavigate(`/create?date=${dateStr}&from=calendar`);
                     }
                   }
                 };
