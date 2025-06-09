@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,16 +7,16 @@ import {
   TouchableOpacity,
   Pressable,
   FlatList,
-  Dimensions
+  Dimensions,
+  Alert
 } from "react-native";
-import { useRouter, useNavigation } from "expo-router"; // ✅ useNavigation 추가
+import { useRouter } from "expo-router";
 import IconButton from "../components/IconButton";
 import { useAuth } from "../contexts/AuthContext";
 import { usePhoto } from "../contexts/PhotoContext";
 import { formatGridData } from "../utils/formatGridData";
 import Constants from "expo-constants";
 import { useDiary } from "../contexts/DiaryContext";
-import { useMemo } from "react";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -24,25 +24,9 @@ const IMAGE_SIZE = (SCREEN_WIDTH - 4) / 3;
 
 export default function confirmPhoto() {
   const nav = useRouter();
-  const navigation = useNavigation(); // ✅ 제스처 감지를 위한 navigation 객체
-  const {
-    photoList,
-    setPhotoList,
-    originalPhotoList,
-    setOriginalPhotoList,
-    selected,
-    setSelected,
-    setMode,
-    resetPhoto,
-    setMainPhotoId
-  } = usePhoto();
+  const { photoList, setPhotoList, selected, setSelected, setMode, setClear } = usePhoto();
   const { token } = useAuth();
   const { selectedDate } = useDiary();
-  const formattedGridData = useMemo(
-    () => formatGridData(originalPhotoList, 3),
-    [originalPhotoList]
-  );
-  const isSelectable = originalPhotoList.length > 9;
 
   const toggleSelect = (photo) => {
     const exists = selected.find((p) => p.id === photo.id);
@@ -54,12 +38,26 @@ export default function confirmPhoto() {
     }
   };
 
+  const handleBestshot = () => {
+    if (selected.length === 0) {
+      Alert.alert("사진 선택", "AI 추천을 위해 최소 한 장의 사진을 선택해주세요.");
+      return;
+    }
+    setClear(false);
+    setPhotoList(photoList);
+    setMode("select");
+    nav.push("/loading/loadingBestShot");
+  };
+
   useEffect(() => {
     console.log("✅ selected 변경됨:", selected);
   }, [selected]);
-
   useEffect(() => {
     console.log("📅 confirmPhoto에서 selectedDate:", selectedDate);
+    if (selectedDate) {
+      setClear(false);
+      setSelected([]);
+    }
   }, [selectedDate]);
 
   useEffect(() => {
@@ -74,9 +72,9 @@ export default function confirmPhoto() {
         });
 
         const data = await res.json();
+
         console.log("🥵임시 사진 목록:", data);
         setPhotoList(data);
-        setOriginalPhotoList(data);
       } catch (error) {
         console.error("임시 사진 불러오기 실패", error);
       }
@@ -84,50 +82,6 @@ export default function confirmPhoto() {
 
     fetchPhotos();
   }, [token]);
-
-  // ✅ 뒤로가기 정리 함수
-  const cleanupPhotos = async () => {
-    try {
-      const res = await fetch(`${BACKEND_URL}/api/photos/selection/temp`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      const data = await res.json();
-      const ids = data.map((photo) => photo.id);
-
-      await Promise.all(
-        ids.map((id) =>
-          fetch(`${BACKEND_URL}/api/photos/selection/${id}`, {
-            method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          })
-        )
-      );
-
-      console.log("🧹 모든 임시 사진 삭제 완료");
-      resetPhoto();
-    } catch (error) {
-      console.error("❌ 사진 삭제 중 오류:", error);
-    }
-  };
-
-  // ✅ 물리/제스처 뒤로가기를 막고 정리 수행
-  useEffect(() => {
-    const unsubscribe = navigation.addListener("beforeRemove", async () => {
-      await cleanupPhotos();
-    });
-
-    return unsubscribe;
-  }, [navigation, token]);
-
-  const handleBack = async () => {
-    await cleanupPhotos();
-    nav.replace("/create");
-  };
 
   return (
     <View style={styles.container}>
@@ -137,19 +91,15 @@ export default function confirmPhoto() {
           hsize={22}
           wsize={22}
           style={styles.back}
-          onPress={handleBack}
+          onPress={nav.back}
         />
-        <Text style={styles.letter}>
-          {originalPhotoList.length <= 9
-            ? "원하는 일기 방식을 선택해주세요."
-            : "일기에 꼭 넣고 싶은 사진을 고르세요"}
-        </Text>
+        <Text style={styles.letter}>일기에 꼭 넣고 싶은 사진을 고르세요</Text>
         <View style={{ width: 24 }} />
       </View>
-      {photoList.length > 9 && <Text style={styles.count}>{`${selected.length}/9`}</Text>}
+      <Text style={styles.count}>{`${selected.length}/9`}</Text>
 
       <FlatList
-        data={formattedGridData}
+        data={formatGridData(photoList, 3)}
         numColumns={3}
         keyExtractor={(_, i) => i.toString()}
         renderItem={({ item }) => {
@@ -158,10 +108,10 @@ export default function confirmPhoto() {
           const isSelected = selected.some((p) => p.id === item.id);
 
           return (
-            <Pressable onPress={() => isSelectable && toggleSelect(item)}>
+            <Pressable onPress={() => toggleSelect(item)}>
               <View style={styles.imageWrapper}>
                 <Image source={{ uri: item.photoUrl }} style={styles.image} />
-                {isSelectable && isSelected && (
+                {isSelected && (
                   <>
                     <View style={styles.overlay} />
                     <Image
@@ -178,36 +128,8 @@ export default function confirmPhoto() {
       />
 
       <View style={styles.buttonRow}>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => {
-            setOriginalPhotoList(photoList);
-            setPhotoList(originalPhotoList);
-            setSelected(selected);
-            setMainPhotoId(photoList.length > 0 ? String(photoList[0].id) : null);
-            setMode("write");
-
-            if (photoList.length > 9) {
-              nav.push("/loading"); // ✅ 많은 사진이면 loading 먼저
-            } else {
-              nav.push("/write"); // ✅ 9장 이하면 바로 작성
-            }
-          }}
-        >
-          <Text style={styles.buttonText}>직접 쓰기</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => {
-            setOriginalPhotoList(photoList);
-            setPhotoList(originalPhotoList);
-            setSelected(selected);
-            setMode("generate");
-            nav.push("/loading");
-          }}
-        >
-          <Text style={styles.buttonText}>AI 생성 일기</Text>
+        <TouchableOpacity style={styles.button} onPress={handleBestshot}>
+          <Text style={styles.buttonText}>베스트샷 추천 받기</Text>
         </TouchableOpacity>
       </View>
     </View>

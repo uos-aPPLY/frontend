@@ -1,6 +1,6 @@
 const colors = {
   brown: "#AC8B78",
-  pinkpoint: "#D9A2A8",
+  pinkpoint: "#D68089",
   pinkmain: "#E3A7AD",
   background: "#FCF9F4",
   gray: "#F1F2F1",

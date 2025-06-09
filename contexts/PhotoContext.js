@@ -10,7 +10,7 @@ export const PhotoProvider = ({ children }) => {
   const [mainPhotoId, setMainPhotoId] = useState(null);
   const [tempPhotoList, setTempPhotoList] = useState(null);
   const [photoCount, setPhotoCount] = useState(0);
-  const [originalPhotoList, setOriginalPhotoList] = useState([]);
+
   const [selectedAssets, setSelectedAssets] = useState([]);
   const [clear, setClear] = useState(false);
 
@@ -31,8 +31,6 @@ export const PhotoProvider = ({ children }) => {
       value={{
         photoList,
         setPhotoList,
-        originalPhotoList,
-        setOriginalPhotoList,
         tempPhotoList,
         setTempPhotoList,
         selected,

@@ -7,8 +7,6 @@ import {
   ScrollView,
   ActivityIndicator
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { useLayoutEffect } from "react";
 import { useRouter } from "expo-router";
 import HeaderDate from "../components/Header/HeaderDate";
 import IconButton from "../components/IconButton";
@@ -21,12 +19,10 @@ import { useDiary } from "../contexts/DiaryContext";
 import { useAuth } from "../contexts/AuthContext";
 import Constants from "expo-constants";
 import ConfirmModal from "../components/Modal/ConfirmModal";
-import { openGalleryAndAdd } from "../utils/openGalleryAndAdd";
 
 export default function EditPage() {
   const { token } = useAuth();
   const nav = useRouter();
-  const navigation = useNavigation();
   const {
     text,
     setText,
@@ -45,6 +41,7 @@ export default function EditPage() {
     setMainPhotoId,
     setSelected,
     resetPhoto,
+    setMode,
     setPhotoCount
   } = usePhoto();
 
@@ -53,10 +50,6 @@ export default function EditPage() {
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [photoToDelete, setPhotoToDelete] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
-
-  useLayoutEffect(() => {
-    navigation.setOptions({ gestureEnabled: false });
-  }, [navigation]);
 
   useEffect(() => {
     const realPhotos = photos.filter((p) => p.type !== "add");
@@ -79,15 +72,13 @@ export default function EditPage() {
   console.log("📡 최종 API_URL:", API_URL);
 
   const formatDateToYMD = (date) => {
-    const local = new Date(date);
-    local.setHours(local.getHours() + 9); // ✅ UTC+9 보정 (KST 기준)
-    return local.toISOString().split("T")[0];
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    return `${year}-${month}-${day}`;
   };
-  const date = formatDateToYMD(selectedDate);
-  console.log("📅 선택된 날짜:", date);
-
   const payload = {
-    diaryDate: date,
+    diaryDate: formatDateToYMD(selectedDate),
     content: text,
     emotionIcon: selectedCharacter?.name,
     photoIds: photos.filter((p) => p.type !== "add" && typeof p.id === "number").map((p) => p.id),
@@ -154,23 +145,7 @@ export default function EditPage() {
 
       resetPhoto();
       resetDiary();
-
-      navigation.reset({
-        index: 0,
-        routes: [
-          {
-            name: "diary", // or the layout group
-            state: {
-              routes: [
-                {
-                  name: "[date]",
-                  params: { date }
-                }
-              ]
-            }
-          }
-        ]
-      });
+      nav.back();
     } catch (err) {
       console.error("💥 저장 중 에러:", err);
     } finally {
@@ -178,25 +153,13 @@ export default function EditPage() {
     }
   };
 
-  const handleAddPhoto = async () => {
-    const existingCount = photos.filter((p) => p.type !== "add").length;
+  const handleAddPhoto = () => {
+    setMode("add");
 
-    const addedAssets = await openGalleryAndAdd(token, existingCount);
-    if (!addedAssets || addedAssets.length === 0) return;
-
-    const newPhotos = addedAssets.map((asset) => ({
-      id: asset.id,
-      photoUrl: asset.photoUrl
-    }));
-
-    const updatedPhotos = [...photos.filter((p) => p.id && p.id !== "add"), ...newPhotos];
-
-    setPhotoList(updatedPhotos);
-    setTempPhotoList(updatedPhotos);
-
-    if (!mainPhotoId || !updatedPhotos.some((p) => String(p.id) === String(mainPhotoId))) {
-      setMainPhotoId(String(newPhotos[0].id));
-    }
+    nav.push({
+      pathname: "/addPhotoGallery",
+      params: { mode: "add" }
+    });
   };
 
   return (
@@ -206,22 +169,8 @@ export default function EditPage() {
     >
       <View style={styles.container}>
         <HeaderDate
-          date={date}
-          onBack={() => {
-            resetDiary();
-            resetPhoto();
-            navigation.reset({
-              index: 0,
-              routes: [
-                {
-                  name: "diary",
-                  state: {
-                    routes: [{ name: "[date]", params: { date } }]
-                  }
-                }
-              ]
-            });
-          }}
+          date={selectedDate}
+          onBack={() => nav.back()}
           hasText={text.trim().length > 0}
           onSave={handleSave}
         />
@@ -250,20 +199,14 @@ export default function EditPage() {
                 source={require("../assets/icons/aipencilicon.png")}
                 wsize={24}
                 hsize={24}
-                onPress={
-                  photos.filter((p) => p.type !== "add").length === 0
-                    ? null
-                    : () =>
-                        nav.push({
-                          pathname: "/editWithAi",
-                          params: {
-                            date: date
-                          }
-                        })
+                onPress={() =>
+                  nav.push({
+                    pathname: "/editWithAi",
+                    params: {
+                      date: selectedDate.toISOString().split("T")[0]
+                    }
+                  })
                 }
-                style={{
-                  opacity: photos.filter((p) => p.type !== "add").length === 0 ? 0.3 : 1
-                }}
               />
               <IconButton
                 source={require("../assets/icons/pictureinfoicon.png")}

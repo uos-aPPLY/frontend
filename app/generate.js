@@ -19,9 +19,9 @@ import IconButton from "../components/IconButton";
 import { useAuth } from "../contexts/AuthContext";
 import { usePhoto } from "../contexts/PhotoContext";
 import Constants from "expo-constants";
+import { clearAllTempPhotos } from "../utils/clearTempPhotos";
 import ConfirmModal from "../components/Modal/ConfirmModal";
 import colors from "../constants/colors";
-import { set } from "date-fns";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -31,7 +31,7 @@ export default function GeneratePage() {
   const { token } = useAuth();
   const { BACKEND_URL } = Constants.expoConfig.extra;
 
-  const { mode, selected, setSelected, setPhotoList, originalPhotoList } = usePhoto(); // 🔧 추가
+  const { resetPhoto, mode, setMode, selected, setSelected } = usePhoto(); // 🔧 추가
 
   const [photos, setPhotos] = useState([]);
   const [keywords, setKeywords] = useState({});
@@ -56,27 +56,17 @@ export default function GeneratePage() {
     console.log("🖼️ 현재 대표사진 ID:", mainPhotoId);
   }, [mainPhotoId]);
 
-  useEffect(() => {
-    return () => {
-      // 페이지 unmount 시 selected 초기화
-      setSelected([]);
-      setPhotoList(originalPhotoList); // 이전 사진 복원도 같이
-    };
-  }, []);
-
   const visiblePhotos = useMemo(() => {
     const filtered = selected
-      .map((sel) => {
-        const targetId = typeof sel === "object" ? sel.id : sel;
-        const found = photos.find((p) => String(p.id) === String(targetId));
-        if (!found) {
-          console.warn("⚠️ selected에 해당하는 사진 없음:", targetId);
-        }
-        return found;
-      })
+      .map((selId) => photos.find((p) => p.id === Number(selId)))
       .filter((p) => p && !hiddenIds.includes(p.id));
     return filtered;
   }, [photos, hiddenIds, selected]);
+
+  const isLast = useMemo(
+    () => currentIndex >= visiblePhotos.length - 1,
+    [currentIndex, visiblePhotos.length]
+  );
 
   const handleNext = () => {
     const nextIdx = currentIndex + 1;
@@ -109,7 +99,6 @@ export default function GeneratePage() {
           : visiblePhotos[0]?.id // ✅ 대표사진도 유효성 체크
       }
     });
-    setSelected([]); // ✅ 완료 후 선택 초기화
   };
 
   const fetchKeywordsFromAPI = async () => {
@@ -127,10 +116,6 @@ export default function GeneratePage() {
       return [];
     }
   };
-  const isLast = useMemo(
-    () => currentIndex >= visiblePhotos.length - 1,
-    [currentIndex, visiblePhotos.length]
-  );
 
   const initialize = async () => {
     try {
@@ -150,7 +135,7 @@ export default function GeneratePage() {
       console.log("✅ 가져온 임시 사진:", tempPhotos);
 
       setPhotos(tempPhotos);
-      setMainPhotoId(typeof selected[0] === "object" ? selected[0].id : Number(selected[0]));
+      setMainPhotoId(Number(selected[0]));
 
       const fetchedKeywords = await fetchKeywordsFromAPI();
       setAllKeywords(fetchedKeywords);
@@ -208,25 +193,23 @@ export default function GeneratePage() {
     });
   };
 
-  const handleHidePhoto = (id) => {
-    const visibleCount = photos.filter((p) => !hiddenIds.includes(p.id)).length;
-
-    if (visibleCount <= 1) {
+  const handleHidePhoto = async (id) => {
+    const remaining = photos.filter((p) => !hiddenIds.includes(p.id));
+    if (remaining.length <= 1) {
       Alert.alert("삭제 불가", "마지막 사진은 삭제할 수 없습니다.");
       return;
     }
 
-    setHiddenIds((prev) => {
-      const updated = [...prev, id];
+    const nextHiddenIds = [...hiddenIds, id];
+    const nextVisiblePhotos = photos.filter((p) => !nextHiddenIds.includes(p.id));
 
-      // ✅ mainPhotoId가 삭제되면 새로운 대표 지정
-      if (String(mainPhotoId) === String(id)) {
-        const remaining = photos.filter((p) => !updated.includes(p.id));
-        setMainPhotoId(remaining[0]?.id ?? null);
-      }
+    if (nextVisiblePhotos.length === 0) {
+      await clearAllTempPhotos(token);
+      nav.replace("/customGallery");
+      return;
+    }
 
-      return updated;
-    });
+    setHiddenIds(nextHiddenIds);
   };
 
   const handleDragEnd = useCallback(({ data }) => {
@@ -247,9 +230,16 @@ export default function GeneratePage() {
           source={require("../assets/icons/backicon.png")}
           hsize={22}
           wsize={22}
-          onPress={() => {
-            setSelected([]);
-            nav.back();
+          onPress={async () => {
+            if (mode === "ai" || mode === "manual") {
+              nav.back();
+            } else if (mode === "choose") {
+              nav.back();
+            } else {
+              await clearAllTempPhotos(token);
+              resetPhoto();
+              nav.back();
+            }
           }}
         />
         <Text style={styles.title}>포커스 키워드 설정</Text>
@@ -376,21 +366,7 @@ export default function GeneratePage() {
       </KeyboardAvoidingView>
 
       <View style={styles.bottomRow}>
-        <TouchableOpacity
-          style={styles.nextButton}
-          onPress={() => {
-            // 키워드 입력 중이면 먼저 반영
-            if (editingKeywordPhotoId && newKeyword.trim()) {
-              handleKeywordSubmit();
-            }
-
-            if (isLast) {
-              handleComplete();
-            } else {
-              handleNext();
-            }
-          }}
-        >
+        <TouchableOpacity style={styles.nextButton} onPress={isLast ? handleComplete : handleNext}>
           <Text style={styles.nextText}>{isLast ? "AI 일기 생성하기" : "다음"}</Text>
         </TouchableOpacity>
       </View>
