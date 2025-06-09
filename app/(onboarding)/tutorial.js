@@ -11,6 +11,7 @@ import {
   Image
 } from "react-native";
 import { useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 
 const { width } = Dimensions.get("window");
@@ -65,6 +66,17 @@ export default function Tutorial() {
     setCurrentIndex(idx);
   };
 
+  const handleCompleteTutorial = async () => {
+    try {
+      await SecureStore.setItemAsync("hasCompletedTutorial", "true");
+
+      router.replace("/home");
+    } catch (error) {
+      console.error("튜토리얼 완료 상태 저장 실패:", error);
+      Alert.alert("오류", "처리 중 문제가 발생했습니다.");
+    }
+  };
+
   const onNext = () => {
     if (currentIndex < pages.length - 1) {
       scrollRef.current.scrollTo({
@@ -72,6 +84,7 @@ export default function Tutorial() {
         animated: true
       });
     } else {
+      handleCompleteTutorial();
       router.push("/home");
     }
   };

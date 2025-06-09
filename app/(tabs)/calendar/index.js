@@ -17,11 +17,12 @@ import HeaderCalender from "../../../components/Header/HeaderCalendar";
 import MonthNavigator from "../../../components/Calendar/MonthNavigator";
 import CalendarGrid from "../../../components/Calendar/CalendarGrid";
 import { CalendarViewContext } from "../../../contexts/CalendarViewContext";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useNavigation, StackActions } from "@react-navigation/native";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
 export default function Calendar({ onDatePress }) {
+  const navigation = useNavigation();
   const { date: dateParam } = useLocalSearchParams();
   const initialMonth = dateParam ? parseISO(dateParam) : new Date();
   const [currentMonth, setCurrentMonth] = useState(initialMonth);
@@ -69,6 +70,12 @@ export default function Calendar({ onDatePress }) {
   // ✅ 캘린더 화면에 포커스될 때마다 새로고침 + 30초 주기 인터벌 실행
   useFocusEffect(
     useCallback(() => {
+      const stackNav = navigation.getParent();
+
+      if (stackNav && stackNav.getState()?.type === "stack" && stackNav.getState().index > 0) {
+        stackNav.dispatch(StackActions.popToTop());
+      }
+
       console.log("📌 캘린더 탭 진입 → fetchDiaries 실행");
       fetchDiaries(false); // 진입 시 1회
 
@@ -81,7 +88,7 @@ export default function Calendar({ onDatePress }) {
         console.log("👋 캘린더 탭 이탈 → 인터벌 제거");
         clearInterval(intervalId);
       };
-    }, [fetchDiaries])
+    }, [fetchDiaries, navigation])
   );
 
   // ✅ 새 일기 생성 이벤트 수신 시 새로고침

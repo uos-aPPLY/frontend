@@ -12,7 +12,8 @@ const DEFAULT_EXP_SEC = 60 * 15;
 const SEC_KEYS = {
   ACCESS_TOKEN: "accessToken",
   REFRESH_TOKEN: "refreshToken",
-  ACCESS_EXP: "accessExp"
+  ACCESS_EXP: "accessExp",
+  HAS_COMPLETED_TUTORIAL: "hasCompletedTutorial"
 };
 
 const originalFetch = global.fetch;
@@ -138,6 +139,18 @@ export function AuthProvider({ children }) {
     return res;
   };
 
+  const refetchUser = async () => {
+    try {
+      const currentToken = await SecureStore.getItemAsync(SEC_KEYS.ACCESS_TOKEN);
+      if (currentToken) {
+        const profile = await _fetchProfile(currentToken);
+        setUser(profile);
+      }
+    } catch (e) {
+      console.error("Refetch user error", e);
+    }
+  };
+
   // 로그인 직후 호출
   const saveToken = async ({
     accessToken,
@@ -193,6 +206,7 @@ export function AuthProvider({ children }) {
     await SecureStore.deleteItemAsync(SEC_KEYS.ACCESS_TOKEN);
     await SecureStore.deleteItemAsync(SEC_KEYS.ACCESS_EXP);
     await SecureStore.deleteItemAsync(SEC_KEYS.REFRESH_TOKEN);
+    await SecureStore.deleteItemAsync(SEC_KEYS.HAS_COMPLETED_TUTORIAL);
     setUser(null);
     setToken(null);
   };
@@ -214,7 +228,8 @@ export function AuthProvider({ children }) {
       submitAgreements,
       checkRequiredAgreed,
       signOut,
-      authFetch
+      authFetch,
+      refetchUser
     }),
     [user, token, loading]
   );

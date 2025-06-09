@@ -9,6 +9,7 @@ import { DiaryProvider } from "../contexts/DiaryContext";
 import { PhotoProvider } from "../contexts/PhotoContext";
 import { PaperProvider } from "react-native-paper";
 import * as SplashScreen from "expo-splash-screen";
+import * as SecureStore from "expo-secure-store";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -21,11 +22,10 @@ function RootLayoutNav() {
   useEffect(() => {
     const redirectByTerms = async () => {
       if (loading) return;
-
-      // 인증 로딩 완료 시 스플래시 숨기기
       await SplashScreen.hideAsync();
 
-      // 1) 비로그인 시
+      const inAuthGroup = segments.includes("(onboarding)");
+
       if (
         !user &&
         !["login", "terms", "nickname", "speechstyle", "tutorial"].includes(openSegment)
@@ -34,23 +34,43 @@ function RootLayoutNav() {
         return;
       }
 
-      // 로그인했으면 필수약관 동의 상태 확인
-      const requiredAgreed = user ? await checkRequiredAgreed() : false;
-
-      // 2) 로그인했지만 필수약관 동의 전, terms 제외 모든 경로 금지
-      if (user && !requiredAgreed && openSegment !== "terms") {
-        router.replace("/terms");
+      const requiredAgreed = await checkRequiredAgreed();
+      if (!requiredAgreed) {
+        if (openSegment !== "terms") {
+          router.replace("/(onboarding)/terms");
+        }
         return;
       }
 
-      // 3) 로그인 & 필수약관 동의 완료 시, 루트 또는 login 접근은 home으로
-      if (user && requiredAgreed && (openSegment === "" || openSegment === "login")) {
+      if (user.nickname === null) {
+        if (openSegment !== "nickname") {
+          router.replace("/(onboarding)/nickname");
+        }
+        return;
+      }
+
+      if (user.writingStylePrompt === "기본 말투입니다.") {
+        if (openSegment !== "speechstyle") {
+          router.replace("/(onboarding)/speechstyle");
+        }
+        return;
+      }
+
+      const hasCompletedTutorial = await SecureStore.getItemAsync("hasCompletedTutorial");
+      if (!hasCompletedTutorial) {
+        if (openSegment !== "tutorial") {
+          router.replace("/(onboarding)/tutorial");
+        }
+        return;
+      }
+
+      if (inAuthGroup || openSegment === "login" || openSegment === "") {
         router.replace("/home");
       }
     };
 
     redirectByTerms();
-  }, [user, loading, openSegment, router]);
+  }, [user, loading, openSegment, router, segments]);
 
   if (loading) {
     return (

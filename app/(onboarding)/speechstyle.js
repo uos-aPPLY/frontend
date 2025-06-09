@@ -15,6 +15,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
 import TextEditorModal from "../../components/Modal/TextEditorModal";
+import { useAuth } from "../../contexts/AuthContext";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
@@ -47,6 +48,7 @@ const templates = {
 
 export default function SpeechStyle() {
   const router = useRouter();
+  const { refetchUser } = useAuth();
   const { from } = useLocalSearchParams();
   const stylesArray = Object.keys(templates);
   const [selected, setSelected] = useState(null);
@@ -118,6 +120,7 @@ export default function SpeechStyle() {
         const errorText = await response.text();
         throw new Error(`말투 저장 실패: ${errorText}`);
       }
+      await refetchUser();
 
       if (from === "settings") {
         router.back();
