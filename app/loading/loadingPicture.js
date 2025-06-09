@@ -1,5 +1,4 @@
 //app/loading/loadingPicture.js
-
 import { useEffect } from "react";
 import { View, ActivityIndicator, StyleSheet, Text, SafeAreaView } from "react-native";
 import { useRouter } from "expo-router";
@@ -16,6 +15,7 @@ export default function LoadingPage() {
 
   return (
     <View style={styles.container}>
+      <Stack.Screen options={{ gestureEnabled: false }} />
       <View style={styles.loadingArea}>
         <ActivityIndicator size="large" color="#D68089" />
         <Text style={styles.message}>사진을 업로드 중이에요...</Text>

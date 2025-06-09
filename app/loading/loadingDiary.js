@@ -1,6 +1,6 @@
 import { useLayoutEffect, useEffect, useRef, useCallback } from "react";
 import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { Stack, useRouter, useLocalSearchParams } from "expo-router";
 import Constants from "expo-constants";
 import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../../contexts/AuthContext";
@@ -205,6 +205,7 @@ export default function LoadingDiary() {
 
   return (
     <View style={styles.container}>
+      <Stack.Screen options={{ gestureEnabled: false }} />
       <View style={styles.loadingArea}>
         <ActivityIndicator size="large" color="#D68089" />
         <Text style={styles.message}>
