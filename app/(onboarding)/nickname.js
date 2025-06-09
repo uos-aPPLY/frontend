@@ -12,6 +12,7 @@ import {
   Alert
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useAuth } from "../../contexts/AuthContext";
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
 
@@ -32,6 +33,7 @@ const Nickname = () => {
   const router = useRouter();
   const [nickname, setNickname] = useState("");
   const [loading, setLoading] = useState(false);
+  const { refetchUser } = useAuth();
 
   const goBack = () => {
     router.back();
@@ -58,6 +60,7 @@ const Nickname = () => {
         throw new Error(`닉네임 업데이트 실패: ${errText}`);
       }
 
+      await refetchUser();
       router.push("/speechstyle");
     } catch (error) {
       console.error(error);
