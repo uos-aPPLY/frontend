@@ -1,14 +1,14 @@
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { uploadPhotos } from "./uploadPhotos";
-import { usePhoto } from "../contexts/PhotoContext";
 
 /**
  * 갤러리 열고 사진을 업로드한 뒤 서버 응답 리스트 반환
  * @param {string} token - 인증 토큰
+ * @param {number} existingCount - 이미 선택된 사진의 개수
  * @returns {Promise<UploadedPhoto[]>} - 서버에서 응답받은 업로드 결과
  */
-export const openGalleryAndAdd = async (token) => {
+export const openGalleryAndAdd = async (token, existingCount = 0) => {
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
   if (!permission.granted) {
@@ -16,12 +16,20 @@ export const openGalleryAndAdd = async (token) => {
     return [];
   }
 
+  const maxTotal = 9;
+  const remaining = maxTotal - existingCount;
+
+  if (remaining <= 0) {
+    alert("사진은 최대 9장까지 선택할 수 있습니다.");
+    return [];
+  }
+
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ImagePicker.MediaTypeOptions.Images,
     allowsMultipleSelection: true,
-    selectionLimit: 160,
+    selectionLimit: remaining, // ✅ 남은 개수만큼만 선택 가능
     quality: 1,
-    exif: true,
+    exif: true
   });
 
   if (!result.canceled) {
@@ -35,25 +43,16 @@ export const openGalleryAndAdd = async (token) => {
 
       const resizedAssets = await Promise.all(
         originalAssets.map((asset) =>
-          ImageManipulator.manipulateAsync(
-            asset.uri,
-            [{ resize: { width: 400 } }],
-            {
-              compress: 0.5,
-              format: ImageManipulator.SaveFormat.JPEG,
-            }
-          )
+          ImageManipulator.manipulateAsync(asset.uri, [{ resize: { width: 400 } }], {
+            compress: 0.5,
+            format: ImageManipulator.SaveFormat.JPEG
+          })
         )
       );
 
-      // ✅ 서버 응답을 받는다
-      const uploadedPhotos = await uploadPhotos(
-        resizedAssets,
-        token,
-        originalAssets
-      );
+      const uploadedPhotos = await uploadPhotos(resizedAssets, token, originalAssets);
 
-      return uploadedPhotos; // ✅ 서버에서 받은 id, photoUrl 포함된 객체들
+      return uploadedPhotos;
     } catch (error) {
       console.error("업로드 실패", error);
       return [];

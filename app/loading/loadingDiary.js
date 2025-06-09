@@ -1,17 +1,17 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useLayoutEffect, useEffect, useRef, useCallback } from "react";
 import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import Constants from "expo-constants";
+import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../../contexts/AuthContext";
 import { useDiary } from "../../contexts/DiaryContext";
-import IconButton from "../../components/IconButton";
 import { DeviceEventEmitter } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import colors from "../../constants/colors";
 
 export default function LoadingDiary() {
+  const navigation = useNavigation();
   const router = useRouter();
-  const nav = useRouter();
   const { token } = useAuth();
   const { selectedDate } = useDiary();
   const { BACKEND_URL } = Constants.expoConfig.extra;
@@ -31,6 +31,10 @@ export default function LoadingDiary() {
   const visiblePhotos = JSON.parse(photos || "[]");
   const keywordMap = JSON.parse(keywords || "{}");
 
+  useLayoutEffect(() => {
+    navigation.setOptions({ gestureEnabled: false });
+  }, [navigation]);
+
   const finalizedPhotos = visiblePhotos.map((photo, index) => ({
     photoId: photo.id,
     sequence: index,
@@ -49,7 +53,22 @@ export default function LoadingDiary() {
       if (confirmRes.ok) {
         console.log("✅ confirm 성공");
         DeviceEventEmitter.emit("refreshCalendar");
-        router.replace(`/diary/${diaryDate}`);
+        navigation.reset({
+          index: 0,
+          routes: [
+            {
+              name: "diary", // or layout group name
+              state: {
+                routes: [
+                  {
+                    name: "[date]",
+                    params: { date: diaryDate }
+                  }
+                ]
+              }
+            }
+          ]
+        });
         return true;
       } else {
         console.warn("❌ confirm 실패", confirmRes.status);
@@ -195,7 +214,7 @@ export default function LoadingDiary() {
         </Text>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => nav.replace({ pathname: "/calendar", params: { date: diaryDate } })}
+          onPress={() => router.replace({ pathname: "/calendar", params: { date: diaryDate } })}
         >
           <Text style={styles.backButtonText}>캘린더로 돌아가기</Text>
         </TouchableOpacity>
@@ -217,7 +236,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     marginTop: 20,
-    backgroundColor: colors.pinkmain,
+    backgroundColor: colors.pinkpoint,
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 20
