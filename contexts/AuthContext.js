@@ -206,9 +206,13 @@ export function AuthProvider({ children }) {
     await SecureStore.deleteItemAsync(SEC_KEYS.ACCESS_TOKEN);
     await SecureStore.deleteItemAsync(SEC_KEYS.ACCESS_EXP);
     await SecureStore.deleteItemAsync(SEC_KEYS.REFRESH_TOKEN);
-    await SecureStore.deleteItemAsync(SEC_KEYS.HAS_COMPLETED_TUTORIAL);
     setUser(null);
     setToken(null);
+  };
+
+  const deleteAccount = async () => {
+    await signOut();
+    await SecureStore.deleteItemAsync(SEC_KEYS.HAS_COMPLETED_TUTORIAL);
   };
 
   useEffect(() => {
@@ -228,6 +232,7 @@ export function AuthProvider({ children }) {
       submitAgreements,
       checkRequiredAgreed,
       signOut,
+      deleteAccount,
       authFetch,
       refetchUser
     }),

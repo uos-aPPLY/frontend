@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Menu, Divider } from "react-native-paper";
 import { KeyboardAvoidingView, Platform, View, StyleSheet, ScrollView } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 
 import HeaderDate from "../components/Header/HeaderDate";
 import IconButton from "../components/IconButton";
@@ -92,13 +92,14 @@ export default function CreatePage() {
       keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       style={{ flex: 1 }}
     >
+      <Stack.Screen options={{ gestureEnabled: false }} />
       <View style={styles.all}>
         <HeaderDate
           date={date}
           onBack={() => {
             resetDiary();
             resetPhoto();
-            nav.replace("/calendar");
+            nav.replace(`/calendar?date=${date}`);
           }}
           hasText={text.trim().length > 0}
           onSave={createDiary}

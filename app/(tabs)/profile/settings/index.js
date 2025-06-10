@@ -11,7 +11,7 @@ import Header from "../../../../components/Header/HeaderSettings";
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { signOut } = useAuth();
+  const { signOut, deleteAccount } = useAuth();
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
   const handleLogoutConfirm = () => {
@@ -21,7 +21,7 @@ export default function SettingsPage() {
   };
 
   const handleWithdrawalSuccess = () => {
-    signOut();
+    deleteAccount();
     router.replace("/login");
   };
 
@@ -49,9 +49,9 @@ export default function SettingsPage() {
               onPress = () => router.push("/profile/settings/help");
             }
             if (t === "서비스 이용약관")
-              onPress = () => router.push("/profile//settings/termofservice");
+              onPress = () => router.push("/profile/settings/termofservice");
             if (t === "개인정보처리방침")
-              onPress = () => router.push("/profile//settings/privacypolicy");
+              onPress = () => router.push("/profile/settings/privacypolicy");
             return (
               <Pressable key={t} style={styles.item} onPress={onPress}>
                 {({ pressed }) => (
