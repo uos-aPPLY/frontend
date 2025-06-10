@@ -1,3 +1,4 @@
+// app/(tabs)/index.js
 import { useRouter } from "expo-router";
 import { StyleSheet, View, Text } from "react-native";
 import HeaderDefault from "../../components/Header/HeaderDefault";
@@ -17,7 +18,7 @@ export default function Home() {
     "소중한 순간을 놓치지 않도록, \n지금 바로 올려볼까요?",
     "작은 순간도 기억으로 남길 때 \n비로소 빛나기 시작합니다.",
     "오늘 찍은 한 장의 사진으로 \n내일은 더 다정해질 거예요.",
-    "과거와 미래가 만나는 그곳, \n사진 속에서 이야기해요.",
+    "과거와 미래가 만나는 그곳, \n사진 속에서 이야기해요."
   ];
 
   const today = new Date();
@@ -36,13 +37,13 @@ export default function Home() {
     try {
       return {
         status: response.status,
-        json: JSON.parse(text),
+        json: JSON.parse(text)
       };
     } catch (e) {
       console.error("❌ JSON 파싱 실패:", e);
       return {
         status: response.status,
-        json: null,
+        json: null
       };
     }
   };
@@ -93,7 +94,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FCF9F4",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 30,
+    paddingHorizontal: 30
   },
   card: {
     width: "100%",
@@ -108,13 +109,13 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2.5 },
     shadowOpacity: 0.2,
     shadowRadius: 1.6,
-    elevation: 3,
+    elevation: 3
   },
   message: {
     fontSize: 16,
     textAlign: "center",
     marginBottom: 10,
     color: "#A8907C",
-    lineHeight: 30,
-  },
+    lineHeight: 30
+  }
 });
