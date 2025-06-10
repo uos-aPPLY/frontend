@@ -1,5 +1,4 @@
 // app/generate.jsx
-
 import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import {
   View,
@@ -21,7 +20,6 @@ import { usePhoto } from "../contexts/PhotoContext";
 import Constants from "expo-constants";
 import ConfirmModal from "../components/Modal/ConfirmModal";
 import colors from "../constants/colors";
-import { set } from "date-fns";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -43,7 +41,6 @@ export default function GeneratePage() {
   const [allKeywords, setAllKeywords] = useState([]);
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [targetDeletePhotoId, setTargetDeletePhotoId] = useState(null);
-  const [confirmBackModalVisible, setConfirmBackModalVisible] = useState(false);
 
   console.log("selected:", selected);
   console.log(
@@ -228,17 +225,29 @@ export default function GeneratePage() {
       return updated;
     });
   };
+  const handleDragEnd = useCallback(
+    ({ data }) => {
+      setPhotos(data);
 
-  const handleDragEnd = useCallback(({ data }) => {
-    setPhotos(data);
-    setKeywords((prev) => {
-      const updated = {};
-      data.forEach((photo) => {
-        updated[photo.id] = prev[photo.id] || [];
+      // 👉 selected도 새 순서로 업데이트
+      const newSelected = data
+        .map((photo) =>
+          selected.find((sel) => (typeof sel === "object" ? sel.id : sel) === photo.id)
+        )
+        .filter(Boolean);
+      setSelected(newSelected);
+
+      // 키워드 재맵핑
+      setKeywords((prev) => {
+        const updated = {};
+        data.forEach((photo) => {
+          updated[photo.id] = prev[photo.id] || [];
+        });
+        return updated;
       });
-      return updated;
-    });
-  }, []);
+    },
+    [selected]
+  );
 
   return (
     <View style={styles.container}>
@@ -272,13 +281,24 @@ export default function GeneratePage() {
               setCurrentIndex(viewableItems[0].index ?? 0);
             }
           }}
+          dragItemOverflow={false}
+          activationDelay={200}
           viewabilityConfig={{ itemVisiblePercentThreshold: 70 }}
-          renderItem={({ item, drag }) => (
+          renderItem={({ item, drag, isActive }) => (
             <ScaleDecorator>
               <View style={styles.cardWrapper}>
                 <View style={styles.cardShadowWrapper}>
-                  <TouchableOpacity onPressIn={drag} delayLongPress={500}>
-                    <View style={styles.card}>
+                  <TouchableOpacity onLongPress={drag} delayLongPress={200} activeOpacity={1}>
+                    <View
+                      style={[
+                        styles.card,
+                        isActive && {
+                          opacity: 0.8,
+                          width: screenWidth * 0.62,
+                          height: screenWidth * 0.62
+                        }
+                      ]}
+                    >
                       <Image
                         source={{ uri: item.photoUrl }}
                         style={styles.cardImage}
@@ -366,12 +386,16 @@ export default function GeneratePage() {
             </ScaleDecorator>
           )}
           activationDistance={20}
-          autoscrollThreshold={80}
+          autoscrollThreshold={100}
           autoscrollSpeed={25}
           onDragEnd={handleDragEnd}
           scrollEnabled={true}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 260 }}
+          contentContainerStyle={{
+            paddingBottom: 260,
+            paddingTop: 20, // ✅ 위쪽 여유도 추가
+            minHeight: Dimensions.get("window").height
+          }}
         />
       </KeyboardAvoidingView>
 
@@ -457,7 +481,8 @@ const styles = StyleSheet.create({
     borderRadius: 30
   },
   card: {
-    width: screenWidth * 0.8,
+    width: screenWidth * 0.6,
+    height: screenWidth * 0.6,
     aspectRatio: 1,
     borderRadius: 30,
     overflow: "hidden",

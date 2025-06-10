@@ -50,18 +50,6 @@ export default function TabsLayout() {
               />
             )
           }}
-          listeners={({ navigation, route }) => ({
-            tabPress: (e) => {
-              const parentStack = navigation.getParent();
-              if (
-                parentStack &&
-                parentStack.getState()?.type === "stack" &&
-                parentStack.getState().index > 0
-              ) {
-                parentStack.dispatch(StackActions.popToTop());
-              }
-            }
-          })}
         />
         <Tabs.Screen
           name="profile"

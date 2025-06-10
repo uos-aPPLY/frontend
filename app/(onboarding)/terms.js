@@ -70,14 +70,15 @@ export default function Terms() {
       }));
       const updatedUser = await submitAgreements(agreements);
 
-      if (!updatedUser?.nickname) {
-        router.push("/nickname");
-      } else {
-        router.push("/home");
-      }
+      // if (!updatedUser?.nickname) {
+      //   router.push("/nickname");
+      // } else {
+      //   router.push("/home");
+      // }
     } catch (e) {
       Alert.alert("제출 실패", e.message);
     }
+    router.push("/nickname");
   };
 
   if (loading) return null;
