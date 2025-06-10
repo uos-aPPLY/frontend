@@ -3,7 +3,7 @@
     "name": "DiaryPic",
     "slug": "diarypic-fe",
     "scheme": ["diarypic"],
-    "version": "1.0.4",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -15,7 +15,7 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "buildNumber": "5",
+      "buildNumber": "6",
       "supportsTablet": true,
       "bundleIdentifier": "com.apply.diarypic",
       "infoPlist": {
