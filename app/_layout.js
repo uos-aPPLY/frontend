@@ -17,7 +17,7 @@ function RootLayoutNav() {
   const { user, loading, checkRequiredAgreed } = useAuth();
   const router = useRouter();
   const segments = useSegments();
-  const openSegment = segments[0] ?? "";
+  const openSegment = segments[segments.length - 1] ?? "";
 
   useEffect(() => {
     const redirectByTerms = async () => {
@@ -42,29 +42,23 @@ function RootLayoutNav() {
         return;
       }
 
-      if (user.nickname === null) {
-        if (openSegment !== "nickname") {
-          router.replace("/(onboarding)/nickname");
-        }
+      if (!inAuthGroup && user?.nickname === null) {
+        router.replace("/(onboarding)/nickname");
         return;
       }
 
-      if (user.writingStylePrompt === "기본 말투입니다.") {
-        if (openSegment !== "speechstyle") {
-          router.replace("/(onboarding)/speechstyle");
-        }
+      if (!inAuthGroup && user.writingStylePrompt === "기본 말투입니다.") {
+        router.replace("/(onboarding)/speechstyle");
         return;
       }
 
       const hasCompletedTutorial = await SecureStore.getItemAsync("hasCompletedTutorial");
-      if (!hasCompletedTutorial) {
-        if (openSegment !== "tutorial") {
-          router.replace("/(onboarding)/tutorial");
-        }
+      if (!inAuthGroup && !hasCompletedTutorial && openSegment !== "tutorial") {
+        router.replace("/(onboarding)/tutorial");
         return;
       }
 
-      if (inAuthGroup || openSegment === "login" || openSegment === "") {
+      if (!inAuthGroup && (openSegment === "" || openSegment === "login")) {
         router.replace("/home");
       }
     };
