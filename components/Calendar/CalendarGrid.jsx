@@ -354,7 +354,13 @@ export default function CalendarGrid({ currentMonth, diariesByDate, onPrev, onNe
                           </View>
                         )
                       ) : (
-                        <View style={styles.dayStandardBackground} />
+                        <LinearGradient
+                          colors={["#dad4ec", "#dad4ec", "#f3e7e9"]}
+                          locations={[0, 0.01, 1]}
+                          start={{ x: 0, y: 1 }}
+                          end={{ x: 0, y: 0 }}
+                          style={styles.dayStandardBackground}
+                        />
                       )
                     ) : selectedDate === dateStr ? (
                       <Image
@@ -451,8 +457,7 @@ const styles = StyleSheet.create({
   dayStandardBackground: {
     width: DAY_ITEM_SIZE * 0.9,
     height: DAY_ITEM_SIZE * 0.9,
-    borderRadius: (DAY_ITEM_SIZE * 0.9) / 2,
-    backgroundColor: "rgba(255, 187, 145, 0.7)"
+    borderRadius: (DAY_ITEM_SIZE * 0.9) / 2
   },
   dayTextWrapper: {
     position: "absolute",
