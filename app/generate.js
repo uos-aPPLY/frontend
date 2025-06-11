@@ -186,9 +186,19 @@ export default function GeneratePage() {
     }
 
     const formatted = `#${trimmed}`;
+    const existingKeywords = keywords[editingKeywordPhotoId] || [];
+
+    // ✅ 이미 존재하는 키워드인지 확인
+    if (existingKeywords.includes(formatted)) {
+      Alert.alert("중복 키워드", "이미 추가된 키워드입니다.");
+      setEditingKeywordPhotoId(null);
+      setNewKeyword("");
+      return;
+    }
+
     setKeywords((prev) => ({
       ...prev,
-      [editingKeywordPhotoId]: [...(prev[editingKeywordPhotoId] || []), formatted]
+      [editingKeywordPhotoId]: [...existingKeywords, formatted]
     }));
 
     setEditingKeywordPhotoId(null);

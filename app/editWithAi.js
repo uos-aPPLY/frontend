@@ -241,7 +241,11 @@ export default function EditWithAIPage() {
               {(!webviewLoaded || isSubmitting) && (
                 <View style={styles.webviewLoading}>
                   <ActivityIndicator size="small" color="#D68089" />
-                  <Text style={{ marginTop: 10, color: "#A78C7B" }}>로딩 중...</Text>
+                  <Text style={{ textAlign: "center", marginTop: 10, color: "#A78C7B" }}>
+                    {isSubmitting
+                      ? "AI 수정 중입니다...\n앱을 전환하거나 닫지 마시고, 잠시만 기다려주세요."
+                      : "로딩 중..."}
+                  </Text>
                 </View>
               )}
 
