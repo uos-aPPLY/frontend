@@ -85,6 +85,29 @@ export default function SettingsPage() {
           })}
         </View>
 
+        {/* 사용설명서 */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>사용설명서</Text>
+          {["메인화면", "수정기능", "베스트샷 추천 & AI 기능"].map((t) => {
+            let onPress;
+            if (t === "메인화면") {
+              onPress = () => router.push("/profile/settings/manual/main");
+            } else if (t === "수정기능") {
+              onPress = () => router.push("/profile/settings/manual/fix");
+            } else if (t === "베스트샷 추천 & AI 기능") {
+              onPress = () => router.push("/profile/settings/manual/generate");
+            }
+
+            return (
+              <Pressable key={t} style={styles.item} onPress={onPress}>
+                {({ pressed }) => (
+                  <Text style={[styles.itemText, pressed && { opacity: 0.5 }]}>{t}</Text>
+                )}
+              </Pressable>
+            );
+          })}
+        </View>
+
         {/* 계정 관리 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>계정 관리</Text>

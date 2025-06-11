@@ -26,6 +26,7 @@ export default function WritePage() {
   const {
     photoList,
     setPhotoList,
+    setTempPhotoList,
     setSelected,
     originalPhotoList,
     mainPhotoId,
@@ -43,6 +44,7 @@ export default function WritePage() {
 
   useEffect(() => {
     setSelectedAssets([]);
+    setTempPhotoList(null);
   }, []);
 
   useEffect(() => {
@@ -70,6 +72,7 @@ export default function WritePage() {
 
     const updated = [...photoList.filter((p) => p.id && p.id !== "add"), ...newPhotos];
     setPhotoList(updated);
+    setTempPhotoList(updated); // ✅ tempPhotoList도 동기화
 
     if (!mainPhotoId || !updated.some((p) => String(p.id) === String(mainPhotoId))) {
       setMainPhotoId(String(newPhotos[0].id));
@@ -87,6 +90,7 @@ export default function WritePage() {
     try {
       const updated = photoList.filter((p) => p.id !== targetPhotoId);
       setPhotoList(updated);
+      setTempPhotoList(updated); // ✅ tempPhotoList도 동기화
 
       if (String(targetPhotoId) === String(mainPhotoId)) {
         setMainPhotoId(updated.length > 0 ? String(updated[0].id) : null);
@@ -156,6 +160,7 @@ export default function WritePage() {
           date={date}
           onBack={() => {
             setPhotoList(originalPhotoList);
+            setTempPhotoList(null); // ✅ tempPhotoList 초기화
             setSelected([]);
             nav.back();
           }}
@@ -164,6 +169,7 @@ export default function WritePage() {
             resetDiary();
             createDiary();
             resetPhoto();
+            setTempPhotoList(null); // ✅ tempPhotoList 초기화
             setSelected([]);
           }}
         />

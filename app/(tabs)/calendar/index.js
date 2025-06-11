@@ -146,6 +146,7 @@ export default function Calendar({ onDatePress }) {
               currentMonth={currentMonth}
               onPrev={() => setCurrentMonth(subMonths(currentMonth, 1))}
               onNext={() => setCurrentMonth(addMonths(currentMonth, 1))}
+              onMonthChange={setCurrentMonth}
             />
             <View style={styles.gridWrapper}>
               <CalendarGrid

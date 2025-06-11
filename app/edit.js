@@ -59,6 +59,7 @@ export default function EditPage() {
   }, [navigation]);
 
   useEffect(() => {
+    setTempPhotoList(null);
     const realPhotos = photos.filter((p) => p.type !== "add");
     setPhotoCount(realPhotos.length);
 

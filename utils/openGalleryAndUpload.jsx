@@ -1,4 +1,4 @@
-import { InteractionManager } from "react-native";
+import { InteractionManager, Alert, Linking } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { uploadPhotos } from "./uploadPhotos";
@@ -10,10 +10,20 @@ import { uploadPhotos } from "./uploadPhotos";
  */
 export const openGalleryAndUpload = async (token, navigate, mode) => {
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  const maxCount = mode === "choose" ? 9 : 80;
+  const maxCount = mode === "choose" ? 9 : 40;
 
   if (!permission.granted) {
-    alert("갤러리 접근 권한이 필요합니다.");
+    Alert.alert(
+      "갤러리 접근 권한 필요",
+      "사진을 선택하려면 갤러리 접근 권한이 필요합니다.\n설정에서 권한을 허용해주세요.",
+      [
+        { text: "취소", style: "cancel" },
+        {
+          text: "설정으로 이동",
+          onPress: () => Linking.openSettings()
+        }
+      ]
+    );
     return;
   }
 

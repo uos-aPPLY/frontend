@@ -147,7 +147,11 @@ export default function GeneratePage() {
       console.log("✅ 가져온 임시 사진:", tempPhotos);
 
       setPhotos(tempPhotos);
-      setMainPhotoId(typeof selected[0] === "object" ? selected[0].id : Number(selected[0]));
+
+      // ✅ 첫 번째 사진을 대표사진으로 설정 (selected가 비어있을 수 있으므로)
+      if (tempPhotos.length > 0) {
+        setMainPhotoId(tempPhotos[0].id);
+      }
 
       const fetchedKeywords = await fetchKeywordsFromAPI();
       setAllKeywords(fetchedKeywords);
@@ -168,10 +172,18 @@ export default function GeneratePage() {
 
   useEffect(() => {
     const visible = photos.filter((p) => !hiddenIds.includes(p.id));
-    if (!visible.some((p) => p.id === mainPhotoId)) {
-      setMainPhotoId(visible[0]?.id ?? null);
+
+    // ✅ 대표사진이 없거나 현재 보이는 사진에 없으면 첫 번째로 설정
+    if (!mainPhotoId || !visible.some((p) => p.id === mainPhotoId)) {
+      if (visible.length > 0) {
+        console.log("🔄 대표사진 재설정:", visible[0].id);
+        setMainPhotoId(visible[0].id);
+      } else {
+        console.log("⚠️ 보이는 사진이 없음");
+        setMainPhotoId(null);
+      }
     }
-  }, [hiddenIds, photos]);
+  }, [hiddenIds, photos, mainPhotoId]);
 
   const handleAddKeyword = (id) => {
     setEditingKeywordPhotoId(id);
@@ -216,24 +228,20 @@ export default function GeneratePage() {
   };
 
   const handleHidePhoto = (id) => {
-    const visibleCount = photos.filter((p) => !hiddenIds.includes(p.id)).length;
+    // ✅ 실제로 보이는 사진 개수 (visiblePhotos 기준)
+    const currentVisibleCount = visiblePhotos.length;
 
-    if (visibleCount <= 1) {
+    console.log("🗑️ 삭제 시도:", id, "현재 보이는 사진 수:", currentVisibleCount);
+
+    if (currentVisibleCount <= 1) {
       Alert.alert("삭제 불가", "마지막 사진은 삭제할 수 없습니다.");
       return;
     }
 
-    setHiddenIds((prev) => {
-      const updated = [...prev, id];
+    console.log("🗑️ 사진 삭제:", id, "현재 대표사진:", mainPhotoId);
 
-      // ✅ mainPhotoId가 삭제되면 새로운 대표 지정
-      if (String(mainPhotoId) === String(id)) {
-        const remaining = photos.filter((p) => !updated.includes(p.id));
-        setMainPhotoId(remaining[0]?.id ?? null);
-      }
-
-      return updated;
-    });
+    // ✅ hiddenIds에 추가 (useEffect가 대표사진 재설정을 담당)
+    setHiddenIds((prev) => [...prev, id]);
   };
   const handleDragEnd = useCallback(
     ({ data }) => {

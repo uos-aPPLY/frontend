@@ -155,9 +155,6 @@ export default function DiaryPage() {
       if (res.ok) {
         console.log("🗑️ 일기 삭제 성공");
         resetDiary();
-        setPhotoList([]);
-        setTempPhotoList([]);
-        setMainPhotoId(null);
         nav.back();
       } else {
         console.warn("❌ 일기 삭제 실패:", res.status);
@@ -270,9 +267,6 @@ export default function DiaryPage() {
         date={parsedDate}
         onBack={() => {
           resetDiary();
-          setPhotoList([]);
-          setTempPhotoList([]);
-          setMainPhotoId(null);
           nav.replace({ pathname: "/calendar", params: { date: date } });
         }}
         onTrashPress={() => setShowConfirmModal(true)}
@@ -306,11 +300,24 @@ export default function DiaryPage() {
                 source={require("../../assets/icons/pencilicon.png")}
                 hsize={24}
                 wsize={24}
-                onPress={() =>
+                onPress={() => {
+                  const currentPhotos = diary.photos || [];
+                  setPhotoList(currentPhotos);
+                  setTempPhotoList(currentPhotos);
+
+                  const representativePhoto = currentPhotos.find(
+                    (p) => p.photoUrl === diary.representativePhotoUrl
+                  );
+                  if (representativePhoto) {
+                    setMainPhotoId(String(representativePhoto.id));
+                  } else if (currentPhotos.length > 0) {
+                    setMainPhotoId(String(currentPhotos[0].id));
+                  }
+
                   nav.push({
                     pathname: "/edit"
-                  })
-                }
+                  });
+                }}
               />
               <IconButton
                 source={isGridView ? oneViewIcon : viewIcon}
