@@ -13,7 +13,8 @@ const SEC_KEYS = {
   ACCESS_TOKEN: "accessToken",
   REFRESH_TOKEN: "refreshToken",
   ACCESS_EXP: "accessExp",
-  HAS_COMPLETED_TUTORIAL: "hasCompletedTutorial"
+  HAS_COMPLETED_TUTORIAL: "hasCompletedTutorial",
+  HAS_CREATED_FIRST_DIARY: "hasCreatedFirstDiary"
 };
 
 const originalFetch = global.fetch;
@@ -213,6 +214,16 @@ export function AuthProvider({ children }) {
   const deleteAccount = async () => {
     await signOut();
     await SecureStore.deleteItemAsync(SEC_KEYS.HAS_COMPLETED_TUTORIAL);
+    await SecureStore.deleteItemAsync(SEC_KEYS.HAS_CREATED_FIRST_DIARY);
+  };
+
+  const checkHasCreatedFirstDiary = async () => {
+    const hasCreated = await SecureStore.getItemAsync(SEC_KEYS.HAS_CREATED_FIRST_DIARY);
+    return hasCreated === "true";
+  };
+
+  const markFirstDiaryCreated = async () => {
+    await SecureStore.setItemAsync(SEC_KEYS.HAS_CREATED_FIRST_DIARY, "true");
   };
 
   useEffect(() => {
@@ -234,7 +245,9 @@ export function AuthProvider({ children }) {
       signOut,
       deleteAccount,
       authFetch,
-      refetchUser
+      refetchUser,
+      checkHasCreatedFirstDiary,
+      markFirstDiaryCreated
     }),
     [user, token, loading]
   );
