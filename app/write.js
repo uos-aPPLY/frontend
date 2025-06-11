@@ -14,6 +14,7 @@ import Constants from "expo-constants";
 import EditImageSlider from "../components/EditImageSlider";
 import { openGalleryAndAdd } from "../utils/openGalleryAndAdd";
 import ConfirmModal from "../components/Modal/ConfirmModal";
+import colors from "../constants/colors";
 
 const MAX_PHOTO_COUNT = 9;
 
@@ -280,9 +281,9 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
-    backgroundColor: "#D68089",
+    backgroundColor: colors.pinkmain,
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 10
+    borderRadius: 15
   }
 });
