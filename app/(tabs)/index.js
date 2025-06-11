@@ -1,15 +1,17 @@
 // app/(tabs)/index.js
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { StyleSheet, View, Text } from "react-native";
 import HeaderDefault from "../../components/Header/HeaderDefault";
 import IconButton from "../../components/IconButton";
 import { useDiary } from "../../contexts/DiaryContext";
 import Constants from "expo-constants";
+import { useEffect, useState, useCallback } from "react";
 import { format } from "date-fns";
 
 export default function Home() {
   const nav = useRouter();
   const { setSelectedDate } = useDiary();
+  const [hasDiaryToday, setHasDiaryToday] = useState(null);
 
   const messages = [
     "지금 이 순간이 내일의 추억이 되도록, \n사진 한 장을 남겨보세요.",
@@ -48,26 +50,60 @@ export default function Home() {
     }
   };
 
+  // 화면이 포커스될 때마다 오늘의 일기 확인
+  useFocusEffect(
+    useCallback(() => {
+      const checkTodayDiary = async () => {
+        try {
+          const res = await fetchDiaryByDate();
+
+          if (res.status === 200 && typeof res.json?.id === "number") {
+            console.log("✅ 오늘 일기 있음");
+            setHasDiaryToday(true);
+          } else {
+            console.log("⛔️ 오늘 일기 없음");
+            setHasDiaryToday(false);
+          }
+        } catch (error) {
+          console.error("❌ 일기 확인 중 오류:", error);
+          setHasDiaryToday(false);
+        }
+      };
+
+      checkTodayDiary();
+    }, [todayStr])
+  );
+
   const handlePress = async () => {
     console.log("📸 홈 버튼 클릭", todayStr);
-    const res = await fetchDiaryByDate();
 
-    if (res.status === 204 || !res.json) {
-      console.log("⛔️ 일기 없음 → 작성 페이지로");
-      setSelectedDate(todayStr);
-      nav.push(`/create?date=${todayStr}&from=calendar`);
-      return;
-    }
-
-    if (res.status === 200 && typeof res.json.id === "number") {
+    if (hasDiaryToday) {
+      // 일기가 있으면 캘린더로 이동
       console.log("✅ 일기 있음 → 캘린더 이동");
       nav.push("/calendar");
       return;
     }
 
-    console.log("⚠️ 알 수 없는 응답 → 작성 페이지 이동");
+    // 일기가 없으면 작성 페이지로 이동
+    console.log("⛔️ 일기 없음 → 작성 페이지로");
     setSelectedDate(todayStr);
     nav.push(`/create?date=${todayStr}&from=calendar`);
+  };
+
+  // 로딩 중에는 기본 아이콘 표시
+  const getButtonIcon = () => {
+    if (hasDiaryToday === null) {
+      // 로딩 중
+      return require("../../assets/icons/bigpinkplusicon.png");
+    }
+
+    if (hasDiaryToday) {
+      // 일기가 있으면 캘린더 아이콘
+      return require("../../assets/icons/gocalendericon.png");
+    }
+
+    // 일기가 없으면 플러스 아이콘
+    return require("../../assets/icons/bigpinkplusicon.png");
   };
 
   return (
@@ -77,9 +113,9 @@ export default function Home() {
         <View style={styles.card}>
           <Text style={styles.message}>{message}</Text>
           <IconButton
-            source={require("../../assets/icons/bigpinkplusicon.png")}
-            hsize={50}
-            wsize={50}
+            source={getButtonIcon()}
+            hsize={hasDiaryToday ? 60 : 50}
+            wsize={hasDiaryToday ? 140 : 50}
             onPress={handlePress}
           />
         </View>
