@@ -36,8 +36,9 @@ const pages = [
   {
     image: require("../../assets/icons/phoneicon.png"),
 
-    title: "텍스트 명령만으로 AI 일기를\n손쉽게 수정할 수 있어요",
-    subtitle: "모든 일기는 캘린더로 한눈에 정리돼요"
+    title: "텍스트로 원하는 부분만\n간편하게 AI에게 수정 요청해보세요",
+    subtitle: "작성한 일기는 캘린더에서 한눈에 확인할 수 있어요",
+    helpText: "설정 > 사용설명서에서\n기능 안내를 확인해보세요"
   }
 ];
 
@@ -112,6 +113,7 @@ export default function Tutorial() {
             <Image source={page.image} style={styles.pageImage} />
             <Text style={styles.title}>{page.title}</Text>
             <Text style={styles.subtitle}>{page.subtitle}</Text>
+            {page.helpText && <Text style={styles.helpText}>{page.helpText}</Text>}
           </View>
         ))}
       </ScrollView>
@@ -171,6 +173,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
     color: "#555"
+  },
+  helpText: {
+    fontSize: 15,
+    textAlign: "center",
+    color: "#D68089",
+    fontWeight: "600",
+    marginTop: 20,
+    paddingHorizontal: 15,
+    backgroundColor: "rgba(214, 128, 137, 0.1)",
+    paddingVertical: 12,
+    borderRadius: 15,
+    lineHeight: 22
   },
   pagination: {
     flexDirection: "row",

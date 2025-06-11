@@ -104,7 +104,7 @@ export default function LoadingPage() {
       <View style={styles.loadingArea}>
         <ActivityIndicator size="large" color="#D68089" />
         <Text style={styles.text}>
-          {"베스트샷을 고르는 중이에요! 📸\n 앱을 전환하거나 닫지 마시고, 잠시만 기다려주세요."}
+          {"베스트샷을 고르는 중이에요...📸\n 앱을 전환하거나 닫지 마시고, 잠시만 기다려주세요."}
         </Text>
       </View>
 

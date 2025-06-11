@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { View, Text, Image, StyleSheet, Dimensions, TouchableOpacity } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import DraggableFlatList, { ScaleDecorator } from "react-native-draggable-flatlist";
 import { usePhoto } from "../contexts/PhotoContext";
 import IconButton from "../components/IconButton";
@@ -27,6 +27,7 @@ export default function PhotoReorder() {
   const [hiddenIds, setHiddenIds] = useState([]);
   const [isConfirmVisible, setIsConfirmVisible] = useState(false);
   const [targetPhotoId, setTargetPhotoId] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const effectivePhotos = useMemo(() => tempPhotoList ?? photoList, [tempPhotoList, photoList]);
 
@@ -35,23 +36,43 @@ export default function PhotoReorder() {
     [photos, hiddenIds]
   );
 
-  // 초기화
-  useEffect(() => {
-    setPhotos(effectivePhotos);
-    const valid =
-      effectivePhotos.find((p) => String(p.id) === String(mainPhotoId)) || effectivePhotos[0];
-    setMainPhotoIdLocal(valid?.id ?? null);
-  }, [effectivePhotos]);
+  // ✅ 페이지 포커스될 때마다 최신 데이터로 업데이트
+  useFocusEffect(
+    useCallback(() => {
+      console.log("📋 PhotoReorder 포커스 - 데이터 업데이트");
+      console.log("현재 effectivePhotos:", effectivePhotos);
+
+      setIsLoading(true); // 로딩 시작
+
+      // ✅ 약간의 지연 후 데이터 업데이트 (이전 렌더링 방지)
+      setTimeout(() => {
+        setPhotos(effectivePhotos);
+        setHiddenIds([]); // 숨김 목록도 초기화
+
+        const valid =
+          effectivePhotos.find((p) => String(p.id) === String(mainPhotoId)) || effectivePhotos[0];
+        setMainPhotoIdLocal(valid?.id ?? null);
+
+        setIsLoading(false); // 로딩 완료
+      }, 50);
+    }, [effectivePhotos, mainPhotoId])
+  );
 
   // 대표사진이 숨겨졌을 때 자동으로 대체
   useEffect(() => {
-    if (hiddenIds.includes(mainPhotoIdLocal)) {
-      const fallback = photos.find((p) => !hiddenIds.includes(p.id));
-      if (fallback) {
-        setMainPhotoIdLocal(fallback.id);
+    const visible = photos.filter((p) => !hiddenIds.includes(p.id));
+
+    // ✅ 대표사진이 없거나 현재 보이는 사진에 없으면 첫 번째로 설정
+    if (!mainPhotoIdLocal || !visible.some((p) => String(p.id) === String(mainPhotoIdLocal))) {
+      if (visible.length > 0) {
+        console.log("🔄 대표사진 재설정:", visible[0].id);
+        setMainPhotoIdLocal(visible[0].id);
+      } else {
+        console.log("⚠️ 보이는 사진이 없음");
+        setMainPhotoIdLocal(null);
       }
     }
-  }, [hiddenIds, photos]);
+  }, [hiddenIds, photos, mainPhotoIdLocal]);
 
   const handleSaveOrder = () => {
     const newOrder = photos.filter((p) => !hiddenIds.includes(p.id));
@@ -70,12 +91,15 @@ export default function PhotoReorder() {
   };
 
   const handleHidePhoto = (id) => {
+    console.log("🗑️ 삭제 시도:", id);
+
     setTargetPhotoId(id);
     setIsConfirmVisible(true);
   };
 
   const onConfirmDelete = () => {
     if (targetPhotoId) {
+      console.log("🗑️ 사진 삭제 확정:", targetPhotoId);
       setHiddenIds((prev) => [...prev, targetPhotoId]);
       setTargetPhotoId(null);
       setIsConfirmVisible(false);

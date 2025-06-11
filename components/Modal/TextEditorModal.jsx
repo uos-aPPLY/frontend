@@ -82,7 +82,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#888",
     textAlign: "left",
-    marginBottom: 5
+    marginBottom: 5,
+    marginLeft: 10
   },
   inputContainer: {
     position: "relative",
