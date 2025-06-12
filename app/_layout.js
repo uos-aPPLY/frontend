@@ -7,18 +7,23 @@ import { ActivityIndicator, View } from "react-native";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { DiaryProvider } from "../contexts/DiaryContext";
 import { PhotoProvider } from "../contexts/PhotoContext";
+import { ServerStatusProvider, useServerStatus } from "../contexts/ServerStatusContext";
 import { PaperProvider } from "react-native-paper";
 import * as SplashScreen from "expo-splash-screen";
 import * as SecureStore from "expo-secure-store";
+import MaintenanceScreen from "../components/MaintenanceScreen";
+import DeveloperMenu from "../components/DeveloperMenu";
 
 SplashScreen.preventAutoHideAsync();
 
 function RootLayoutNav() {
   const { user, loading, checkRequiredAgreed } = useAuth();
+  const { serverStatus, isChecking, retryConnection } = useServerStatus();
   const router = useRouter();
   const segments = useSegments();
   const openSegment = segments[segments.length - 1] ?? "";
 
+  // 모든 useEffect를 최상단에 배치 (Hooks 규칙 준수)
   useEffect(() => {
     const redirectByTerms = async () => {
       if (loading) return;
@@ -66,6 +71,38 @@ function RootLayoutNav() {
     redirectByTerms();
   }, [user, loading, openSegment, router, segments]);
 
+  // 디버깅용 로그
+  console.log("RootLayoutNav serverStatus:", serverStatus);
+  console.log("Maintenance check:", {
+    isOnline: serverStatus.isOnline,
+    isUnderMaintenance: serverStatus.isUnderMaintenance,
+    condition:
+      serverStatus.isOnline === null || !serverStatus.isOnline || serverStatus.isUnderMaintenance
+  });
+
+  // 서버 상태 확인이 완료되지 않았거나 서버에 문제가 있는 경우
+  if (serverStatus.isOnline === null || !serverStatus.isOnline || serverStatus.isUnderMaintenance) {
+    console.log("Showing MaintenanceScreen with props:", {
+      isUnderMaintenance: serverStatus.isUnderMaintenance,
+      isServerDown: serverStatus.isOnline === false,
+      maintenanceMessage: serverStatus.maintenanceMessage,
+      isRetrying: isChecking
+    });
+
+    return (
+      <>
+        <MaintenanceScreen
+          isUnderMaintenance={serverStatus.isUnderMaintenance}
+          isServerDown={serverStatus.isOnline === false}
+          maintenanceMessage={serverStatus.maintenanceMessage}
+          onRetry={retryConnection}
+          isRetrying={isChecking}
+        />
+        <DeveloperMenu />
+      </>
+    );
+  }
+
   if (loading) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
@@ -75,26 +112,31 @@ function RootLayoutNav() {
   }
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false
-      }}
-    />
+    <>
+      <Stack
+        screenOptions={{
+          headerShown: false
+        }}
+      />
+      <DeveloperMenu />
+    </>
   );
 }
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <DiaryProvider>
-        <PhotoProvider>
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <PaperProvider>
-              <RootLayoutNav />
-            </PaperProvider>
-          </GestureHandlerRootView>
-        </PhotoProvider>
-      </DiaryProvider>
-    </AuthProvider>
+    <ServerStatusProvider>
+      <AuthProvider>
+        <DiaryProvider>
+          <PhotoProvider>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <PaperProvider>
+                <RootLayoutNav />
+              </PaperProvider>
+            </GestureHandlerRootView>
+          </PhotoProvider>
+        </DiaryProvider>
+      </AuthProvider>
+    </ServerStatusProvider>
   );
 }

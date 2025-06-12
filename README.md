@@ -48,6 +48,7 @@ npx expo install expo-media-library
 npx expo install react-native-paper react-native-vector-icons
 npx expo install react-native-render-html
 npx expo install expo-apple-authentication expo-random
+npx expo install expo-store-review
 ```
 
 ## Prettier 설정

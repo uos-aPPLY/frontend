@@ -27,12 +27,14 @@ import { usePhoto } from "../../contexts/PhotoContext";
 import { useDiary } from "../../contexts/DiaryContext";
 import defaultCharacter from "../../assets/character/char1.png";
 import colors from "../../constants/colors";
+import * as StoreReview from "expo-store-review";
+import { Linking } from "react-native";
 
 const screenWidth = Dimensions.get("window").width;
 
 export default function DiaryPage() {
   const nav = useRouter();
-  const { token } = useAuth();
+  const { token, checkHasCreatedFirstDiary, markFirstDiaryCreated } = useAuth();
 
   const { date: dateParam } = useLocalSearchParams();
   const date = dateParam;
@@ -55,6 +57,7 @@ export default function DiaryPage() {
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
   const [isGridView, setIsGridView] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isFirstDiary, setIsFirstDiary] = useState(false);
 
   const characterObj =
     diary && diary.emotionIcon
@@ -164,6 +167,42 @@ export default function DiaryPage() {
     }
   };
 
+  const handleBackNavigation = () => {
+    resetDiary();
+    setPhotoList([]);
+    setTempPhotoList([]);
+    setMainPhotoId(null);
+    nav.replace({ pathname: "/calendar", params: { date: date } });
+  };
+
+  const requestAppStoreReview = async () => {
+    try {
+      const isAvailable = await StoreReview.isAvailableAsync();
+      if (isAvailable) {
+        await StoreReview.requestReview();
+      } else {
+        // 네이티브 리뷰가 불가능하면 앱스토어로 이동
+        const appStoreUrl = "https://apps.apple.com/kr/app/diarypic/id6746401780";
+        const supported = await Linking.canOpenURL(appStoreUrl);
+        if (supported) {
+          await Linking.openURL(appStoreUrl);
+        }
+      }
+    } catch (error) {
+      console.error("Error requesting review:", error);
+      // 에러 발생 시 앱스토어로 이동
+      try {
+        const appStoreUrl = "https://apps.apple.com/kr/app/diarypic/id6746401780";
+        const supported = await Linking.canOpenURL(appStoreUrl);
+        if (supported) {
+          await Linking.openURL(appStoreUrl);
+        }
+      } catch (linkError) {
+        console.error("Error opening App Store:", linkError);
+      }
+    }
+  };
+
   useEffect(() => {
     const fetchDiary = async () => {
       try {
@@ -215,6 +254,13 @@ export default function DiaryPage() {
         if (data && data.id && typeof data.status !== "undefined") {
           await confirmDiaryStatus(data.id, data.status);
         }
+
+        // 첫 일기인지 확인
+        const hasCreatedFirstDiary = await checkHasCreatedFirstDiary();
+        if (!hasCreatedFirstDiary) {
+          setIsFirstDiary(true);
+          await markFirstDiaryCreated();
+        }
       } catch (error) {
         console.error("📛 다이어리 로딩 실패", error);
         setDiary(undefined);
@@ -236,7 +282,9 @@ export default function DiaryPage() {
     setText,
     setSelectedCharacter,
     setSelectedDate,
-    confirmDiaryStatus
+    confirmDiaryStatus,
+    checkHasCreatedFirstDiary,
+    markFirstDiaryCreated
   ]);
 
   if (loading) {
@@ -265,9 +313,11 @@ export default function DiaryPage() {
     <View style={styles.container}>
       <HeaderDateAndTrash
         date={parsedDate}
-        onBack={() => {
-          resetDiary();
-          nav.replace({ pathname: "/calendar", params: { date: date } });
+        onBack={async () => {
+          if (isFirstDiary) {
+            await requestAppStoreReview();
+          }
+          handleBackNavigation();
         }}
         onTrashPress={() => setShowConfirmModal(true)}
       />
