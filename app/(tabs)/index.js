@@ -1,17 +1,18 @@
 // app/(tabs)/index.js
 import { useRouter, useFocusEffect } from "expo-router";
-import { StyleSheet, View, Text } from "react-native";
+import { StyleSheet, View, Text, Animated } from "react-native";
 import HeaderDefault from "../../components/Header/HeaderDefault";
 import IconButton from "../../components/IconButton";
 import { useDiary } from "../../contexts/DiaryContext";
 import Constants from "expo-constants";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { format } from "date-fns";
 
 export default function Home() {
   const nav = useRouter();
   const { setSelectedDate } = useDiary();
   const [hasDiaryToday, setHasDiaryToday] = useState(null);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
 
   const messages = [
     "지금 이 순간이 내일의 추억이 되도록, \n사진 한 장을 남겨보세요.",
@@ -28,82 +29,59 @@ export default function Home() {
   const message = messages[today.getDay()];
   const BACKEND_URL = Constants.expoConfig.extra.BACKEND_URL;
 
+  const fadeOut = () => {
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 100,
+      useNativeDriver: true
+    }).start();
+  };
+
+  const fadeIn = () => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: true
+    }).start();
+  };
+
   const fetchDiaryByDate = async () => {
-    const url = `${BACKEND_URL}/api/diaries/by-date?date=${todayStr}`;
-    const response = await fetch(url); // 전역 fetch를 통해 자동 토큰 갱신
-
-    console.log("📡 응답 상태 코드:", response.status);
-    const text = await response.text();
-    console.log("📄 응답 본문:", text);
-
     try {
-      return {
-        status: response.status,
-        json: JSON.parse(text)
-      };
-    } catch (e) {
-      console.error("❌ JSON 파싱 실패:", e);
-      return {
-        status: response.status,
-        json: null
-      };
+      fadeOut();
+      const url = `${BACKEND_URL}/api/diaries/by-date?date=${todayStr}`;
+      const response = await fetch(url);
+      const text = await response.text();
+
+      try {
+        const data = JSON.parse(text);
+        const hasDiary = response.status === 200 && typeof data?.id === "number";
+        setHasDiaryToday(hasDiary);
+        fadeIn();
+      } catch (e) {
+        console.error("❌ JSON 파싱 실패:", e);
+        setHasDiaryToday(false);
+        fadeIn();
+      }
+    } catch (error) {
+      console.error("❌ 일기 확인 중 오류:", error);
+      setHasDiaryToday(false);
+      fadeIn();
     }
   };
 
-  // 화면이 포커스될 때마다 오늘의 일기 확인
   useFocusEffect(
     useCallback(() => {
-      const checkTodayDiary = async () => {
-        try {
-          const res = await fetchDiaryByDate();
-
-          if (res.status === 200 && typeof res.json?.id === "number") {
-            console.log("✅ 오늘 일기 있음");
-            setHasDiaryToday(true);
-          } else {
-            console.log("⛔️ 오늘 일기 없음");
-            setHasDiaryToday(false);
-          }
-        } catch (error) {
-          console.error("❌ 일기 확인 중 오류:", error);
-          setHasDiaryToday(false);
-        }
-      };
-
-      checkTodayDiary();
+      fetchDiaryByDate();
     }, [todayStr])
   );
 
   const handlePress = async () => {
-    console.log("📸 홈 버튼 클릭", todayStr);
-
     if (hasDiaryToday) {
-      // 일기가 있으면 캘린더로 이동
-      console.log("✅ 일기 있음 → 캘린더 이동");
       nav.push("/calendar");
       return;
     }
-
-    // 일기가 없으면 작성 페이지로 이동
-    console.log("⛔️ 일기 없음 → 작성 페이지로");
     setSelectedDate(todayStr);
     nav.push(`/create?date=${todayStr}&from=calendar`);
-  };
-
-  // 로딩 중에는 기본 아이콘 표시
-  const getButtonIcon = () => {
-    if (hasDiaryToday === null) {
-      // 로딩 중
-      return require("../../assets/icons/bigpinkplusicon.png");
-    }
-
-    if (hasDiaryToday) {
-      // 일기가 있으면 캘린더 아이콘
-      return require("../../assets/icons/gocalendericon.png");
-    }
-
-    // 일기가 없으면 플러스 아이콘
-    return require("../../assets/icons/bigpinkplusicon.png");
   };
 
   return (
@@ -112,12 +90,18 @@ export default function Home() {
       <View style={styles.container}>
         <View style={styles.card}>
           <Text style={styles.message}>{message}</Text>
-          <IconButton
-            source={getButtonIcon()}
-            hsize={hasDiaryToday ? 60 : 50}
-            wsize={hasDiaryToday ? 140 : 50}
-            onPress={handlePress}
-          />
+          <Animated.View style={{ opacity: fadeAnim }}>
+            <IconButton
+              source={
+                hasDiaryToday
+                  ? require("../../assets/icons/gocalendericon.png")
+                  : require("../../assets/icons/bigpinkplusicon.png")
+              }
+              hsize={hasDiaryToday ? 60 : 50}
+              wsize={hasDiaryToday ? 140 : 50}
+              onPress={handlePress}
+            />
+          </Animated.View>
         </View>
       </View>
     </>
