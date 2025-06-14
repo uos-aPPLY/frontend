@@ -113,7 +113,12 @@ export function AuthProvider({ children }) {
   // 401 이 뜨면 한 번만 _refreshAccessToken 후 재시도
   const authFetch = async (input, init = {}) => {
     const url = typeof input === "string" ? input : input.url;
-    const skipRefreshPaths = ["/api/auth/login", "/api/auth/refresh"];
+    const skipRefreshPaths = [
+      "/api/auth/login",
+      "/api/auth/refresh",
+      "/health",
+      "/maintenance-status"
+    ];
 
     if (!skipRefreshPaths.some((p) => url.endsWith(p)) && (await _shouldRefresh())) {
       await _refreshAccessToken();
@@ -123,7 +128,11 @@ export function AuthProvider({ children }) {
       ...init,
       headers: {
         ...(init.headers || {}),
-        Authorization: token ? `Bearer ${token}` : undefined
+        Authorization: skipRefreshPaths.some((p) => url.endsWith(p))
+          ? undefined
+          : token
+          ? `Bearer ${token}`
+          : undefined
       }
     });
 
