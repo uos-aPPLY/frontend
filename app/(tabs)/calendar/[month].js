@@ -14,9 +14,12 @@ import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 import { useLocalSearchParams } from "expo-router";
 import { useRouter } from "expo-router";
-import { parse, format, getYear, getMonth } from "date-fns";
 import { LinearGradient } from "expo-linear-gradient";
 import HeaderSettings from "../../../components/Header/HeaderSettings";
+import * as Localization from "expo-localization";
+import { utcToZonedTime } from "date-fns-tz";
+import { ko, enUS } from "date-fns/locale";
+import { parse, format, getYear, getMonth } from "date-fns";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
@@ -26,7 +29,14 @@ export default function DiaryList() {
   const [diaries, setDiaries] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const monthDate = React.useMemo(() => parse(month, "yyyy-MM", new Date()), [month]);
+  const timeZone = Localization.timezone;
+  const locale = Localization.locale.startsWith("ko") ? ko : enUS;
+
+  const monthDate = React.useMemo(() => {
+    const [y, m] = month.split("-").map(Number);
+    return new Date(Date.UTC(y, m - 1, 1));
+  }, [month]);
+
   const displayMonth = React.useMemo(() => format(monthDate, "yyyy년 M월"), [monthDate]);
 
   const goBack = () => {
@@ -61,6 +71,10 @@ export default function DiaryList() {
     })();
   }, [month, monthDate]);
 
+  console.log(Localization.timezone);
+  console.log("👶"); // Pacific/Auckland
+  console.log(Localization.locale); // en-NZ
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -77,34 +91,39 @@ export default function DiaryList() {
         data={diaries}
         keyExtractor={(item) => item.diaryId.toString()}
         contentContainerStyle={styles.listContent}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => router.push(`/diary/${item.diaryDate}`)}
-          >
-            <View style={styles.imageWrapper}>
-              {item.representativePhotoUrl ? (
-                <Image source={{ uri: item.representativePhotoUrl }} style={styles.cardImage} />
-              ) : (
-                <LinearGradient
-                  colors={["#dad4ec", "#dad4ec", "#f3e7e9"]}
-                  locations={[0, 0.01, 1]}
-                  start={{ x: 0, y: 1 }}
-                  end={{ x: 0, y: 0 }}
-                  style={styles.dayStandardBackground}
-                />
-              )}
-            </View>
-            <View style={styles.cardTextContainer}>
-              <Text style={styles.cardContent} numberOfLines={3}>
-                {item.content}
-              </Text>
-              <Text style={styles.cardDate}>
-                {format(parse(item.diaryDate, "yyyy-MM-dd", new Date()), "yyyy년 M월 d일 (E)")}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        )}
+        renderItem={({ item }) => {
+          const zonedDate = utcToZonedTime(new Date(`${item.diaryDate}T00:00:00Z`), timeZone);
+
+          return (
+            <TouchableOpacity
+              style={styles.card}
+              onPress={() => router.push(`/diary/${item.diaryDate}`)}
+            >
+              <View style={styles.imageWrapper}>
+                {item.representativePhotoUrl ? (
+                  <Image source={{ uri: item.representativePhotoUrl }} style={styles.cardImage} />
+                ) : (
+                  <LinearGradient
+                    colors={["#dad4ec", "#dad4ec", "#f3e7e9"]}
+                    locations={[0, 0.01, 1]}
+                    start={{ x: 0, y: 1 }}
+                    end={{ x: 0, y: 0 }}
+                    style={styles.dayStandardBackground}
+                  />
+                )}
+              </View>
+
+              <View style={styles.cardTextContainer}>
+                <Text style={styles.cardContent} numberOfLines={3}>
+                  {item.content}
+                </Text>
+                <Text style={styles.cardDate}>
+                  {format(zonedDate, "yyyy년 M월 d일 (E)", { locale })}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          );
+        }}
         ListEmptyComponent={() => <Text style={styles.emptyText}>작성된 일기가 없습니다.</Text>}
       />
     </SafeAreaView>
