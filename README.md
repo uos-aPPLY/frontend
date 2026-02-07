@@ -49,6 +49,7 @@ npx expo install react-native-paper react-native-vector-icons
 npx expo install react-native-render-html
 npx expo install expo-apple-authentication expo-random
 npx expo install expo-store-review
+npm install date-fns-tz
 ```
 
 ## Prettier 설정
