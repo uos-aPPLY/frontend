@@ -50,6 +50,8 @@ npx expo install react-native-render-html
 npx expo install expo-apple-authentication expo-random
 npx expo install expo-store-review
 npm install date-fns-tz
+npx expo install expo-localization
+
 ```
 
 ## Prettier 설정
