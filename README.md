@@ -14,6 +14,7 @@ npx expo run:android
 # 실행
 npx expo start
 npx expo start --dev-client -c
+npx expo start --no-dev --minify
 
 # 설치
 npm install
