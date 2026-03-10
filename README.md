@@ -33,7 +33,6 @@ npm install react-native-modal
 npx expo install expo-image-manipulator
 npm install date-fns --save
 npx expo install @expo-google-fonts/inter
-npm install react-native-date-picker
 npx expo install expo-notifications
 npm install react-native-draggable-flatlist
 npx expo install react-native-gesture-handler
