@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, Pressable, Alert, Platform, Button } from "react-native";
 import Constants from "expo-constants";
-import DatePicker from "react-native-date-picker";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import * as Notifications from "expo-notifications";
 import ToggleSwitch from "../ToggleSwitch";
 import { useAuth } from "../../contexts/AuthContext";
@@ -180,7 +180,7 @@ export default function NotificationSettings() {
 
   return (
     <View style={styles.section}>
-      <DatePicker
+      <DateTimePicker
         modal
         open={isTimePickerVisible}
         date={alertTime}
