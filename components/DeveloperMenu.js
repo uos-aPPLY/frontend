@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -8,15 +8,35 @@ import {
   Switch,
   TextInput,
   Alert,
-  ScrollView
+  ScrollView,
+  Animated,
+  PanResponder,
+  useWindowDimensions
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useServerStatus } from "../contexts/ServerStatusContext";
 import { TEST_MAINTENANCE_MODE } from "../constants/serverConfig";
 
+const BUTTON_SIZE = 50;
+const BUTTON_MARGIN = 20;
+const MIN_TOP = 60;
+const MIN_BOTTOM = 40;
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function getDefaultPosition(width) {
+  return {
+    x: Math.max(BUTTON_MARGIN, width - BUTTON_SIZE - BUTTON_MARGIN),
+    y: MIN_TOP
+  };
+}
+
 const DeveloperMenu = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [maintenanceMessage, setMaintenanceMessage] = useState("테스트용 점검 메시지입니다.");
+  const { width, height } = useWindowDimensions();
   const {
     serverStatus,
     forceMaintenanceMode,
@@ -26,11 +46,71 @@ const DeveloperMenu = () => {
     retryConnection,
     retryCount
   } = useServerStatus();
+  const initialPosition = getDefaultPosition(width);
+  const buttonPosition = useRef(new Animated.ValueXY(initialPosition)).current;
+  const currentPositionRef = useRef(initialPosition);
+  const dragStartRef = useRef(initialPosition);
+  const boundsRef = useRef({ width, height });
 
-  // 개발 환경에서만 보이도록 (이중 안전장치)
-  if (!__DEV__ || !TEST_MAINTENANCE_MODE || process.env.NODE_ENV === "production") {
-    return null;
-  }
+  boundsRef.current = { width, height };
+
+  useEffect(() => {
+    const nextPosition = {
+      x: clamp(
+        currentPositionRef.current.x,
+        BUTTON_MARGIN,
+        Math.max(BUTTON_MARGIN, width - BUTTON_SIZE - BUTTON_MARGIN)
+      ),
+      y: clamp(
+        currentPositionRef.current.y,
+        MIN_TOP,
+        Math.max(MIN_TOP, height - BUTTON_SIZE - MIN_BOTTOM)
+      )
+    };
+
+    buttonPosition.setValue(nextPosition);
+    currentPositionRef.current = nextPosition;
+  }, [buttonPosition, height, width]);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) =>
+        Math.abs(gestureState.dx) > 4 || Math.abs(gestureState.dy) > 4,
+      onPanResponderGrant: () => {
+        dragStartRef.current = currentPositionRef.current;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        const maxX = Math.max(BUTTON_MARGIN, boundsRef.current.width - BUTTON_SIZE - BUTTON_MARGIN);
+        const maxY = Math.max(MIN_TOP, boundsRef.current.height - BUTTON_SIZE - MIN_BOTTOM);
+        const nextPosition = {
+          x: clamp(dragStartRef.current.x + gestureState.dx, BUTTON_MARGIN, maxX),
+          y: clamp(dragStartRef.current.y + gestureState.dy, MIN_TOP, maxY)
+        };
+
+        buttonPosition.setValue(nextPosition);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        const maxX = Math.max(BUTTON_MARGIN, boundsRef.current.width - BUTTON_SIZE - BUTTON_MARGIN);
+        const maxY = Math.max(MIN_TOP, boundsRef.current.height - BUTTON_SIZE - MIN_BOTTOM);
+        const releasedPosition = {
+          x: clamp(dragStartRef.current.x + gestureState.dx, BUTTON_MARGIN, maxX),
+          y: clamp(dragStartRef.current.y + gestureState.dy, MIN_TOP, maxY)
+        };
+        const snappedX =
+          releasedPosition.x + BUTTON_SIZE / 2 >= boundsRef.current.width / 2 ? maxX : BUTTON_MARGIN;
+        const nextPosition = { x: snappedX, y: releasedPosition.y };
+
+        Animated.spring(buttonPosition, {
+          toValue: nextPosition,
+          useNativeDriver: false,
+          bounciness: 6
+        }).start();
+
+        currentPositionRef.current = nextPosition;
+      }
+    })
+  ).current;
 
   const handleForceMaintenanceMode = () => {
     console.log("Handle force maintenance mode clicked");
@@ -61,12 +141,27 @@ const DeveloperMenu = () => {
     Alert.alert("정상 모드 복원", "모든 테스트 모드가 해제되고 정상 상태로 복원되었습니다.");
   };
 
+  // 개발 환경에서만 보이도록 (이중 안전장치)
+  if (!__DEV__ || !TEST_MAINTENANCE_MODE || process.env.NODE_ENV === "production") {
+    return null;
+  }
+
   return (
     <>
-      {/* 개발자 메뉴 버튼 - 화면 우측 상단에 고정 */}
-      <TouchableOpacity style={styles.floatingButton} onPress={() => setIsVisible(true)}>
-        <Ionicons name="bug" size={24} color="#FFFFFF" />
-      </TouchableOpacity>
+      {/* 개발자 메뉴 버튼 - 드래그로 위치 이동 가능 */}
+      <Animated.View
+        style={[
+          styles.floatingButtonContainer,
+          {
+            transform: [{ translateX: buttonPosition.x }, { translateY: buttonPosition.y }]
+          }
+        ]}
+        {...panResponder.panHandlers}
+      >
+        <TouchableOpacity style={styles.floatingButton} onPress={() => setIsVisible(true)}>
+          <Ionicons name="bug" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+      </Animated.View>
 
       {/* 개발자 메뉴 모달 */}
       <Modal
@@ -216,13 +311,16 @@ const DeveloperMenu = () => {
 };
 
 const styles = StyleSheet.create({
-  floatingButton: {
+  floatingButtonContainer: {
     position: "absolute",
-    top: 50,
-    right: 20,
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    left: 0,
+    top: 0,
+    zIndex: 9999
+  },
+  floatingButton: {
+    width: BUTTON_SIZE,
+    height: BUTTON_SIZE,
+    borderRadius: BUTTON_SIZE / 2,
     backgroundColor: "#FF6B6B",
     justifyContent: "center",
     alignItems: "center",

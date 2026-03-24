@@ -1,6 +1,6 @@
 // components/Settings/NotificationSettings.jsx
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Pressable, Alert, Platform, Button } from "react-native";
+import { View, Text, StyleSheet, Pressable, Alert, Platform, Modal } from "react-native";
 import Constants from "expo-constants";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as Notifications from "expo-notifications";
@@ -13,15 +13,40 @@ const NOTI_CONTENT = {
   sound: "default"
 };
 
+function createDefaultAlertTime() {
+  const d = new Date();
+  d.setHours(12, 0, 0, 0);
+  return d;
+}
+
+function parseAlarmTime(alarmTime) {
+  if (typeof alarmTime !== "string" || !alarmTime.trim()) {
+    return createDefaultAlertTime();
+  }
+
+  const parts = alarmTime.split(":").map(Number);
+  const [hour, minute] = parts;
+
+  if (!Number.isInteger(hour) || !Number.isInteger(minute)) {
+    return createDefaultAlertTime();
+  }
+
+  const time = createDefaultAlertTime();
+  time.setHours(hour, minute, 0, 0);
+
+  if (Number.isNaN(time.getTime())) {
+    return createDefaultAlertTime();
+  }
+
+  return time;
+}
+
 export default function NotificationSettings() {
   const { token } = useAuth();
   const [photoAlertEnabled, setPhotoAlertEnabled] = useState(false);
-  const [alertTime, setAlertTime] = useState(() => {
-    const d = new Date();
-    d.setHours(12, 0, 0, 0);
-    return d;
-  });
+  const [alertTime, setAlertTime] = useState(createDefaultAlertTime);
   const [isTimePickerVisible, setIsTimePickerVisible] = useState(false);
+  const [draftAlertTime, setDraftAlertTime] = useState(createDefaultAlertTime);
 
   const authHeader = { Authorization: `Bearer ${token}` };
 
@@ -44,52 +69,41 @@ export default function NotificationSettings() {
     const hour = baseDate.getHours();
     const minute = baseDate.getMinutes();
 
-    // 반복 트리거
     const dailyTrigger = {
       type: Notifications.SchedulableTriggerInputTypes.DAILY,
       hour,
       minute
     };
 
-    // 첫 알림 시각 계산 (60초 룰 회피)
     const now = new Date();
-    const firstDate = new Date(now);
-    firstDate.setHours(hour, minute, 0, 0);
-    if (firstDate <= now || firstDate.getTime() - now.getTime() < 60_000) {
-      // 오늘 타이밍이 지났거나 60초 미만이면 다음 날
-      firstDate.setDate(firstDate.getDate() + 1);
+    const nextOccurrence = new Date(now);
+    nextOccurrence.setHours(hour, minute, 0, 0);
+    if (nextOccurrence <= now) {
+      nextOccurrence.setDate(nextOccurrence.getDate() + 1);
     }
 
     return {
-      oneOff: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: firstDate },
-      daily: dailyTrigger
+      daily: dailyTrigger,
+      nextOccurrence
     };
   }
 
   // Schedules the daily notification
   async function scheduleDailyNotification(date) {
     const hasPermission = await ensurePermission();
+    if (!hasPermission) return false;
 
     await Notifications.cancelAllScheduledNotificationsAsync();
 
-    const { oneOff, daily } = buildTriggers(date);
+    const { daily, nextOccurrence } = buildTriggers(date);
 
     try {
-      await Notifications.scheduleNotificationAsync({
-        content: NOTI_CONTENT,
-        trigger: oneOff
-      });
-
       await Notifications.scheduleNotificationAsync({
         content: NOTI_CONTENT,
         trigger: daily
       });
 
-      console.log(
-        `첫 알림: ${new Date(oneOff.date).toLocaleTimeString()} / 이후 매일 ${daily.hour}:${
-          daily.minute
-        }`
-      );
+      console.log(`다음 알림: ${nextOccurrence.toLocaleString()} / 이후 매일 ${daily.hour}:${daily.minute}`);
 
       return true;
     } catch (error) {
@@ -133,16 +147,11 @@ export default function NotificationSettings() {
         const data = await r.json();
 
         const enabled = !!data.alarmEnabled;
-        const time = new Date();
-        if (data.alarmTime) {
-          const [h, m] = data.alarmTime.split(":").map(Number);
-          time.setHours(h, m, 0, 0);
-        } else {
-          time.setHours(12, 0, 0, 0);
-        }
+        const time = parseAlarmTime(data.alarmTime);
 
         setPhotoAlertEnabled(enabled);
         setAlertTime(time);
+        setDraftAlertTime(time);
 
         if (enabled) {
           console.log("초기 로드: 알림 활성화 상태, 알림 예약 시도.");
@@ -171,27 +180,73 @@ export default function NotificationSettings() {
 
   const handleTimeConfirm = async (newTime) => {
     setIsTimePickerVisible(false);
+    if (!(newTime instanceof Date) || Number.isNaN(newTime.getTime())) return;
     setAlertTime(newTime);
+    setDraftAlertTime(newTime);
     if (photoAlertEnabled) {
       await scheduleDailyNotification(newTime);
       await patchAlarm(true, newTime);
     }
   };
 
+  const openTimePicker = () => {
+    setDraftAlertTime(alertTime);
+    setIsTimePickerVisible(true);
+  };
+
+  const handlePickerChange = (event, selectedDate) => {
+    if (Platform.OS === "android") {
+      setIsTimePickerVisible(false);
+      if (event.type === "set" && selectedDate) {
+        handleTimeConfirm(selectedDate);
+      }
+      return;
+    }
+
+    if (selectedDate) {
+      setDraftAlertTime(selectedDate);
+    }
+  };
+
   return (
     <View style={styles.section}>
-      <DateTimePicker
-        modal
-        open={isTimePickerVisible}
-        date={alertTime}
-        mode="time"
-        title="알림 시간 선택"
-        confirmText="확인"
-        cancelText="취소"
-        is24hourSource="locale"
-        onConfirm={handleTimeConfirm}
-        onCancel={() => setIsTimePickerVisible(false)}
-      />
+      {Platform.OS === "ios" && (
+        <Modal
+          visible={isTimePickerVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setIsTimePickerVisible(false)}
+        >
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>알림 시간 선택</Text>
+              <DateTimePicker
+                value={draftAlertTime}
+                mode="time"
+                display="spinner"
+                onChange={handlePickerChange}
+              />
+              <View style={styles.modalActions}>
+                <Pressable onPress={() => setIsTimePickerVisible(false)}>
+                  <Text style={styles.modalActionText}>취소</Text>
+                </Pressable>
+                <Pressable onPress={() => handleTimeConfirm(draftAlertTime)}>
+                  <Text style={styles.modalActionText}>확인</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {Platform.OS === "android" && isTimePickerVisible && (
+        <DateTimePicker
+          value={alertTime}
+          mode="time"
+          is24Hour={false}
+          onChange={handlePickerChange}
+        />
+      )}
 
       <Text style={styles.sectionTitle}>알림</Text>
 
@@ -207,7 +262,7 @@ export default function NotificationSettings() {
       </View>
 
       {photoAlertEnabled && (
-        <Pressable style={styles.itemRow} onPress={() => setIsTimePickerVisible(true)}>
+        <Pressable style={styles.itemRow} onPress={openTimePicker}>
           <Text style={styles.itemText}>알림 시간</Text>
           <Text style={styles.itemText}>
             {alertTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true })}
@@ -236,5 +291,37 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#A78C7B"
   },
-  itemText: { fontSize: 16, color: "#A78C78" }
+  itemText: { fontSize: 16, color: "#A78C78" },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.28)",
+    justifyContent: "center",
+    paddingHorizontal: 24
+  },
+  modalCard: {
+    backgroundColor: "#FFF8F4",
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 16
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#6F584A",
+    textAlign: "center",
+    marginBottom: 8
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 8
+  },
+  modalActionText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#AC8B78",
+    paddingHorizontal: 12,
+    paddingVertical: 8
+  }
 });
