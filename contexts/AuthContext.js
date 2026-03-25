@@ -1,5 +1,5 @@
 // contexts/AuthContext.js
-import React, { createContext, useState, useEffect, useContext, useMemo } from "react";
+import React, { createContext, useState, useEffect, useContext, useMemo, useRef, useCallback } from "react";
 import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 
@@ -23,8 +23,8 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  let refreshingPromise = null;
+  const tokenRef = useRef(null);
+  const refreshingPromiseRef = useRef(null);
 
   const _getStoredAccessExp = async () =>
     Number(await SecureStore.getItemAsync(SEC_KEYS.ACCESS_EXP)) || 0;
@@ -34,11 +34,15 @@ export function AuthProvider({ children }) {
     return Date.now() > exp - REFRESH_THRESHOLD_MS;
   };
 
-  // refreshToken 으로 accessToken 재발급
-  const _refreshAccessToken = async () => {
-    if (refreshingPromise) return refreshingPromise;
+  useEffect(() => {
+    tokenRef.current = token;
+  }, [token]);
 
-    refreshingPromise = (async () => {
+  // refreshToken 으로 accessToken 재발급
+  const _refreshAccessToken = useCallback(async () => {
+    if (refreshingPromiseRef.current) return refreshingPromiseRef.current;
+
+    refreshingPromiseRef.current = (async () => {
       const storedRefresh = await SecureStore.getItemAsync(SEC_KEYS.REFRESH_TOKEN);
       if (!storedRefresh) throw new Error("No refresh token stored");
 
@@ -62,17 +66,22 @@ export function AuthProvider({ children }) {
       if (newRefresh != null) {
         await SecureStore.setItemAsync(SEC_KEYS.REFRESH_TOKEN, String(newRefresh));
       }
+
+      tokenRef.current = newToken;
       setToken(newToken);
 
-      refreshingPromise = null;
       return newToken;
     })();
 
-    return refreshingPromise;
-  };
+    try {
+      return await refreshingPromiseRef.current;
+    } finally {
+      refreshingPromiseRef.current = null;
+    }
+  }, []);
 
   // 프로필 조회에도 동일 로직 적용
-  const _fetchProfile = async (t) => {
+  const _fetchProfile = useCallback(async (t) => {
     let res = await originalFetch(`${BACKEND_URL}/api/users/me`, {
       headers: { Authorization: `Bearer ${t}` }
     });
@@ -83,7 +92,34 @@ export function AuthProvider({ children }) {
       });
     }
     return res.ok && res.headers.get("content-type")?.includes("json") ? res.json() : null;
-  };
+  }, [_refreshAccessToken]);
+
+  const _resolveAccessToken = useCallback(async () => {
+    const storedToken =
+      tokenRef.current ?? (await SecureStore.getItemAsync(SEC_KEYS.ACCESS_TOKEN));
+
+    if (!storedToken) return null;
+
+    if (await _shouldRefresh()) {
+      return _refreshAccessToken();
+    }
+
+    return storedToken;
+  }, [_refreshAccessToken]);
+
+  const _buildHeaders = useCallback((headers, accessToken, shouldAttachAuth) => {
+    const nextHeaders = { ...(headers || {}) };
+
+    if (shouldAttachAuth) {
+      if (accessToken) {
+        nextHeaders.Authorization = `Bearer ${accessToken}`;
+      } else {
+        delete nextHeaders.Authorization;
+      }
+    }
+
+    return nextHeaders;
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -94,12 +130,16 @@ export function AuthProvider({ children }) {
         ]);
 
         if (storedToken) {
+          let activeToken = storedToken;
+
           if (Date.now() > exp - REFRESH_THRESHOLD_MS) {
-            await _refreshAccessToken();
+            activeToken = await _refreshAccessToken();
           } else {
+            tokenRef.current = storedToken;
             setToken(storedToken);
           }
-          const profile = await _fetchProfile(storedToken);
+
+          const profile = await _fetchProfile(activeToken);
           setUser(profile);
         }
       } catch (e) {
@@ -108,10 +148,10 @@ export function AuthProvider({ children }) {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [_fetchProfile, _refreshAccessToken]);
 
   // 401 이 뜨면 한 번만 _refreshAccessToken 후 재시도
-  const authFetch = async (input, init = {}) => {
+  const authFetch = useCallback(async (input, init = {}) => {
     const url = typeof input === "string" ? input : input.url;
     const skipRefreshPaths = [
       "/api/auth/login",
@@ -119,39 +159,27 @@ export function AuthProvider({ children }) {
       "/health",
       "/maintenance-status"
     ];
-
-    if (!skipRefreshPaths.some((p) => url.endsWith(p)) && (await _shouldRefresh())) {
-      await _refreshAccessToken();
-    }
+    const shouldAttachAuth = !skipRefreshPaths.some((p) => url.endsWith(p));
+    const accessToken = shouldAttachAuth ? await _resolveAccessToken() : null;
 
     let res = await originalFetch(input, {
       ...init,
-      headers: {
-        ...(init.headers || {}),
-        Authorization: skipRefreshPaths.some((p) => url.endsWith(p))
-          ? undefined
-          : token
-          ? `Bearer ${token}`
-          : undefined
-      }
+      headers: _buildHeaders(init.headers, accessToken, shouldAttachAuth)
     });
 
-    if (res.status === 401 && !skipRefreshPaths.some((p) => url.endsWith(p))) {
+    if (res.status === 401 && shouldAttachAuth) {
       const newToken = await _refreshAccessToken();
       res = await originalFetch(input, {
         ...init,
-        headers: {
-          ...(init.headers || {}),
-          Authorization: `Bearer ${newToken}`
-        }
+        headers: _buildHeaders(init.headers, newToken, true)
       });
     }
     return res;
-  };
+  }, [_buildHeaders, _refreshAccessToken, _resolveAccessToken]);
 
   const refetchUser = async () => {
     try {
-      const currentToken = await SecureStore.getItemAsync(SEC_KEYS.ACCESS_TOKEN);
+      const currentToken = await _resolveAccessToken();
       if (currentToken) {
         const profile = await _fetchProfile(currentToken);
         setUser(profile);
@@ -176,6 +204,7 @@ export function AuthProvider({ children }) {
 
     await SecureStore.setItemAsync(SEC_KEYS.ACCESS_TOKEN, accessToken);
     await SecureStore.setItemAsync(SEC_KEYS.ACCESS_EXP, String(expMs));
+    tokenRef.current = accessToken;
     setToken(accessToken);
 
     if (refreshToken != null) {
@@ -216,6 +245,7 @@ export function AuthProvider({ children }) {
     await SecureStore.deleteItemAsync(SEC_KEYS.ACCESS_TOKEN);
     await SecureStore.deleteItemAsync(SEC_KEYS.ACCESS_EXP);
     await SecureStore.deleteItemAsync(SEC_KEYS.REFRESH_TOKEN);
+    tokenRef.current = null;
     setUser(null);
     setToken(null);
   };

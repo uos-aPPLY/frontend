@@ -5,7 +5,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  ActivityIndicator
+  ActivityIndicator,
+  DeviceEventEmitter
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useLayoutEffect } from "react";
@@ -153,25 +154,16 @@ export default function EditPage() {
         return;
       }
 
+      DeviceEventEmitter.emit("refreshCalendar");
       resetPhoto();
       resetDiary();
 
-      navigation.reset({
-        index: 0,
-        routes: [
-          {
-            name: "diary", // or the layout group
-            state: {
-              routes: [
-                {
-                  name: "[date]",
-                  params: { date }
-                }
-              ]
-            }
-          }
-        ]
-      });
+      if (nav.canGoBack()) {
+        nav.back();
+        return;
+      }
+
+      nav.replace({ pathname: "/diary/[date]", params: { date } });
     } catch (err) {
       console.error("💥 저장 중 에러:", err);
     } finally {
@@ -211,17 +203,13 @@ export default function EditPage() {
           onBack={() => {
             resetDiary();
             resetPhoto();
-            navigation.reset({
-              index: 0,
-              routes: [
-                {
-                  name: "diary",
-                  state: {
-                    routes: [{ name: "[date]", params: { date } }]
-                  }
-                }
-              ]
-            });
+
+            if (nav.canGoBack()) {
+              nav.back();
+              return;
+            }
+
+            nav.replace({ pathname: "/diary/[date]", params: { date } });
           }}
           hasText={text.trim().length > 0}
           onSave={handleSave}

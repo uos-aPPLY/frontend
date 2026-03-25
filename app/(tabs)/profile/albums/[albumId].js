@@ -10,17 +10,18 @@ import {
   TouchableOpacity
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { parse, format } from "date-fns";
 import { LinearGradient } from "expo-linear-gradient";
 import HeaderSettings from "../../../../components/Header/HeaderSettings";
+import { useAuth } from "../../../../contexts/AuthContext";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
 export default function AlbumDiaryList() {
   const router = useRouter();
+  const { token } = useAuth();
   const { albumId, name } = useLocalSearchParams();
   const [diaries, setDiaries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +30,7 @@ export default function AlbumDiaryList() {
   useEffect(() => {
     (async () => {
       try {
-        const token = await SecureStore.getItemAsync("accessToken");
+        if (!token) return;
         const url =
           albumId === "favorite"
             ? `${BACKEND_URL}/api/albums/favorites`
@@ -45,7 +46,7 @@ export default function AlbumDiaryList() {
         setLoading(false);
       }
     })();
-  }, [albumId]);
+  }, [albumId, token]);
 
   const goBack = () => router.back();
 
@@ -68,7 +69,12 @@ export default function AlbumDiaryList() {
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.card}
-            onPress={() => router.push(`/diary/${item.diaryDate}`)}
+            onPress={() =>
+              router.push({
+                pathname: "/diary/[date]",
+                params: { date: item.diaryDate, from: "album" }
+              })
+            }
           >
             <View style={styles.imageWrapper}>
               {item.representativePhotoUrl ? (

@@ -63,6 +63,15 @@ export default function EditWithAIPage() {
     }
   }, [isSubmitting]);
 
+  const goBackToEdit = () => {
+    if (nav.canGoBack()) {
+      nav.back();
+      return;
+    }
+
+    nav.replace({ pathname: "/edit", params: { id: diaryId } });
+  };
+
   const handleMessage = async (event) => {
     try {
       const { action, content, height } = JSON.parse(event.nativeEvent.data);
@@ -129,7 +138,7 @@ export default function EditWithAIPage() {
       if (action === "SAVE_TEXT") {
         if (!content) return;
         setText(content);
-        nav.replace({ pathname: "/edit", params: { id: diaryId } });
+        goBackToEdit();
       }
 
       if (action === "ERROR") {
@@ -165,7 +174,7 @@ export default function EditWithAIPage() {
   const handleSave = () => {
     setText(localText);
     if (localCharacter) setSelectedCharacter(localCharacter); // ✅ 추가
-    nav.back();
+    goBackToEdit();
   };
 
   const onWebViewLoadEnd = () => {
@@ -205,7 +214,7 @@ export default function EditWithAIPage() {
             <HeaderDate
               date={selectedDate}
               hasText={false}
-              onBack={() => nav.back()}
+              onBack={goBackToEdit}
               onSave={undefined}
             />
 

@@ -1,5 +1,5 @@
 // app/(tabs)/profile/settings/defaultkeywords.js
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Constants from "expo-constants";
@@ -13,13 +13,15 @@ export default function DefaultKeywordsPage() {
   const [keywords, setKeywords] = useState([]);
   const [isEditMode, setIsEditMode] = useState(false);
   const [newKeyword, setNewKeyword] = useState("");
+  const isAddingKeywordRef = useRef(false);
 
   const BACKEND_URL = Constants.expoConfig.extra.BACKEND_URL;
   const pageDescription = "포커스 키워드 설정 시 기본 키워드로 제공돼요.";
 
   useEffect(() => {
+    if (!token) return;
     fetchKeywords();
-  }, []);
+  }, [token]);
 
   const fetchKeywords = async () => {
     try {
@@ -37,15 +39,16 @@ export default function DefaultKeywordsPage() {
 
   const addKeyword = async () => {
     const trimmed = newKeyword.trim();
-    if (!trimmed) return;
+    if (!trimmed || !token || isAddingKeywordRef.current) return false;
 
     // 🔒 중복 방지
     if (keywords.some((k) => k.name === trimmed)) {
       setNewKeyword("");
-      return;
+      return true;
     }
 
     try {
+      isAddingKeywordRef.current = true;
       const res = await fetch(`${BACKEND_URL}/api/keywords`, {
         method: "POST",
         headers: {
@@ -60,9 +63,24 @@ export default function DefaultKeywordsPage() {
 
       setKeywords((prev) => [...prev, newItem]);
       setNewKeyword("");
+      return true;
     } catch (err) {
       console.error("❌ 키워드 추가 실패:", err);
+      return false;
+    } finally {
+      isAddingKeywordRef.current = false;
     }
+  };
+
+  const handleEditToggle = async () => {
+    if (isEditMode) {
+      const success = await addKeyword();
+      if (newKeyword.trim() && !success) {
+        return;
+      }
+    }
+
+    setIsEditMode((prev) => !prev);
   };
 
   const deleteKeyword = async (id) => {
@@ -85,7 +103,7 @@ export default function DefaultKeywordsPage() {
         title="키워드 설정"
         descriptionText={pageDescription}
         rightComponent={
-          <TouchableOpacity onPress={() => setIsEditMode((prev) => !prev)}>
+          <TouchableOpacity onPress={handleEditToggle}>
             <Text style={styles.headerEditText}>{isEditMode ? "확인" : "수정"}</Text>
           </TouchableOpacity>
         }
@@ -114,6 +132,7 @@ export default function DefaultKeywordsPage() {
               placeholder="추가"
               style={styles.input}
               onBlur={addKeyword}
+              onSubmitEditing={addKeyword}
               returnKeyType="done"
               placeholderTextColor="#aaa"
               textAlign="center"

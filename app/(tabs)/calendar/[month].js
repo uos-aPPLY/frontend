@@ -10,7 +10,6 @@ import {
   TouchableOpacity
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 import { useLocalSearchParams } from "expo-router";
 import { useRouter } from "expo-router";
@@ -20,22 +19,59 @@ import * as Localization from "expo-localization";
 import { utcToZonedTime } from "date-fns-tz";
 import { ko, enUS } from "date-fns/locale";
 import { parse, format, getYear, getMonth } from "date-fns";
+import { useAuth } from "../../../contexts/AuthContext";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
 export default function DiaryList() {
   const router = useRouter();
+  const { token } = useAuth();
   const { month } = useLocalSearchParams();
   const [diaries, setDiaries] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const timeZone = Localization.timezone;
-  const locale = Localization.locale.startsWith("ko") ? ko : enUS;
+  const localeCode = React.useMemo(() => {
+    if (typeof Localization.locale === "string" && Localization.locale.length > 0) {
+      return Localization.locale;
+    }
+
+    if (typeof Localization.getLocales === "function") {
+      return Localization.getLocales()?.[0]?.languageTag ?? "en-US";
+    }
+
+    return "en-US";
+  }, []);
+
+  const timeZone = React.useMemo(() => {
+    if (typeof Localization.timezone === "string" && Localization.timezone.length > 0) {
+      return Localization.timezone;
+    }
+
+    if (typeof Localization.getCalendars === "function") {
+      return Localization.getCalendars()?.[0]?.timeZone ?? "UTC";
+    }
+
+    return "UTC";
+  }, []);
+
+  const locale = localeCode.startsWith("ko") ? ko : enUS;
+  const monthParamValue = typeof month === "string" ? month : Array.isArray(month) ? month[0] : "";
 
   const monthDate = React.useMemo(() => {
-    const [y, m] = month.split("-").map(Number);
+    const match = monthParamValue.match(/^(\d{4})-(\d{1,2})$/);
+    if (!match) {
+      return new Date();
+    }
+
+    const y = Number(match[1]);
+    const m = Number(match[2]);
+
+    if (!Number.isInteger(y) || !Number.isInteger(m) || m < 1 || m > 12) {
+      return new Date();
+    }
+
     return new Date(Date.UTC(y, m - 1, 1));
-  }, [month]);
+  }, [monthParamValue]);
 
   const displayMonth = React.useMemo(() => format(monthDate, "yyyy년 M월"), [monthDate]);
 
@@ -47,7 +83,7 @@ export default function DiaryList() {
     (async () => {
       try {
         setLoading(true);
-        const token = await SecureStore.getItemAsync("accessToken");
+        if (!token) return;
         const year = getYear(monthDate);
         const monthParam = getMonth(monthDate) + 1;
 
@@ -69,11 +105,7 @@ export default function DiaryList() {
         setLoading(false);
       }
     })();
-  }, [month, monthDate]);
-
-  console.log(Localization.timezone);
-  console.log("👶"); // Pacific/Auckland
-  console.log(Localization.locale); // en-NZ
+  }, [monthDate, token]);
 
   if (loading) {
     return (

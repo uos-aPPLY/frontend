@@ -12,11 +12,11 @@ import {
   Alert
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import TextEditorModal from "../../../components/Modal/TextEditorModal";
 import { LinearGradient } from "expo-linear-gradient";
+import { useAuth } from "../../../contexts/AuthContext";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 const { width } = Dimensions.get("window");
@@ -24,6 +24,7 @@ const CARD_WIDTH = (width - 30 * 2 - 18) / 2; // padding 20 each side + 12 gap
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { token } = useAuth();
   const [albums, setAlbums] = useState([]);
   const [loading, setLoading] = useState(true);
   const [nickname, setNickname] = useState("");
@@ -37,7 +38,7 @@ export default function ProfilePage() {
   useEffect(() => {
     async function fetchProfile() {
       try {
-        const token = await SecureStore.getItemAsync("accessToken");
+        if (!token) return;
         const res = await fetch(`${BACKEND_URL}/api/users/me`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -53,12 +54,12 @@ export default function ProfilePage() {
       }
     }
     fetchProfile();
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     async function fetchAlbums() {
       try {
-        const token = await SecureStore.getItemAsync("accessToken");
+        if (!token) return;
         const favRes = await fetch(`${BACKEND_URL}/api/albums/favorites`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -86,7 +87,7 @@ export default function ProfilePage() {
       }
     }
     fetchAlbums();
-  }, []);
+  }, [token]);
 
   const handleSaveNickname = async (newName) => {
     const trimmedName = newName.trim();
@@ -118,7 +119,10 @@ export default function ProfilePage() {
     }
 
     try {
-      const token = await SecureStore.getItemAsync("accessToken");
+      if (!token) {
+        Alert.alert("오류", "로그인 정보가 없습니다.");
+        return false;
+      }
       const response = await fetch(`${BACKEND_URL}/api/users/nickname`, {
         method: "PATCH",
         headers: {

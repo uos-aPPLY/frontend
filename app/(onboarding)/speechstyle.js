@@ -13,7 +13,6 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import Constants from "expo-constants";
-import * as SecureStore from "expo-secure-store";
 import TextEditorModal from "../../components/Modal/TextEditorModal";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -45,45 +44,53 @@ const templates = {
   계획형:
     "오늘 할 일 중 세 가지를 완료했다. 프로젝트 기획안 제출, 저녁 식사 준비, 30분 운동. 내일은 반드시 책 50페이지를 읽고, 영어 단어 20개를 외우고, 빨래를 완료해야 한다. 주말까지 보고서를 마무리하려면 매일 조금씩 진행해야 할 것이다. 계획대로 차근차근 해나가자."
 };
+const STYLE_OPTIONS = Object.keys(templates);
 
 export default function SpeechStyle() {
   const router = useRouter();
-  const { refetchUser } = useAuth();
+  const { refetchUser, token } = useAuth();
   const { from } = useLocalSearchParams();
-  const stylesArray = Object.keys(templates);
   const [selected, setSelected] = useState(null);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
-    if (from === "settings") {
-      (async () => {
-        setLoading(true);
-        try {
-          const token = await SecureStore.getItemAsync("accessToken");
-          if (!token) throw new Error("인증 토큰이 없습니다.");
+    if (from !== "settings" || !token) return;
 
-          const res = await fetch(`${BACKEND_URL}/api/users/me`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (!res.ok) throw new Error("사용자 정보 조회 실패");
+    let isActive = true;
 
-          const user = await res.json();
-          const { writingStylePrompt, writingStyleNumber } = user;
-          const styleKey = stylesArray[writingStyleNumber];
-          if (styleKey) {
-            setSelected(styleKey);
-            setText(writingStylePrompt);
-          }
-        } catch (err) {
-          console.error(err);
-        } finally {
+    (async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/users/me`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error("사용자 정보 조회 실패");
+
+        const user = await res.json();
+        const { writingStylePrompt, writingStyleNumber } = user;
+        const styleKey = STYLE_OPTIONS[writingStyleNumber];
+
+        if (!isActive) return;
+
+        if (styleKey) {
+          setSelected(styleKey);
+          setText(writingStylePrompt);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (isActive) {
           setLoading(false);
         }
-      })();
-    }
-  }, [from]);
+      }
+    })();
+
+    return () => {
+      isActive = false;
+    };
+  }, [from, token]);
 
   const onSelect = (style) => {
     setSelected(style);
@@ -103,10 +110,9 @@ export default function SpeechStyle() {
     setLoading(true);
 
     try {
-      const token = await SecureStore.getItemAsync("accessToken");
       if (!token) throw new Error("인증 토큰이 없습니다.");
 
-      const writingStyleNumber = stylesArray.indexOf(selected);
+      const writingStyleNumber = STYLE_OPTIONS.indexOf(selected);
       const response = await fetch(`${BACKEND_URL}/api/users/writing-style`, {
         method: "PATCH",
         headers: {
@@ -160,7 +166,7 @@ export default function SpeechStyle() {
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.grid}>
-          {stylesArray.map((styleName, idx) => (
+          {STYLE_OPTIONS.map((styleName, idx) => (
             <TouchableOpacity
               key={styleName}
               style={[
