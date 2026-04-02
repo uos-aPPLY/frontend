@@ -1,16 +1,21 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useMemo, useState, useCallback } from "react";
 import {
   View,
   Image,
   Text,
   StyleSheet,
   Dimensions,
-  FlatList,
   TouchableOpacity
 } from "react-native";
+import DraggableFlatList from "react-native-draggable-flatlist";
+import * as Haptics from "expo-haptics";
 import IconButton from "./IconButton";
 
 const screenWidth = Dimensions.get("window").width;
+const CARD_WIDTH = screenWidth - 112;
+const CARD_GAP = 14;
+const SIDE_PADDING = (screenWidth - CARD_WIDTH) / 2;
+const SNAP_INTERVAL = CARD_WIDTH + CARD_GAP;
 
 export default function EditImageSlider({
   photos,
@@ -19,79 +24,89 @@ export default function EditImageSlider({
   onDeletePhoto,
   onAddPhoto,
   currentIndex,
-  setCurrentIndex
+  setCurrentIndex,
+  enableInlineReorder = false,
+  onReorderPhotos
 }) {
   const flatListRef = useRef(null);
+  const placeholderIndexRef = useRef(currentIndex);
+  const [isReordering, setIsReordering] = useState(false);
 
-  // ✅ 진짜 사진만 추림 (인디케이터 용도)
-  const realPhotos = photos.filter((p) => p.type !== "add");
-
-  const isEmpty = photos.length === 1 && photos[0].type === "add";
+  const realPhotos = useMemo(() => photos.filter((p) => p.type !== "add"), [photos]);
+  const isEmpty = realPhotos.length === 0;
+  const canAddMore = realPhotos.length < 9;
 
   useEffect(() => {
     if (realPhotos.length === 0) {
       setMainPhotoId(null);
     }
-  }, [realPhotos]);
+    if (currentIndex > Math.max(realPhotos.length - 1, 0)) {
+      setCurrentIndex(Math.max(realPhotos.length - 1, 0));
+    }
+  }, [currentIndex, realPhotos.length, setCurrentIndex, setMainPhotoId]);
 
-  return (
-    <View style={styles.wrapper}>
-      {/* ✅ Indicator - 진짜 사진만 */}
-      {realPhotos.length > 0 && (
-        <View style={styles.pageIndicator}>
-          {realPhotos.map((photo, index) => (
-            <TouchableOpacity
-              key={photo.id?.toString() ?? `photo-${index}`}
-              onPress={() => {
-                flatListRef.current?.scrollToIndex({ index, animated: true });
-                setCurrentIndex(index);
-              }}
-              style={styles.indicatorItem}
-            >
-              {currentIndex === index ? (
-                <Image source={{ uri: photo.photoUrl }} style={styles.thumbnail} />
-              ) : (
-                <View style={styles.dot} />
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
+  useEffect(() => {
+    placeholderIndexRef.current = currentIndex;
+  }, [currentIndex]);
 
-      {/* ✅ FlatList - 전체 사진 (add 포함) */}
-      <FlatList
-        ref={flatListRef}
-        data={photos}
-        keyExtractor={(item, index) =>
-          item.type === "add" ? "add-button" : item.id?.toString() ?? `${index}`
-        }
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={(e) => {
-          const index = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
-          setCurrentIndex(index);
-        }}
-        renderItem={({ item }) =>
-          item.type === "add" ? (
-            <View
-              style={[
-                styles.cardContainer,
-                isEmpty && { marginTop: 30 } // ✅ 사진이 없을 때만 위 여백 추가
-              ]}
-            >
-              <View style={styles.addCard}>
-                <IconButton
-                  source={require("../assets/icons/bigpinkplusicon.png")}
-                  wsize={50}
-                  hsize={50}
-                  onPress={onAddPhoto}
-                />
-              </View>
-            </View>
-          ) : (
-            <View style={styles.cardContainer}>
-              <View style={styles.shadowCard}>
+  const scrollToPhoto = useCallback((index) => {
+    flatListRef.current?.scrollToOffset?.({
+      offset: Math.max(0, index * SNAP_INTERVAL),
+      animated: true
+    });
+  }, []);
+
+  const handleDragEnd = useCallback(
+    ({ data, to }) => {
+      setIsReordering(false);
+      onReorderPhotos?.(data);
+
+      const nextIndex = Math.max(0, Math.min(data.length - 1, to));
+      setCurrentIndex(nextIndex);
+
+      requestAnimationFrame(() => {
+        scrollToPhoto(nextIndex);
+      });
+    },
+    [onReorderPhotos, scrollToPhoto, setCurrentIndex]
+  );
+
+  const handleMomentumScrollEnd = useCallback(
+    (event) => {
+      if (realPhotos.length === 0) {
+        setCurrentIndex(0);
+        return;
+      }
+
+      const rawIndex = Math.round(event.nativeEvent.contentOffset.x / SNAP_INTERVAL);
+      const clampedIndex = Math.max(0, Math.min(realPhotos.length - 1, rawIndex));
+      setCurrentIndex(clampedIndex);
+    },
+    [realPhotos.length, setCurrentIndex]
+  );
+
+  const renderPhotoCard = useCallback(
+    ({ item, drag, isActive, getIndex }) => {
+      const itemIndex = getIndex?.() ?? 0;
+
+      return (
+        <TouchableOpacity
+          activeOpacity={1}
+          onLongPress={
+            enableInlineReorder
+              ? () => {
+                  setIsReordering(true);
+                  placeholderIndexRef.current = itemIndex;
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                  drag();
+                }
+              : undefined
+          }
+          delayLongPress={260}
+        >
+          <View style={styles.cardContainer}>
+            <View style={[styles.shadowCard, isActive && styles.activeShadowCard]}>
+              <View style={styles.imageCard}>
                 <Image source={{ uri: item.photoUrl }} style={styles.image} />
                 <TouchableOpacity
                   style={[
@@ -115,9 +130,93 @@ export default function EditImageSlider({
                 </TouchableOpacity>
               </View>
             </View>
-          )
-        }
-      />
+          </View>
+        </TouchableOpacity>
+      );
+    },
+    [enableInlineReorder, mainPhotoId, onDeletePhoto, setCurrentIndex, setMainPhotoId]
+  );
+
+  const renderAddCard = () => (
+    <View style={styles.addCardContainer}>
+      <View style={styles.addCard}>
+        <IconButton
+          source={require("../assets/icons/bigpinkplusicon.png")}
+          wsize={50}
+          hsize={50}
+          onPress={onAddPhoto}
+        />
+      </View>
+    </View>
+  );
+
+  return (
+    <View style={styles.wrapper}>
+      {realPhotos.length > 0 && (
+        <View style={styles.pageIndicator}>
+          {realPhotos.map((photo, index) => (
+            <TouchableOpacity
+              key={photo.id?.toString() ?? `photo-${index}`}
+              onPress={() => {
+                scrollToPhoto(index);
+                setCurrentIndex(index);
+              }}
+              style={styles.indicatorItem}
+            >
+              {currentIndex === index ? (
+                <Image source={{ uri: photo.photoUrl }} style={styles.thumbnail} />
+              ) : (
+                <View style={styles.dot} />
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      {isEmpty ? (
+        <View style={styles.emptyWrapper}>{renderAddCard()}</View>
+      ) : (
+        <DraggableFlatList
+          ref={flatListRef}
+          data={realPhotos}
+          keyExtractor={(item) => item.id?.toString() ?? `${item.photoUrl}`}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={handleMomentumScrollEnd}
+          onDragBegin={(index) => {
+            setIsReordering(true);
+            placeholderIndexRef.current = index;
+          }}
+          onRelease={() => setIsReordering(false)}
+          onPlaceholderIndexChange={(index) => {
+            if (index == null || index < 0 || index === placeholderIndexRef.current) {
+              return;
+            }
+
+            placeholderIndexRef.current = index;
+            Haptics.selectionAsync().catch(() => {});
+          }}
+          onDragEnd={handleDragEnd}
+          renderItem={renderPhotoCard}
+          ListFooterComponent={canAddMore ? renderAddCard : null}
+          contentContainerStyle={styles.listContent}
+          activationDistance={18}
+          snapToInterval={isReordering ? undefined : SNAP_INTERVAL}
+          decelerationRate={isReordering ? "normal" : "fast"}
+          snapToAlignment="start"
+          autoscrollThreshold={32}
+          autoscrollSpeed={90}
+          dragItemOverflow
+        />
+      )}
+
+      {enableInlineReorder && realPhotos.length > 1 ? (
+        <Text style={styles.reorderHint}>
+          {isReordering
+            ? "좌우로 움직여 사진 순서를 바꿀 수 있어요."
+            : "사진을 길게 눌러 좌우로 움직이면 순서를 바꿀 수 있어요."}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -125,6 +224,14 @@ export default function EditImageSlider({
 const styles = StyleSheet.create({
   wrapper: {
     marginBottom: 10
+  },
+  listContent: {
+    paddingHorizontal: SIDE_PADDING,
+    paddingTop: 10,
+    paddingBottom: 16
+  },
+  emptyWrapper: {
+    paddingHorizontal: SIDE_PADDING
   },
   pageIndicator: {
     flexDirection: "row",
@@ -152,11 +259,10 @@ const styles = StyleSheet.create({
   },
   cardContainer: {
     position: "relative",
-    width: screenWidth - 60,
+    width: CARD_WIDTH,
     aspectRatio: 1,
-    borderRadius: 20,
-    overflow: "hidden",
-    marginHorizontal: 30
+    marginRight: CARD_GAP,
+    overflow: "visible"
   },
   shadowCard: {
     shadowColor: "#000",
@@ -164,16 +270,29 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.5,
     shadowRadius: 4,
     elevation: 3,
-    marginBottom: 10
+    marginBottom: 10,
+    borderRadius: 20,
+    overflow: "visible"
+  },
+  activeShadowCard: {
+    transform: [{ scale: 1.03 }]
+  },
+  imageCard: {
+    borderRadius: 20,
+    overflow: "hidden"
   },
   image: {
-    width: screenWidth - 60,
+    width: CARD_WIDTH,
     aspectRatio: 1,
     borderRadius: 20,
     resizeMode: "cover"
   },
+  addCardContainer: {
+    width: CARD_WIDTH,
+    marginRight: CARD_GAP
+  },
   addCard: {
-    width: screenWidth - 60,
+    width: CARD_WIDTH,
     aspectRatio: 1,
     backgroundColor: "#F1F2F1",
     borderRadius: 30,
@@ -218,5 +337,13 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     tintColor: "#fff"
+  },
+  reorderHint: {
+    marginTop: 10,
+    textAlign: "center",
+    fontSize: 12,
+    lineHeight: 18,
+    color: "#A78C7B",
+    paddingHorizontal: 36
   }
 });

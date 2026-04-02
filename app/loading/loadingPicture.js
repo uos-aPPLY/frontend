@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { View, ActivityIndicator, StyleSheet, Text, SafeAreaView } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { useNavigation } from "@react-navigation/native";
+import CreationFlowProgress from "../../components/CreationFlowProgress";
 
 export default function LoadingPage() {
   const nav = useRouter();
@@ -16,6 +17,10 @@ export default function LoadingPage() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ gestureEnabled: false }} />
+      {/* <CreationFlowProgress
+        currentStep={1}
+        subtitle="선택한 사진을 준비하고 있어요."
+      /> */}
       <View style={styles.loadingArea}>
         <ActivityIndicator size="large" color="#D68089" />
         <Text style={styles.message}>사진을 업로드 중이에요...</Text>

@@ -10,18 +10,19 @@ import {
   TouchableOpacity
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as SecureStore from "expo-secure-store";
 import { useRouter } from "expo-router";
 import Constants from "expo-constants";
 import { LinearGradient } from "expo-linear-gradient";
 import ConfirmModal from "../../../../components/Modal/ConfirmModal";
 import CheckBox from "../../../../components/CheckBox";
 import HeaderSettings from "../../../../components/Header/HeaderSettings";
+import { useAuth } from "../../../../contexts/AuthContext";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
 export default function WastePage() {
   const router = useRouter();
+  const { token } = useAuth();
   const [diaries, setDiaries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectionMode, setSelectionMode] = useState(false);
@@ -34,7 +35,7 @@ export default function WastePage() {
   const fetchTrash = async () => {
     setLoading(true);
     try {
-      const token = await SecureStore.getItemAsync("accessToken");
+      if (!token) return;
       const res = await fetch(`${BACKEND_URL}/api/diaries/trash`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -49,7 +50,7 @@ export default function WastePage() {
 
   useEffect(() => {
     fetchTrash();
-  }, []);
+  }, [token]);
 
   const toggleSelect = (id) => {
     setSelectedIds((prev) => {
@@ -62,7 +63,7 @@ export default function WastePage() {
 
   const handleConfirm = async () => {
     setConfirmVisible(false);
-    const token = await SecureStore.getItemAsync("accessToken");
+    if (!token) return;
     if (confirmAction === "delete") {
       if (selectedIds.size > 0) {
         await Promise.all(

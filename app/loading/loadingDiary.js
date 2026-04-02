@@ -1,4 +1,4 @@
-import { useLayoutEffect, useEffect, useRef, useCallback } from "react";
+import { useLayoutEffect, useRef, useCallback } from "react";
 import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity } from "react-native";
 import { Stack, useRouter, useLocalSearchParams } from "expo-router";
 import Constants from "expo-constants";
@@ -8,6 +8,20 @@ import { useDiary } from "../../contexts/DiaryContext";
 import { DeviceEventEmitter } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import colors from "../../constants/colors";
+// import CreationFlowProgress from "../../components/CreationFlowProgress";
+
+const POLLING_INTERVAL_MS = 8000;
+const MAX_POLL_RETRIES = 30;
+
+function safeJsonParse(value, fallback) {
+  if (typeof value !== "string") return fallback;
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
 
 export default function LoadingDiary() {
   const navigation = useNavigation();
@@ -18,6 +32,8 @@ export default function LoadingDiary() {
 
   const isMounted = useRef(false);
   const pollingRef = useRef(null);
+  const pollTimeoutRef = useRef(null);
+  const hasStartedRef = useRef(false);
 
   const { date: dateParam, photos = "[]", keywords = "{}", mainPhotoId } = useLocalSearchParams();
 
@@ -25,11 +41,11 @@ export default function LoadingDiary() {
     typeof dateParam === "string"
       ? dateParam
       : typeof selectedDate === "string"
-      ? selectedDate
-      : selectedDate?.toISOString().split("T")[0];
+        ? selectedDate
+        : selectedDate?.toISOString().split("T")[0];
 
-  const visiblePhotos = JSON.parse(photos || "[]");
-  const keywordMap = JSON.parse(keywords || "{}");
+  const visiblePhotos = safeJsonParse(photos, []);
+  const keywordMap = safeJsonParse(keywords, {});
 
   useLayoutEffect(() => {
     navigation.setOptions({ gestureEnabled: false });
@@ -62,7 +78,7 @@ export default function LoadingDiary() {
                 routes: [
                   {
                     name: "[date]",
-                    params: { date: diaryDate }
+                    params: { date: diaryDate, from: "generated" }
                   }
                 ]
               }
@@ -79,45 +95,60 @@ export default function LoadingDiary() {
     return false;
   };
 
-  const pollDiaryStatus = async (dateToPoll) => {
-    const maxRetries = 50;
-    let attempts = 0;
+  const waitForNextPoll = useCallback(
+    () =>
+      new Promise((resolve) => {
+        pollTimeoutRef.current = setTimeout(() => {
+          pollTimeoutRef.current = null;
+          resolve();
+        }, POLLING_INTERVAL_MS);
+      }),
+    []
+  );
 
-    while (attempts < maxRetries && isMounted.current) {
-      try {
-        const res = await fetch(`${BACKEND_URL}/api/diaries/by-date?date=${dateToPoll}`, {
-          headers: {
-            Authorization: `Bearer ${token}`
+  const pollDiaryStatus = useCallback(
+    async (dateToPoll) => {
+      let attempts = 0;
+
+      while (attempts < MAX_POLL_RETRIES && isMounted.current) {
+        try {
+          const res = await fetch(`${BACKEND_URL}/api/diaries/by-date?date=${dateToPoll}`, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+
+          const data = await res.json();
+
+          if (data?.status === "confirmed") {
+            DeviceEventEmitter.emit("refreshCalendar");
+            router.replace({
+              pathname: "/diary/[date]",
+              params: { date: dateToPoll, from: "generated" }
+            });
+            return;
+          } else if (data?.status === "unconfirmed" && data?.id) {
+            const confirmed = await confirmDiary(data.id, data.diaryDate);
+            if (confirmed) return;
           }
-        });
 
-        const data = await res.json();
-        console.log("📡 현재 다이어리 상태:", data?.status);
-
-        if (data?.status === "confirmed") {
-          DeviceEventEmitter.emit("refreshCalendar");
-          router.replace(`/diary/${dateToPoll}`);
-          return;
-        } else if (data?.status === "unconfirmed" && data?.id) {
-          const confirmed = await confirmDiary(data.id, data.diaryDate);
-          if (confirmed) return;
+          await waitForNextPoll();
+        } catch (err) {
+          console.error("🔁 다이어리 상태 polling 에러:", err);
         }
 
-        await new Promise((r) => setTimeout(r, 5000));
-      } catch (err) {
-        console.error("🔁 다이어리 상태 polling 에러:", err);
+        attempts++;
       }
 
-      attempts++;
-    }
-
-    if (isMounted.current) {
-      console.warn("⚠️ Polling 실패: 홈으로 이동");
-      router.replace("/home");
-    } else {
-      console.log("⛔️ 포커스 사라짐 - 홈 이동 생략");
-    }
-  };
+      if (isMounted.current) {
+        console.warn("⚠️ Polling 실패: 홈으로 이동");
+        router.replace("/home");
+      } else {
+        console.log("⛔️ 포커스 사라짐 - 홈 이동 생략");
+      }
+    },
+    [BACKEND_URL, confirmDiary, router, token, waitForNextPoll]
+  );
 
   const runCreateOrPoll = useCallback(async () => {
     const shouldCreate =
@@ -127,6 +158,9 @@ export default function LoadingDiary() {
       console.warn("🚫 유효하지 않은 diaryDate 또는 토큰 누락");
       return;
     }
+
+    if (hasStartedRef.current) return;
+    hasStartedRef.current = true;
 
     if (!shouldCreate || visiblePhotos.length === 0) {
       console.log("📌 생성 없이 상태만 polling");
@@ -140,9 +174,6 @@ export default function LoadingDiary() {
         representativePhotoId: Number(mainPhotoId),
         finalizedPhotos
       };
-
-      console.log("📤 일기 생성 요청:", body);
-      console.log("🔑 현재 토큰:", token);
 
       const res = await fetch(`${BACKEND_URL}/api/diaries/auto`, {
         method: "POST",
@@ -172,9 +203,11 @@ export default function LoadingDiary() {
 
       if (json?.status === "confirmed") {
         DeviceEventEmitter.emit("refreshCalendar");
-        router.replace(`/diary/${json.diaryDate}`);
+        router.replace({
+          pathname: "/diary/[date]",
+          params: { date: json.diaryDate, from: "generated" }
+        });
       } else if (json?.status === "generating") {
-        console.log("🕒 생성 중... polling 시작");
         pollingRef.current = pollDiaryStatus(json.diaryDate);
       } else if (json?.status === "unconfirmed" && json?.id) {
         const confirmed = await confirmDiary(json.id, json.diaryDate);
@@ -189,7 +222,19 @@ export default function LoadingDiary() {
       console.error("📛 일기 생성 실패:", err);
       router.replace("/home");
     }
-  }, [token, diaryDate]);
+  }, [
+    BACKEND_URL,
+    confirmDiary,
+    diaryDate,
+    finalizedPhotos,
+    keywords,
+    mainPhotoId,
+    photos,
+    pollDiaryStatus,
+    router,
+    token,
+    visiblePhotos.length
+  ]);
 
   useFocusEffect(
     useCallback(() => {
@@ -199,6 +244,10 @@ export default function LoadingDiary() {
       return () => {
         console.log("🔙 뒤로감 또는 화면 이탈 - polling 중단");
         isMounted.current = false;
+        if (pollTimeoutRef.current) {
+          clearTimeout(pollTimeoutRef.current);
+          pollTimeoutRef.current = null;
+        }
       };
     }, [runCreateOrPoll])
   );
@@ -206,6 +255,10 @@ export default function LoadingDiary() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ gestureEnabled: false }} />
+      {/* <CreationFlowProgress
+        currentStep={5}
+        subtitle="사진과 키워드를 바탕으로 오늘의 기록을 엮고 있어요."
+      /> */}
       <View style={styles.loadingArea}>
         <ActivityIndicator size="large" color="#D68089" />
         <Text style={styles.message}>
@@ -215,7 +268,7 @@ export default function LoadingDiary() {
         </Text>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => router.replace({ pathname: "/calendar", params: { date: diaryDate } })}
+          onPress={() => router.dismissTo({ pathname: "/calendar", params: { date: diaryDate } })}
         >
           <Text style={styles.backButtonText}>캘린더로 돌아가기</Text>
         </TouchableOpacity>

@@ -1,5 +1,5 @@
 // ✅ 변경사항 반영: EditWithAIPage 전체
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -25,9 +25,19 @@ import characterList from "../assets/characterList";
 import IconButton from "../components/IconButton";
 import ImageSlider from "../components/ImageSlider";
 import ConfirmModal from "../components/Modal/ConfirmModal";
+import { useNavigation } from "@react-navigation/native";
+
+function sanitizeEditTokens(value) {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return value.replace(/<\/?edit token>/gi, "");
+}
 
 export default function EditWithAIPage() {
   const nav = useRouter();
+  const navigation = useNavigation();
   const { token } = useAuth();
   const { photoList: photosToShow } = usePhoto();
   const {
@@ -41,7 +51,8 @@ export default function EditWithAIPage() {
   } = useDiary();
 
   const diary = diaryMapById[diaryId];
-  const [localText, setLocalText] = useState(text ?? "");
+  const sanitizedOriginalText = useMemo(() => sanitizeEditTokens(text ?? ""), [text]);
+  const [localText, setLocalText] = useState(sanitizedOriginalText);
   const [webviewLoaded, setWebviewLoaded] = useState(false);
   const [requestText, setRequestText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,12 +67,88 @@ export default function EditWithAIPage() {
   const [isResultReady, setIsResultReady] = useState(false);
   const scrollRef = useRef(null);
   const [isErrorModalVisible, setIsErrorModalVisible] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [showDraftComparison, setShowDraftComparison] = useState(false);
+  const pendingActionRef = useRef(null);
+  const skipBeforeRemoveRef = useRef(false);
+  const originalCharacterName = selectedCharacter?.name ?? characterObj?.name ?? "";
+  const hasUnsavedChanges = useMemo(
+    () =>
+      localText !== sanitizedOriginalText ||
+      (localCharacter?.name ?? "") !== originalCharacterName ||
+      requestText.trim().length > 0 ||
+      isResultReady ||
+      isSubmitting,
+    [
+      isResultReady,
+      isSubmitting,
+      localCharacter?.name,
+      localText,
+      originalCharacterName,
+      requestText,
+      sanitizedOriginalText
+    ]
+  );
 
   useEffect(() => {
     if (isSubmitting && scrollRef.current) {
       scrollRef.current.scrollTo({ y: 0, animated: true });
     }
   }, [isSubmitting]);
+
+  const goBackToEdit = useCallback(() => {
+    skipBeforeRemoveRef.current = true;
+    setShowLeaveConfirm(false);
+
+    const pendingAction = pendingActionRef.current;
+    pendingActionRef.current = null;
+
+    if (pendingAction) {
+      navigation.dispatch(pendingAction);
+      return;
+    }
+
+    if (nav.canGoBack()) {
+      nav.back();
+      return;
+    }
+
+    nav.replace({ pathname: "/edit", params: { id: diaryId } });
+  }, [diaryId, nav, navigation]);
+
+  const attemptLeave = useCallback(() => {
+    if (!hasUnsavedChanges) {
+      goBackToEdit();
+      return;
+    }
+
+    setShowLeaveConfirm(true);
+  }, [goBackToEdit, hasUnsavedChanges]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("beforeRemove", (event) => {
+      const actionType = event.data.action?.type;
+
+      if (skipBeforeRemoveRef.current) {
+        skipBeforeRemoveRef.current = false;
+        return;
+      }
+
+      if (!["GO_BACK", "POP", "POP_TO_TOP"].includes(actionType)) {
+        return;
+      }
+
+      if (!hasUnsavedChanges) {
+        return;
+      }
+
+      event.preventDefault();
+      pendingActionRef.current = event.data.action;
+      setShowLeaveConfirm(true);
+    });
+
+    return unsubscribe;
+  }, [hasUnsavedChanges, navigation]);
 
   const handleMessage = async (event) => {
     try {
@@ -105,7 +192,8 @@ export default function EditWithAIPage() {
         }
 
         const parsed = JSON.parse(resultText);
-        setLocalText(parsed.diary);
+        const sanitizedDiary = sanitizeEditTokens(parsed.diary);
+        setLocalText(sanitizedDiary);
         setRequestText("");
         setIsResultReady(true);
 
@@ -115,7 +203,7 @@ export default function EditWithAIPage() {
         }
 
         // 수정된 내용 WebView에 반영
-        const escapedContent = parsed.diary
+        const escapedContent = sanitizedDiary
           .replace(/\\/g, "\\\\")
           .replace(/`/g, "\\`")
           .replace(/\$/g, "\\$");
@@ -128,8 +216,9 @@ export default function EditWithAIPage() {
 
       if (action === "SAVE_TEXT") {
         if (!content) return;
-        setText(content);
-        nav.replace({ pathname: "/edit", params: { id: diaryId } });
+        setText(sanitizeEditTokens(content));
+        skipBeforeRemoveRef.current = true;
+        goBackToEdit();
       }
 
       if (action === "ERROR") {
@@ -163,16 +252,20 @@ export default function EditWithAIPage() {
     `);
   };
   const handleSave = () => {
-    setText(localText);
+    setText(sanitizeEditTokens(localText));
     if (localCharacter) setSelectedCharacter(localCharacter); // ✅ 추가
-    nav.back();
+    skipBeforeRemoveRef.current = true;
+    goBackToEdit();
   };
 
   const onWebViewLoadEnd = () => {
     setWebviewLoaded(true);
-    if (!text) return;
+    if (!sanitizedOriginalText) return;
 
-    const escapedContent = text.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$/g, "\\$");
+    const escapedContent = sanitizedOriginalText
+      .replace(/\\/g, "\\\\")
+      .replace(/`/g, "\\`")
+      .replace(/\$/g, "\\$");
 
     webviewRef.current?.injectJavaScript(`
       window.postMessage(JSON.stringify({ content: \`${escapedContent}\` }), "*");
@@ -205,7 +298,7 @@ export default function EditWithAIPage() {
             <HeaderDate
               date={selectedDate}
               hasText={false}
-              onBack={() => nav.back()}
+              onBack={attemptLeave}
               onSave={undefined}
             />
 
@@ -266,6 +359,32 @@ export default function EditWithAIPage() {
                 ]}
               />
             </View>
+
+            {isResultReady && (
+              <View style={styles.comparisonSection}>
+                <View style={styles.comparisonHeader}>
+                  <Text style={styles.comparisonTitle}>일기 초안 비교</Text>
+                  <TouchableOpacity onPress={() => setShowDraftComparison((prev) => !prev)}>
+                    <Text style={styles.comparisonToggle}>
+                      {showDraftComparison ? "숨기기" : "비교 보기"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {showDraftComparison && (
+                  <>
+                    <View style={styles.comparisonCard}>
+                      <Text style={styles.comparisonLabel}>수정 전</Text>
+                      <Text style={styles.comparisonText}>{sanitizedOriginalText}</Text>
+                    </View>
+                    <View style={styles.comparisonCard}>
+                      <Text style={styles.comparisonLabel}>AI 제안 후</Text>
+                      <Text style={styles.comparisonText}>{localText}</Text>
+                    </View>
+                  </>
+                )}
+              </View>
+            )}
           </ScrollView>
 
           <View style={styles.inputAreaFixed}>
@@ -326,6 +445,18 @@ export default function EditWithAIPage() {
           cancelText="" // ❗️빈 문자열 전달
           confirmText="확인"
         />
+        <ConfirmModal
+          visible={showLeaveConfirm}
+          title="변경사항을 저장하지 않을까요?"
+          message="지금 나가면 AI 수정 초안과 요청 내용이 사라집니다."
+          onCancel={() => {
+            pendingActionRef.current = null;
+            setShowLeaveConfirm(false);
+          }}
+          onConfirm={goBackToEdit}
+          cancelText="계속 수정"
+          confirmText="나가기"
+        />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -361,6 +492,45 @@ const styles = StyleSheet.create({
   },
   textBoxWrapper: {
     backgroundColor: "#FCF9F4"
+  },
+  comparisonSection: {
+    marginHorizontal: 30,
+    marginTop: 16,
+    marginBottom: 10,
+    backgroundColor: "#FFF8F4",
+    borderRadius: 22,
+    padding: 16
+  },
+  comparisonHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center"
+  },
+  comparisonTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#8D6F60"
+  },
+  comparisonToggle: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#D68089"
+  },
+  comparisonCard: {
+    marginTop: 12,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 14
+  },
+  comparisonLabel: {
+    fontSize: 12,
+    color: "#B09587",
+    marginBottom: 8
+  },
+  comparisonText: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: "#7E6458"
   },
   inputAreaFixed: {
     paddingHorizontal: 20,

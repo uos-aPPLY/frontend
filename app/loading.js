@@ -7,6 +7,7 @@ import IconButton from "../components/IconButton";
 import { usePhoto } from "../contexts/PhotoContext";
 import ConfirmModal from "../components/Modal/ConfirmModal";
 import { useNavigation } from "@react-navigation/native";
+// import CreationFlowProgress from "../components/CreationFlowProgress";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
@@ -101,6 +102,10 @@ export default function LoadingPage() {
 
   return (
     <View style={styles.container}>
+      {/* <CreationFlowProgress
+        currentStep={3}
+        subtitle="사진 흐름을 정리해서 대표 컷을 골라내는 단계예요."
+      /> */}
       <View style={styles.loadingArea}>
         <ActivityIndicator size="large" color="#D68089" />
         <Text style={styles.text}>
@@ -137,7 +142,8 @@ const styles = StyleSheet.create({
   loadingArea: {
     flex: 1,
     justifyContent: "center",
-    alignItems: "center"
+    alignItems: "center",
+    paddingHorizontal: 30
   },
   text: {
     marginTop: 16,

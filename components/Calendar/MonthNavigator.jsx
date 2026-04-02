@@ -52,10 +52,10 @@ export default function MonthNavigator({ currentMonth, onPrev, onNext, onMonthCh
         <Text style={styles.monthText}>{format(currentMonth, "yyyy년 M월")}</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={onNext}>
-        <Text style={styles.iconButton}>
+      <TouchableOpacity onPress={onNext} style={styles.iconButton}>
+        <View style={styles.iconWrapper}>
           <Image source={require("../../assets/icons/forwardicon.png")} style={styles.icon} />
-        </Text>
+        </View>
       </TouchableOpacity>
 
       <YearMonthPicker
@@ -78,6 +78,10 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     padding: 8
+  },
+  iconWrapper: {
+    justifyContent: "center",
+    alignItems: "center"
   },
   icon: {
     width: 14,

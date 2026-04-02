@@ -13,7 +13,7 @@ export default function HelpPage() {
       <WebView
         style={styles.webview}
         source={{
-          uri: "https://tough-trick-2e0.notion.site/1f22150012138047ab7fd687aa02031e?pvs=4"
+          uri: "https://abyssinian-mallow-80c.notion.site/DiaryPic-20edeb51139881a6bf8ede4311146dbc?source=copy_link"
         }}
         startInLoadingState
       />

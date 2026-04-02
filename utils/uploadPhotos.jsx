@@ -39,10 +39,6 @@ export async function uploadPhotos(resizedAssets, token, originalAssets) {
 
   formData.append("metadata", JSON.stringify(metadataArray));
 
-  for (const pair of formData.entries()) {
-    console.log("❤️formData entry:", pair[0], pair[1]);
-  }
-
   const response = await fetch(`${BACKEND_URL}/api/photos/upload`, {
     method: "POST",
     headers: {
@@ -67,6 +63,5 @@ export async function uploadPhotos(resizedAssets, token, originalAssets) {
     }
   }
 
-  console.log("✅ 업로드 성공:", data);
   return data;
 }

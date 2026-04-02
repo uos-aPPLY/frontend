@@ -1,5 +1,5 @@
 // contexts/AuthContext.js
-import React, { createContext, useState, useEffect, useContext, useMemo } from "react";
+import React, { createContext, useState, useEffect, useContext, useMemo, useRef, useCallback } from "react";
 import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 
@@ -13,6 +13,7 @@ const SEC_KEYS = {
   ACCESS_TOKEN: "accessToken",
   REFRESH_TOKEN: "refreshToken",
   ACCESS_EXP: "accessExp",
+  REFRESH_EXP: "refreshExp",
   HAS_COMPLETED_TUTORIAL: "hasCompletedTutorial",
   HAS_CREATED_FIRST_DIARY: "hasCreatedFirstDiary"
 };
@@ -23,8 +24,8 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  let refreshingPromise = null;
+  const tokenRef = useRef(null);
+  const refreshingPromiseRef = useRef(null);
 
   const _getStoredAccessExp = async () =>
     Number(await SecureStore.getItemAsync(SEC_KEYS.ACCESS_EXP)) || 0;
@@ -34,45 +35,101 @@ export function AuthProvider({ children }) {
     return Date.now() > exp - REFRESH_THRESHOLD_MS;
   };
 
+  useEffect(() => {
+    tokenRef.current = token;
+  }, [token]);
+
+  const _clearSession = useCallback(async () => {
+    await Promise.all([
+      SecureStore.deleteItemAsync(SEC_KEYS.ACCESS_TOKEN),
+      SecureStore.deleteItemAsync(SEC_KEYS.ACCESS_EXP),
+      SecureStore.deleteItemAsync(SEC_KEYS.REFRESH_TOKEN),
+      SecureStore.deleteItemAsync(SEC_KEYS.REFRESH_EXP)
+    ]);
+    tokenRef.current = null;
+    setToken(null);
+    setUser(null);
+  }, []);
+
   // refreshToken 으로 accessToken 재발급
-  const _refreshAccessToken = async () => {
-    if (refreshingPromise) return refreshingPromise;
+  const _refreshAccessToken = useCallback(async () => {
+    if (refreshingPromiseRef.current) return refreshingPromiseRef.current;
 
-    refreshingPromise = (async () => {
+    refreshingPromiseRef.current = (async () => {
       const storedRefresh = await SecureStore.getItemAsync(SEC_KEYS.REFRESH_TOKEN);
-      if (!storedRefresh) throw new Error("No refresh token stored");
+      const refreshExp = Number(await SecureStore.getItemAsync(SEC_KEYS.REFRESH_EXP)) || 0;
 
-      const res = await originalFetch(`${BACKEND_URL}/api/auth/refresh`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refreshToken: storedRefresh })
-      });
-      if (!res.ok) throw new Error("Refresh token request failed");
-
-      const {
-        accessToken: newToken,
-        accessTokenExpiresIn,
-        refreshToken: newRefresh
-      } = await res.json();
-
-      const expMs = Date.now() + (accessTokenExpiresIn ?? DEFAULT_EXP_SEC) * 1000;
-
-      await SecureStore.setItemAsync(SEC_KEYS.ACCESS_TOKEN, String(newToken));
-      await SecureStore.setItemAsync(SEC_KEYS.ACCESS_EXP, String(expMs));
-      if (newRefresh != null) {
-        await SecureStore.setItemAsync(SEC_KEYS.REFRESH_TOKEN, String(newRefresh));
+      if (!storedRefresh) {
+        await _clearSession();
+        throw new Error("No refresh token stored");
       }
-      setToken(newToken);
 
-      refreshingPromise = null;
-      return newToken;
+      if (refreshExp > 0 && Date.now() >= refreshExp) {
+        await _clearSession();
+        throw new Error("Refresh token expired");
+      }
+
+      try {
+        const res = await originalFetch(`${BACKEND_URL}/api/auth/refresh`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken: storedRefresh })
+        });
+        if (!res.ok) {
+          await _clearSession();
+          throw new Error("Refresh token request failed");
+        }
+
+        const {
+          accessToken: newToken,
+          accessTokenExpiresIn,
+          refreshToken: newRefresh,
+          refreshTokenExpiresIn: newRefreshExpiresIn
+        } = await res.json();
+
+        if (typeof newToken !== "string" || newToken.length === 0) {
+          await _clearSession();
+          throw new Error("Invalid refresh response");
+        }
+
+        const expMs = Date.now() + (accessTokenExpiresIn ?? DEFAULT_EXP_SEC) * 1000;
+
+        await SecureStore.setItemAsync(SEC_KEYS.ACCESS_TOKEN, String(newToken));
+        await SecureStore.setItemAsync(SEC_KEYS.ACCESS_EXP, String(expMs));
+        if (newRefresh != null) {
+          await SecureStore.setItemAsync(SEC_KEYS.REFRESH_TOKEN, String(newRefresh));
+        }
+        if (newRefreshExpiresIn != null) {
+          const refreshExpMs = Date.now() + Number(newRefreshExpiresIn) * 1000;
+          await SecureStore.setItemAsync(SEC_KEYS.REFRESH_EXP, String(refreshExpMs));
+        }
+
+        tokenRef.current = newToken;
+        setToken(newToken);
+
+        return newToken;
+      } catch (error) {
+        if (
+          error.message === "Refresh token request failed" ||
+          error.message === "Refresh token expired" ||
+          error.message === "Invalid refresh response"
+        ) {
+          throw error;
+        }
+
+        throw new Error(error.message || "Refresh token request failed");
+      }
     })();
 
-    return refreshingPromise;
-  };
+    try {
+      return await refreshingPromiseRef.current;
+    } finally {
+      refreshingPromiseRef.current = null;
+    }
+  }, [_clearSession]);
 
   // 프로필 조회에도 동일 로직 적용
-  const _fetchProfile = async (t) => {
+  const _fetchProfile = useCallback(async (t) => {
     let res = await originalFetch(`${BACKEND_URL}/api/users/me`, {
       headers: { Authorization: `Bearer ${t}` }
     });
@@ -83,7 +140,34 @@ export function AuthProvider({ children }) {
       });
     }
     return res.ok && res.headers.get("content-type")?.includes("json") ? res.json() : null;
-  };
+  }, [_refreshAccessToken]);
+
+  const _resolveAccessToken = useCallback(async () => {
+    const storedToken =
+      tokenRef.current ?? (await SecureStore.getItemAsync(SEC_KEYS.ACCESS_TOKEN));
+
+    if (!storedToken) return null;
+
+    if (await _shouldRefresh()) {
+      return _refreshAccessToken();
+    }
+
+    return storedToken;
+  }, [_refreshAccessToken]);
+
+  const _buildHeaders = useCallback((headers, accessToken, shouldAttachAuth) => {
+    const nextHeaders = { ...(headers || {}) };
+
+    if (shouldAttachAuth) {
+      if (accessToken) {
+        nextHeaders.Authorization = `Bearer ${accessToken}`;
+      } else {
+        delete nextHeaders.Authorization;
+      }
+    }
+
+    return nextHeaders;
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -94,12 +178,16 @@ export function AuthProvider({ children }) {
         ]);
 
         if (storedToken) {
+          let activeToken = storedToken;
+
           if (Date.now() > exp - REFRESH_THRESHOLD_MS) {
-            await _refreshAccessToken();
+            activeToken = await _refreshAccessToken();
           } else {
+            tokenRef.current = storedToken;
             setToken(storedToken);
           }
-          const profile = await _fetchProfile(storedToken);
+
+          const profile = await _fetchProfile(activeToken);
           setUser(profile);
         }
       } catch (e) {
@@ -108,10 +196,10 @@ export function AuthProvider({ children }) {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [_fetchProfile, _refreshAccessToken]);
 
   // 401 이 뜨면 한 번만 _refreshAccessToken 후 재시도
-  const authFetch = async (input, init = {}) => {
+  const authFetch = useCallback(async (input, init = {}) => {
     const url = typeof input === "string" ? input : input.url;
     const skipRefreshPaths = [
       "/api/auth/login",
@@ -119,39 +207,27 @@ export function AuthProvider({ children }) {
       "/health",
       "/maintenance-status"
     ];
-
-    if (!skipRefreshPaths.some((p) => url.endsWith(p)) && (await _shouldRefresh())) {
-      await _refreshAccessToken();
-    }
+    const shouldAttachAuth = !skipRefreshPaths.some((p) => url.endsWith(p));
+    const accessToken = shouldAttachAuth ? await _resolveAccessToken() : null;
 
     let res = await originalFetch(input, {
       ...init,
-      headers: {
-        ...(init.headers || {}),
-        Authorization: skipRefreshPaths.some((p) => url.endsWith(p))
-          ? undefined
-          : token
-          ? `Bearer ${token}`
-          : undefined
-      }
+      headers: _buildHeaders(init.headers, accessToken, shouldAttachAuth)
     });
 
-    if (res.status === 401 && !skipRefreshPaths.some((p) => url.endsWith(p))) {
+    if (res.status === 401 && shouldAttachAuth) {
       const newToken = await _refreshAccessToken();
       res = await originalFetch(input, {
         ...init,
-        headers: {
-          ...(init.headers || {}),
-          Authorization: `Bearer ${newToken}`
-        }
+        headers: _buildHeaders(init.headers, newToken, true)
       });
     }
     return res;
-  };
+  }, [_buildHeaders, _refreshAccessToken, _resolveAccessToken]);
 
   const refetchUser = async () => {
     try {
-      const currentToken = await SecureStore.getItemAsync(SEC_KEYS.ACCESS_TOKEN);
+      const currentToken = await _resolveAccessToken();
       if (currentToken) {
         const profile = await _fetchProfile(currentToken);
         setUser(profile);
@@ -176,10 +252,15 @@ export function AuthProvider({ children }) {
 
     await SecureStore.setItemAsync(SEC_KEYS.ACCESS_TOKEN, accessToken);
     await SecureStore.setItemAsync(SEC_KEYS.ACCESS_EXP, String(expMs));
+    tokenRef.current = accessToken;
     setToken(accessToken);
 
     if (refreshToken != null) {
       await SecureStore.setItemAsync(SEC_KEYS.REFRESH_TOKEN, String(refreshToken));
+    }
+    if (refreshTokenExpiresIn != null) {
+      const refreshExpMs = Date.now() + Number(refreshTokenExpiresIn) * 1000;
+      await SecureStore.setItemAsync(SEC_KEYS.REFRESH_EXP, String(refreshExpMs));
     }
 
     const profile = await _fetchProfile(accessToken);
@@ -213,11 +294,7 @@ export function AuthProvider({ children }) {
   };
 
   const signOut = async () => {
-    await SecureStore.deleteItemAsync(SEC_KEYS.ACCESS_TOKEN);
-    await SecureStore.deleteItemAsync(SEC_KEYS.ACCESS_EXP);
-    await SecureStore.deleteItemAsync(SEC_KEYS.REFRESH_TOKEN);
-    setUser(null);
-    setToken(null);
+    await _clearSession();
   };
 
   const deleteAccount = async () => {
@@ -258,7 +335,7 @@ export function AuthProvider({ children }) {
       checkHasCreatedFirstDiary,
       markFirstDiaryCreated
     }),
-    [user, token, loading]
+    [user, token, loading, _clearSession]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

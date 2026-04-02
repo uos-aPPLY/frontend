@@ -67,7 +67,6 @@ export default function Login() {
       const { identityToken, fullName } = credential;
       if (!identityToken) throw new Error("identityToken 누락");
 
-      console.log("Apple identity token: ", identityToken);
       const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -80,9 +79,6 @@ export default function Login() {
 
       const { accessToken, accessTokenExpiresIn, refreshToken, refreshTokenExpiresIn } =
         await res.json();
-      console.log("Backend access token: ", accessToken);
-      console.log("Backend access token expires in: ", accessTokenExpiresIn);
-      console.log("Backend refresh token: ", refreshToken);
       await saveToken({
         accessToken,
         accessTokenExpiresIn,
@@ -105,7 +101,6 @@ export default function Login() {
     setLoading(true);
     try {
       const { successResponse, failureResponse } = await NaverLogin.login();
-      console.log("Naver Token: ", successResponse);
       if (failureResponse) {
         if (!failureResponse.isCancel) {
           Alert.alert("네이버 로그인 오류", failureResponse.message);
@@ -123,9 +118,6 @@ export default function Login() {
 
       const { accessToken, accessTokenExpiresIn, refreshToken, refreshTokenExpiresIn } =
         await res.json();
-      console.log("Backend access token: ", accessToken);
-      console.log("Backend access token expires in: ", accessTokenExpiresIn);
-      console.log("Backend refresh token: ", refreshToken);
       await saveToken({
         accessToken,
         accessTokenExpiresIn,
@@ -134,7 +126,6 @@ export default function Login() {
       });
 
       const requiredAgreed = await checkRequiredAgreed();
-      console.log("약관 동의 상태: ", requiredAgreed);
       router.replace(requiredAgreed ? "/home" : "/terms");
     } catch (e) {
       // console.error("네이버 로그인 처리 오류:", e);
@@ -148,24 +139,20 @@ export default function Login() {
   const handleKakaoLogin = async () => {
     setLoading(true);
     try {
-      const token =
+      const kakaoToken =
         Platform.OS === "ios" ? await KakaoLogin.loginWithKakaoAccount() : await KakaoLogin.login();
-      console.log(token);
       const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           provider: "kakao",
-          accessToken: token.accessToken
+          accessToken: kakaoToken.accessToken
         })
       });
       if (!res.ok) throw new Error(await res.text());
 
       const { accessToken, accessTokenExpiresIn, refreshToken, refreshTokenExpiresIn } =
         await res.json();
-      console.log("Backend access token: ", accessToken);
-      console.log("Backend access token expires in: ", accessTokenExpiresIn);
-      console.log("Backend refresh token: ", refreshToken);
       await saveToken({
         accessToken,
         accessTokenExpiresIn,

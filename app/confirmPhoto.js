@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import { formatGridData } from "../utils/formatGridData";
 import Constants from "expo-constants";
 import { useDiary } from "../contexts/DiaryContext";
 import { useMemo } from "react";
+// import CreationFlowProgress from "../components/CreationFlowProgress";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -43,6 +44,7 @@ export default function confirmPhoto() {
     [originalPhotoList]
   );
   const isSelectable = originalPhotoList.length > 9;
+  const skipBeforeRemoveCleanupRef = useRef(false);
 
   const toggleSelect = (photo) => {
     const exists = selected.find((p) => p.id === photo.id);
@@ -86,7 +88,7 @@ export default function confirmPhoto() {
   }, [token]);
 
   // ✅ 뒤로가기 정리 함수
-  const cleanupPhotos = async () => {
+  const cleanupPhotos = useCallback(async () => {
     try {
       const res = await fetch(`${BACKEND_URL}/api/photos/selection/temp`, {
         method: "GET",
@@ -113,19 +115,31 @@ export default function confirmPhoto() {
     } catch (error) {
       console.error("❌ 사진 삭제 중 오류:", error);
     }
-  };
+  }, [resetPhoto, token]);
 
   // ✅ 물리/제스처 뒤로가기를 막고 정리 수행
   useEffect(() => {
-    const unsubscribe = navigation.addListener("beforeRemove", async () => {
-      await cleanupPhotos();
+    const unsubscribe = navigation.addListener("beforeRemove", () => {
+      if (skipBeforeRemoveCleanupRef.current) {
+        skipBeforeRemoveCleanupRef.current = false;
+        return;
+      }
+
+      cleanupPhotos();
     });
 
     return unsubscribe;
-  }, [navigation, token]);
+  }, [cleanupPhotos, navigation]);
 
   const handleBack = async () => {
+    skipBeforeRemoveCleanupRef.current = true;
     await cleanupPhotos();
+
+    if (nav.canGoBack()) {
+      nav.back();
+      return;
+    }
+
     nav.replace("/create");
   };
 
@@ -146,6 +160,10 @@ export default function confirmPhoto() {
         </Text>
         <View style={{ width: 24 }} />
       </View>
+      {/* <CreationFlowProgress
+        currentStep={2}
+        subtitle="직접 쓰기와 AI 생성 일기 중 원하는 방식을 고르세요."
+      /> */}
       {photoList.length > 9 && <Text style={styles.count}>{`${selected.length}/9`}</Text>}
 
       <FlatList

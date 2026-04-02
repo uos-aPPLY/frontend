@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -29,6 +29,7 @@ import defaultCharacter from "../../assets/character/char1.png";
 import colors from "../../constants/colors";
 import * as StoreReview from "expo-store-review";
 import { Linking } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -36,7 +37,7 @@ export default function DiaryPage() {
   const nav = useRouter();
   const { token, checkHasCreatedFirstDiary, markFirstDiaryCreated } = useAuth();
 
-  const { date: dateParam } = useLocalSearchParams();
+  const { date: dateParam, from } = useLocalSearchParams();
   const date = dateParam;
   const parsedDate = parseISO(date);
 
@@ -119,10 +120,16 @@ export default function DiaryPage() {
         }
       );
       if (res.ok) {
+        const nextIsFavorited = !diary.isFavorited;
         setDiary((prev) => ({
           ...prev,
           isFavorited: !prev.isFavorited
         }));
+        DeviceEventEmitter.emit("favoriteChanged", {
+          diaryId: diary.id,
+          isFavorited: nextIsFavorited,
+          diaryDate: diary.diaryDate
+        });
       } else {
         console.warn("❌ 즐겨찾기 API 실패:", res.status);
       }
@@ -172,6 +179,17 @@ export default function DiaryPage() {
     setPhotoList([]);
     setTempPhotoList([]);
     setMainPhotoId(null);
+
+    if (from === "generated") {
+      nav.dismissTo({ pathname: "/calendar", params: { date: date } });
+      return;
+    }
+
+    if (nav.canGoBack()) {
+      nav.back();
+      return;
+    }
+
     nav.replace({ pathname: "/calendar", params: { date: date } });
   };
 
@@ -203,73 +221,68 @@ export default function DiaryPage() {
     }
   };
 
-  useEffect(() => {
-    const fetchDiary = async () => {
-      try {
-        const res = await fetch(
-          `${Constants.expoConfig.extra.BACKEND_URL}/api/diaries/by-date?date=${date}`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        );
-        if (!res.ok) {
-          setDiary(undefined);
-          return;
+  const fetchDiary = useCallback(async () => {
+    try {
+      const res = await fetch(
+        `${Constants.expoConfig.extra.BACKEND_URL}/api/diaries/by-date?date=${date}`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
         }
-
-        const text = await res.text();
-        if (!text) {
-          setDiary(undefined);
-          return;
-        }
-
-        const data = JSON.parse(text);
-        console.log("📓 불러온 다이어리 데이터:", data);
-        setDiary(data);
-        setDiaryId(data.id);
-        setDiaryMapById((prev) => ({
-          ...prev,
-          [data.id]: data
-        }));
-
-        setText(data.content || "");
-
-        const characterFound = characterList.find((c) => c.name === data.emotionIcon);
-        if (characterFound) {
-          setSelectedCharacter(characterFound);
-        }
-
-        if (data.diaryDate) {
-          const diaryDateObject = parseISO(data.diaryDate);
-          setSelectedDate(diaryDateObject);
-        }
-
-        setPhotoList(data.photos || []);
-        setTempPhotoList(data.photos || []);
-        const found = data.photos.find((p) => p.photoUrl === data.representativePhotoUrl);
-        if (found) {
-          setMainPhotoId(String(found.id));
-        }
-
-        if (data && data.id && typeof data.status !== "undefined") {
-          await confirmDiaryStatus(data.id, data.status);
-        }
-
-        // 첫 일기인지 확인
-        const hasCreatedFirstDiary = await checkHasCreatedFirstDiary();
-        if (!hasCreatedFirstDiary) {
-          setIsFirstDiary(true);
-          await markFirstDiaryCreated();
-        }
-      } catch (error) {
-        console.error("📛 다이어리 로딩 실패", error);
+      );
+      if (!res.ok) {
         setDiary(undefined);
-      } finally {
-        setLoading(false);
+        return;
       }
-    };
 
-    if (date && token) fetchDiary();
+      const text = await res.text();
+      if (!text) {
+        setDiary(undefined);
+        return;
+      }
+
+      const data = JSON.parse(text);
+      console.log("📓 불러온 다이어리 데이터:", data);
+      setDiary(data);
+      setDiaryId(data.id);
+      setDiaryMapById((prev) => ({
+        ...prev,
+        [data.id]: data
+      }));
+
+      setText(data.content || "");
+
+      const characterFound = characterList.find((c) => c.name === data.emotionIcon);
+      if (characterFound) {
+        setSelectedCharacter(characterFound);
+      }
+
+      if (data.diaryDate) {
+        const diaryDateObject = parseISO(data.diaryDate);
+        setSelectedDate(diaryDateObject);
+      }
+
+      setPhotoList(data.photos || []);
+      setTempPhotoList(data.photos || []);
+      const found = data.photos.find((p) => p.photoUrl === data.representativePhotoUrl);
+      if (found) {
+        setMainPhotoId(String(found.id));
+      }
+
+      if (data && data.id && typeof data.status !== "undefined") {
+        await confirmDiaryStatus(data.id, data.status);
+      }
+
+      const hasCreatedFirstDiary = await checkHasCreatedFirstDiary();
+      if (!hasCreatedFirstDiary) {
+        setIsFirstDiary(true);
+        await markFirstDiaryCreated();
+      }
+    } catch (error) {
+      console.error("📛 다이어리 로딩 실패", error);
+      setDiary(undefined);
+    } finally {
+      setLoading(false);
+    }
   }, [
     date,
     token,
@@ -287,6 +300,17 @@ export default function DiaryPage() {
     markFirstDiaryCreated
   ]);
 
+  useFocusEffect(
+    useCallback(() => {
+      if (!date || !token) {
+        return;
+      }
+
+      setLoading(true);
+      fetchDiary();
+    }, [date, fetchDiary, token])
+  );
+
   if (loading) {
     return (
       <View style={styles.loader}>
@@ -300,7 +324,7 @@ export default function DiaryPage() {
     return (
       <View style={styles.loader}>
         <Text style={styles.loadingText}>해당 날짜에 일기가 없습니다.</Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => nav.back()}>
+        <TouchableOpacity style={styles.backButton} onPress={handleBackNavigation}>
           <Text style={styles.backButtonText}>캘린더로 돌아가기</Text>
         </TouchableOpacity>
       </View>
@@ -387,7 +411,9 @@ export default function DiaryPage() {
           </View>
         </View>
 
-        <Text style={styles.cardText}>{diary.content}</Text>
+        <View style={styles.cardTextWrapper}>
+          <Text style={styles.cardText}>{diary.content}</Text>
+        </View>
       </ScrollView>
 
       <ConfirmModal
@@ -444,17 +470,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12
   },
-  cardText: {
+  cardTextWrapper: {
     backgroundColor: "#fff",
+    borderRadius: 30,
+    marginHorizontal: 30,
+    minHeight: 360,
+    marginBottom: 60,
+    overflow: "hidden"
+  },
+  cardText: {
     color: "#A78C7B",
     fontSize: 16,
     lineHeight: 26,
     paddingVertical: 20,
-    paddingHorizontal: 25,
-    borderRadius: 30,
-    marginHorizontal: 30,
-    minHeight: 360,
-    marginBottom: 60
+    paddingHorizontal: 25
   },
   backButton: {
     marginTop: 20,

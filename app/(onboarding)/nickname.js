@@ -14,7 +14,6 @@ import {
 import { useRouter } from "expo-router";
 import { useAuth } from "../../contexts/AuthContext";
 import Constants from "expo-constants";
-import * as SecureStore from "expo-secure-store";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 
@@ -33,7 +32,7 @@ const Nickname = () => {
   const router = useRouter();
   const [nickname, setNickname] = useState("");
   const [loading, setLoading] = useState(false);
-  const { refetchUser } = useAuth();
+  const { refetchUser, token } = useAuth();
 
   const goBack = () => {
     router.back();
@@ -43,7 +42,6 @@ const Nickname = () => {
     if (loading) return;
     setLoading(true);
     try {
-      const token = await SecureStore.getItemAsync("accessToken");
       if (!token) throw new Error("토큰이 없습니다.");
 
       const res = await fetch(`${BACKEND_URL}/api/users/nickname`, {

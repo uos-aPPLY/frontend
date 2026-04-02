@@ -11,8 +11,18 @@ import { ServerStatusProvider, useServerStatus } from "../contexts/ServerStatusC
 import { PaperProvider } from "react-native-paper";
 import * as SplashScreen from "expo-splash-screen";
 import * as SecureStore from "expo-secure-store";
+import * as Notifications from "expo-notifications";
 import MaintenanceScreen from "../components/MaintenanceScreen";
 import DeveloperMenu from "../components/DeveloperMenu";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true
+  })
+});
 
 SplashScreen.preventAutoHideAsync();
 

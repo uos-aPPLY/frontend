@@ -80,6 +80,9 @@ export default function CreatePage() {
 
   const { token } = useAuth();
 
+  const fallbackRoute =
+    from === "home" ? "/home" : { pathname: "/calendar", params: { date } };
+
   useEffect(() => {
     if (token) {
       clearAllTempPhotos(token);
@@ -99,7 +102,13 @@ export default function CreatePage() {
           onBack={() => {
             resetDiary();
             resetPhoto();
-            nav.replace(`/calendar?date=${date}`);
+
+            if (nav.canGoBack()) {
+              nav.back();
+              return;
+            }
+
+            nav.replace(fallbackRoute);
           }}
           hasText={text.trim().length > 0}
           onSave={createDiary}

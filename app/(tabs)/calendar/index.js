@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import * as Haptics from "expo-haptics";
 import Constants from "expo-constants";
-import * as SecureStore from "expo-secure-store";
 import { useLocalSearchParams } from "expo-router";
 import { addMonths, subMonths, format, parseISO } from "date-fns";
 import HeaderCalender from "../../../components/Header/HeaderCalendar";
@@ -18,11 +17,15 @@ import MonthNavigator from "../../../components/Calendar/MonthNavigator";
 import CalendarGrid from "../../../components/Calendar/CalendarGrid";
 import { CalendarViewContext } from "../../../contexts/CalendarViewContext";
 import { useFocusEffect, useNavigation, StackActions } from "@react-navigation/native";
+import { useAuth } from "../../../contexts/AuthContext";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
+const CALENDAR_AUTO_REFRESH_MS = 30000;
+const FOCUS_REFRESH_DEBOUNCE_MS = 5000;
 
 export default function Calendar({ onDatePress }) {
   const navigation = useNavigation();
+  const { token } = useAuth();
   const { date: dateParam } = useLocalSearchParams();
   const initialMonth = dateParam ? parseISO(dateParam) : new Date();
   const [currentMonth, setCurrentMonth] = useState(initialMonth);
@@ -31,30 +34,50 @@ export default function Calendar({ onDatePress }) {
   const [showEmotion, setShowEmotion] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const isFirstLoad = useRef(true);
+  const inFlightFetchRef = useRef(null);
+  const lastFetchAtRef = useRef(0);
 
   const fetchDiaries = useCallback(
     async (withLoading = false) => {
+      if (inFlightFetchRef.current) {
+        return inFlightFetchRef.current;
+      }
+
+      const task = (async () => {
+        try {
+          if (withLoading) setLoading(true);
+          if (!token) return;
+          const year = format(currentMonth, "yyyy");
+          const month = format(currentMonth, "MM");
+          const res = await fetch(`${BACKEND_URL}/api/diaries/calendar?year=${year}&month=${month}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const data = await res.json();
+          const map = {};
+          data.forEach((item) => {
+            map[item.diaryDate] = item;
+          });
+          setDiariesByDate(map);
+          lastFetchAtRef.current = Date.now();
+        } catch (e) {
+          console.error("fetchDiaries 에러:", e);
+        } finally {
+          inFlightFetchRef.current = null;
+          if (withLoading) setLoading(false);
+        }
+      })();
+
+      inFlightFetchRef.current = task;
+
       try {
-        if (withLoading) setLoading(true);
-        const token = await SecureStore.getItemAsync("accessToken");
-        const year = format(currentMonth, "yyyy");
-        const month = format(currentMonth, "MM");
-        const res = await fetch(`${BACKEND_URL}/api/diaries/calendar?year=${year}&month=${month}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = await res.json();
-        const map = {};
-        data.forEach((item) => {
-          map[item.diaryDate] = item;
-        });
-        setDiariesByDate(map);
-      } catch (e) {
-        console.error("fetchDiaries 에러:", e);
+        await task;
       } finally {
-        if (withLoading) setLoading(false);
+        if (!withLoading) {
+          setLoading(false);
+        }
       }
     },
-    [currentMonth]
+    [currentMonth, token]
   );
 
   useEffect(() => {
@@ -67,7 +90,7 @@ export default function Calendar({ onDatePress }) {
     fetchDiaries(false);
   }, [currentMonth]);
 
-  // ✅ 캘린더 화면에 포커스될 때마다 새로고침 + 30초 주기 인터벌 실행
+  // 캘린더 화면에 포커스될 때 새로고침 + 완화된 주기 자동 갱신
   useFocusEffect(
     useCallback(() => {
       const stackNav = navigation.getParent();
@@ -76,16 +99,15 @@ export default function Calendar({ onDatePress }) {
         stackNav.dispatch(StackActions.popToTop());
       }
 
-      console.log("📌 캘린더 탭 진입 → fetchDiaries 실행");
-      fetchDiaries(false); // 진입 시 1회
+      if (Date.now() - lastFetchAtRef.current > FOCUS_REFRESH_DEBOUNCE_MS) {
+        fetchDiaries(false);
+      }
 
       const intervalId = setInterval(() => {
-        console.log("⏱ 8초마다 캘린더 새로고침 실행");
-        fetchDiaries(false); // 조용한 자동 새로고침
-      }, 8000);
+        fetchDiaries(false);
+      }, CALENDAR_AUTO_REFRESH_MS);
 
       return () => {
-        console.log("👋 캘린더 탭 이탈 → 인터벌 제거");
         clearInterval(intervalId);
       };
     }, [fetchDiaries, navigation])
@@ -94,7 +116,6 @@ export default function Calendar({ onDatePress }) {
   // ✅ 새 일기 생성 이벤트 수신 시 새로고침
   useEffect(() => {
     const subscription = DeviceEventEmitter.addListener("refreshCalendar", () => {
-      console.log("📅 새 일기 생성됨 → 캘린더 새로고침");
       fetchDiaries(false);
     });
 
@@ -108,7 +129,6 @@ export default function Calendar({ onDatePress }) {
       setRefreshing(true);
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       await fetchDiaries(false);
-      console.log("Refreshing Success!");
     } catch (e) {
       console.error("onRefresh 에러:", e);
     } finally {

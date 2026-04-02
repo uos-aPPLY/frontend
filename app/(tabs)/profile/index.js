@@ -1,5 +1,5 @@
 // app/(tabs)/profile/index.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,14 +9,16 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Dimensions,
-  Alert
+  Alert,
+  DeviceEventEmitter
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import TextEditorModal from "../../../components/Modal/TextEditorModal";
 import { LinearGradient } from "expo-linear-gradient";
+import { useAuth } from "../../../contexts/AuthContext";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 const { width } = Dimensions.get("window");
@@ -24,6 +26,7 @@ const CARD_WIDTH = (width - 30 * 2 - 18) / 2; // padding 20 each side + 12 gap
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { token } = useAuth();
   const [albums, setAlbums] = useState([]);
   const [loading, setLoading] = useState(true);
   const [nickname, setNickname] = useState("");
@@ -33,60 +36,96 @@ export default function ProfilePage() {
     month: 0
   });
   const [isModalVisible, setModalVisible] = useState(false);
+  const [albumFilter, setAlbumFilter] = useState("all");
+
+  const fetchProfile = useCallback(async () => {
+    try {
+      if (!token) return;
+      const res = await fetch(`${BACKEND_URL}/api/users/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const json = await res.json();
+      setNickname(json.nickname || "");
+      setDiaryCounts({
+        total: json.totalDiariesCount || 0,
+        year: json.yearDiariesCount || 0,
+        month: json.monthDiariesCount || 0
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  }, [token]);
+
+  const fetchAlbums = useCallback(async () => {
+    try {
+      if (!token) return;
+      const favRes = await fetch(`${BACKEND_URL}/api/albums/favorites`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const favJson = await favRes.json();
+
+      const allRes = await fetch(`${BACKEND_URL}/api/albums`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const allJson = await allRes.json();
+      const otherAlbums = allJson.map((a) => ({
+        id: a.id,
+        name: a.name,
+        coverUrl: a.coverImageUrl,
+        type: "location",
+        subtitle: ""
+      }));
+      let albumsList = otherAlbums;
+      if (Array.isArray(favJson) && favJson.length > 0) {
+        const favCover = favJson[0].representativePhotoUrl;
+        albumsList = [
+          {
+            id: "favorite",
+            name: "좋아요",
+            coverUrl: favCover,
+            type: "favorite",
+            subtitle: ""
+          },
+          ...otherAlbums
+        ];
+      }
+      setAlbums(albumsList);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
 
   useEffect(() => {
-    async function fetchProfile() {
-      try {
-        const token = await SecureStore.getItemAsync("accessToken");
-        const res = await fetch(`${BACKEND_URL}/api/users/me`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const json = await res.json();
-        setNickname(json.nickname || "");
-        setDiaryCounts({
-          total: json.totalDiariesCount || 0,
-          year: json.yearDiariesCount || 0,
-          month: json.monthDiariesCount || 0
-        });
-      } catch (e) {
-        console.error(e);
-      }
+    if (!token) {
+      return;
     }
+
+    setLoading(true);
     fetchProfile();
-  }, []);
+    fetchAlbums();
+  }, [fetchAlbums, fetchProfile, token]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!token) {
+        return;
+      }
+
+      fetchProfile();
+      fetchAlbums();
+    }, [fetchAlbums, fetchProfile, token])
+  );
 
   useEffect(() => {
-    async function fetchAlbums() {
-      try {
-        const token = await SecureStore.getItemAsync("accessToken");
-        const favRes = await fetch(`${BACKEND_URL}/api/albums/favorites`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const favJson = await favRes.json();
+    const subscription = DeviceEventEmitter.addListener("favoriteChanged", () => {
+      fetchProfile();
+      fetchAlbums();
+    });
 
-        const allRes = await fetch(`${BACKEND_URL}/api/albums`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const allJson = await allRes.json();
-        const otherAlbums = allJson.map((a) => ({
-          id: a.id,
-          name: a.name,
-          coverUrl: a.coverImageUrl
-        }));
-        let albumsList = otherAlbums;
-        if (Array.isArray(favJson) && favJson.length > 0) {
-          const favCover = favJson[0].representativePhotoUrl;
-          albumsList = [{ id: "favorite", name: "좋아요", coverUrl: favCover }, ...otherAlbums];
-        }
-        setAlbums(albumsList);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchAlbums();
-  }, []);
+    return () => subscription.remove();
+  }, [fetchAlbums, fetchProfile]);
 
   const handleSaveNickname = async (newName) => {
     const trimmedName = newName.trim();
@@ -118,7 +157,10 @@ export default function ProfilePage() {
     }
 
     try {
-      const token = await SecureStore.getItemAsync("accessToken");
+      if (!token) {
+        Alert.alert("오류", "로그인 정보가 없습니다.");
+        return false;
+      }
       const response = await fetch(`${BACKEND_URL}/api/users/nickname`, {
         method: "PATCH",
         headers: {
@@ -151,6 +193,28 @@ export default function ProfilePage() {
     );
   }
 
+  const albumFilters = [
+    { key: "all", label: "전체", count: albums.length },
+    {
+      key: "favorite",
+      label: "좋아요",
+      count: albums.filter((album) => album.type === "favorite").length
+    },
+    {
+      key: "location",
+      label: "위치",
+      count: albums.filter((album) => album.type === "location").length
+    }
+  ];
+
+  const filteredAlbums = albums.filter((album) => {
+    if (albumFilter === "all") {
+      return true;
+    }
+
+    return album.type === albumFilter;
+  });
+
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.header} edges={["top"]}>
@@ -182,8 +246,27 @@ export default function ProfilePage() {
         </View>
       </SafeAreaView>
 
+      <View style={styles.filterRow}>
+        {albumFilters.map((filter) => (
+          <TouchableOpacity
+            key={filter.key}
+            style={[styles.filterChip, albumFilter === filter.key && styles.activeFilterChip]}
+            onPress={() => setAlbumFilter(filter.key)}
+          >
+            <Text
+              style={[
+                styles.filterChipText,
+                albumFilter === filter.key && styles.activeFilterChipText
+              ]}
+            >
+              {`${filter.label} ${filter.count}`}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
       <FlatList
-        data={albums}
+        data={filteredAlbums}
         keyExtractor={(item) => item.id.toString()}
         numColumns={2}
         columnWrapperStyle={styles.row}
@@ -213,12 +296,15 @@ export default function ProfilePage() {
               )}
             </View>
             <Text style={styles.cardText}>{item.name}</Text>
+            {item.subtitle ? <Text style={styles.cardSubText}>{item.subtitle}</Text> : null}
           </TouchableOpacity>
         )}
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>
-              좋아요 앨범과 위치 기반 앨범이{"\n"}자동으로 생성됩니다.
+              {albumFilter === "all"
+                ? "좋아요 앨범과 위치 기반 앨범이\n자동으로 생성됩니다."
+                : "선택한 필터에 맞는 앨범이 아직 없습니다."}
             </Text>
           </View>
         )}
@@ -301,11 +387,37 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 30,
-    paddingTop: 30
+    paddingTop: 14,
+    paddingBottom: 30
   },
   row: {
     justifyContent: "space-between",
     marginBottom: 10
+  },
+  filterRow: {
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 30,
+    paddingTop: 18,
+    paddingBottom: 8,
+    marginBottom: 8
+  },
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 18,
+    backgroundColor: "#EFE5DD"
+  },
+  activeFilterChip: {
+    backgroundColor: "#D68089"
+  },
+  filterChipText: {
+    fontSize: 13,
+    color: "#8D6F60",
+    fontWeight: "600"
+  },
+  activeFilterChipText: {
+    color: "#fff"
   },
   card: {
     width: CARD_WIDTH,
@@ -332,6 +444,13 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontSize: 14,
     color: "#AC8B78"
+  },
+  cardSubText: {
+    marginTop: 4,
+    fontSize: 12,
+    color: "#B49A8A",
+    textAlign: "center",
+    lineHeight: 16
   },
   emptyContainer: {
     flex: 1,

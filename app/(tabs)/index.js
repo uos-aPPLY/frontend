@@ -81,7 +81,7 @@ export default function Home() {
       return;
     }
     setSelectedDate(todayStr);
-    nav.push(`/create?date=${todayStr}&from=calendar`);
+    nav.push(`/create?date=${todayStr}&from=home`);
   };
 
   return (
