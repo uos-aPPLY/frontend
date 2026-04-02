@@ -13,6 +13,7 @@ const SEC_KEYS = {
   ACCESS_TOKEN: "accessToken",
   REFRESH_TOKEN: "refreshToken",
   ACCESS_EXP: "accessExp",
+  REFRESH_EXP: "refreshExp",
   HAS_COMPLETED_TUTORIAL: "hasCompletedTutorial",
   HAS_CREATED_FIRST_DIARY: "hasCreatedFirstDiary"
 };
@@ -38,39 +39,86 @@ export function AuthProvider({ children }) {
     tokenRef.current = token;
   }, [token]);
 
+  const _clearSession = useCallback(async () => {
+    await Promise.all([
+      SecureStore.deleteItemAsync(SEC_KEYS.ACCESS_TOKEN),
+      SecureStore.deleteItemAsync(SEC_KEYS.ACCESS_EXP),
+      SecureStore.deleteItemAsync(SEC_KEYS.REFRESH_TOKEN),
+      SecureStore.deleteItemAsync(SEC_KEYS.REFRESH_EXP)
+    ]);
+    tokenRef.current = null;
+    setToken(null);
+    setUser(null);
+  }, []);
+
   // refreshToken 으로 accessToken 재발급
   const _refreshAccessToken = useCallback(async () => {
     if (refreshingPromiseRef.current) return refreshingPromiseRef.current;
 
     refreshingPromiseRef.current = (async () => {
       const storedRefresh = await SecureStore.getItemAsync(SEC_KEYS.REFRESH_TOKEN);
-      if (!storedRefresh) throw new Error("No refresh token stored");
+      const refreshExp = Number(await SecureStore.getItemAsync(SEC_KEYS.REFRESH_EXP)) || 0;
 
-      const res = await originalFetch(`${BACKEND_URL}/api/auth/refresh`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refreshToken: storedRefresh })
-      });
-      if (!res.ok) throw new Error("Refresh token request failed");
-
-      const {
-        accessToken: newToken,
-        accessTokenExpiresIn,
-        refreshToken: newRefresh
-      } = await res.json();
-
-      const expMs = Date.now() + (accessTokenExpiresIn ?? DEFAULT_EXP_SEC) * 1000;
-
-      await SecureStore.setItemAsync(SEC_KEYS.ACCESS_TOKEN, String(newToken));
-      await SecureStore.setItemAsync(SEC_KEYS.ACCESS_EXP, String(expMs));
-      if (newRefresh != null) {
-        await SecureStore.setItemAsync(SEC_KEYS.REFRESH_TOKEN, String(newRefresh));
+      if (!storedRefresh) {
+        await _clearSession();
+        throw new Error("No refresh token stored");
       }
 
-      tokenRef.current = newToken;
-      setToken(newToken);
+      if (refreshExp > 0 && Date.now() >= refreshExp) {
+        await _clearSession();
+        throw new Error("Refresh token expired");
+      }
 
-      return newToken;
+      try {
+        const res = await originalFetch(`${BACKEND_URL}/api/auth/refresh`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken: storedRefresh })
+        });
+        if (!res.ok) {
+          await _clearSession();
+          throw new Error("Refresh token request failed");
+        }
+
+        const {
+          accessToken: newToken,
+          accessTokenExpiresIn,
+          refreshToken: newRefresh,
+          refreshTokenExpiresIn: newRefreshExpiresIn
+        } = await res.json();
+
+        if (typeof newToken !== "string" || newToken.length === 0) {
+          await _clearSession();
+          throw new Error("Invalid refresh response");
+        }
+
+        const expMs = Date.now() + (accessTokenExpiresIn ?? DEFAULT_EXP_SEC) * 1000;
+
+        await SecureStore.setItemAsync(SEC_KEYS.ACCESS_TOKEN, String(newToken));
+        await SecureStore.setItemAsync(SEC_KEYS.ACCESS_EXP, String(expMs));
+        if (newRefresh != null) {
+          await SecureStore.setItemAsync(SEC_KEYS.REFRESH_TOKEN, String(newRefresh));
+        }
+        if (newRefreshExpiresIn != null) {
+          const refreshExpMs = Date.now() + Number(newRefreshExpiresIn) * 1000;
+          await SecureStore.setItemAsync(SEC_KEYS.REFRESH_EXP, String(refreshExpMs));
+        }
+
+        tokenRef.current = newToken;
+        setToken(newToken);
+
+        return newToken;
+      } catch (error) {
+        if (
+          error.message === "Refresh token request failed" ||
+          error.message === "Refresh token expired" ||
+          error.message === "Invalid refresh response"
+        ) {
+          throw error;
+        }
+
+        throw new Error(error.message || "Refresh token request failed");
+      }
     })();
 
     try {
@@ -78,7 +126,7 @@ export function AuthProvider({ children }) {
     } finally {
       refreshingPromiseRef.current = null;
     }
-  }, []);
+  }, [_clearSession]);
 
   // 프로필 조회에도 동일 로직 적용
   const _fetchProfile = useCallback(async (t) => {
@@ -210,6 +258,10 @@ export function AuthProvider({ children }) {
     if (refreshToken != null) {
       await SecureStore.setItemAsync(SEC_KEYS.REFRESH_TOKEN, String(refreshToken));
     }
+    if (refreshTokenExpiresIn != null) {
+      const refreshExpMs = Date.now() + Number(refreshTokenExpiresIn) * 1000;
+      await SecureStore.setItemAsync(SEC_KEYS.REFRESH_EXP, String(refreshExpMs));
+    }
 
     const profile = await _fetchProfile(accessToken);
     setUser(profile);
@@ -242,12 +294,7 @@ export function AuthProvider({ children }) {
   };
 
   const signOut = async () => {
-    await SecureStore.deleteItemAsync(SEC_KEYS.ACCESS_TOKEN);
-    await SecureStore.deleteItemAsync(SEC_KEYS.ACCESS_EXP);
-    await SecureStore.deleteItemAsync(SEC_KEYS.REFRESH_TOKEN);
-    tokenRef.current = null;
-    setUser(null);
-    setToken(null);
+    await _clearSession();
   };
 
   const deleteAccount = async () => {
@@ -288,7 +335,7 @@ export function AuthProvider({ children }) {
       checkHasCreatedFirstDiary,
       markFirstDiaryCreated
     }),
-    [user, token, loading]
+    [user, token, loading, _clearSession]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
