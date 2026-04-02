@@ -13,7 +13,8 @@ import {
   Alert
 } from "react-native";
 import { useRouter } from "expo-router";
-import DraggableFlatList, { ScaleDecorator } from "react-native-draggable-flatlist";
+import DraggableFlatList from "react-native-draggable-flatlist";
+import * as Haptics from "expo-haptics";
 import IconButton from "../components/IconButton";
 import { useAuth } from "../contexts/AuthContext";
 import { usePhoto } from "../contexts/PhotoContext";
@@ -23,6 +24,10 @@ import colors from "../constants/colors";
 // import CreationFlowProgress from "../components/CreationFlowProgress";
 
 const screenWidth = Dimensions.get("window").width;
+const CARD_WIDTH = screenWidth - 112;
+const CARD_GAP = 14;
+const SIDE_PADDING = (screenWidth - CARD_WIDTH) / 2;
+const SNAP_INTERVAL = CARD_WIDTH + CARD_GAP;
 
 function normalizeKeywordInput(value) {
   return value.replace(/^#+/, "").replace(/\s+/g, " ").trim();
@@ -70,6 +75,8 @@ export default function GeneratePage() {
   const [customKeywordPool, setCustomKeywordPool] = useState([]);
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [targetDeletePhotoId, setTargetDeletePhotoId] = useState(null);
+  const [isReordering, setIsReordering] = useState(false);
+  const placeholderIndexRef = useRef(0);
 
   console.log("selected:", selected);
   console.log(
@@ -107,10 +114,9 @@ export default function GeneratePage() {
   const handleNext = () => {
     const nextIdx = currentIndex + 1;
     if (nextIdx < visiblePhotos.length) {
-      flatListRef.current?.scrollToIndex({
-        index: nextIdx,
-        animated: true,
-        viewPosition: 0
+      flatListRef.current?.scrollToOffset?.({
+        offset: Math.max(0, nextIdx * SNAP_INTERVAL),
+        animated: true
       });
       setCurrentIndex(nextIdx);
     }
@@ -278,7 +284,8 @@ export default function GeneratePage() {
     setHiddenIds((prev) => [...prev, id]);
   };
   const handleDragEnd = useCallback(
-    ({ data }) => {
+    ({ data, to }) => {
+      setIsReordering(false);
       setPhotos(data);
 
       // 👉 selected도 새 순서로 업데이트
@@ -296,6 +303,15 @@ export default function GeneratePage() {
           updated[photo.id] = prev[photo.id] || [];
         });
         return updated;
+      });
+
+      const nextIndex = Math.max(0, Math.min(data.length - 1, to));
+      setCurrentIndex(nextIndex);
+      requestAnimationFrame(() => {
+        flatListRef.current?.scrollToOffset?.({
+          offset: Math.max(0, nextIndex * SNAP_INTERVAL),
+          animated: true
+        });
       });
     },
     [selected]
@@ -361,33 +377,58 @@ export default function GeneratePage() {
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
+        {visiblePhotos.length > 0 && (
+          <View style={styles.pageIndicator}>
+            {visiblePhotos.map((photo, index) => (
+              <TouchableOpacity
+                key={photo.id?.toString() ?? `photo-${index}`}
+                onPress={() => {
+                  flatListRef.current?.scrollToOffset?.({
+                    offset: Math.max(0, index * SNAP_INTERVAL),
+                    animated: true
+                  });
+                  setCurrentIndex(index);
+                }}
+                style={styles.indicatorItem}
+              >
+                {currentIndex === index ? (
+                  <Image source={{ uri: photo.photoUrl }} style={styles.thumbnail} />
+                ) : (
+                  <View style={styles.dot} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
         <DraggableFlatList
           ref={flatListRef}
           data={visiblePhotos}
           keyExtractor={(item) => item?.id?.toString()}
-          onViewableItemsChanged={({ viewableItems }) => {
-            if (viewableItems.length > 0) {
-              setCurrentIndex(viewableItems[0].index ?? 0);
-            }
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={(event) => {
+            const rawIndex = Math.round(event.nativeEvent.contentOffset.x / SNAP_INTERVAL);
+            const clampedIndex = Math.max(0, Math.min(visiblePhotos.length - 1, rawIndex));
+            setCurrentIndex(clampedIndex);
           }}
-          dragItemOverflow={false}
-          activationDelay={200}
-          viewabilityConfig={{ itemVisiblePercentThreshold: 70 }}
-          renderItem={({ item, drag, isActive }) => (
-            <ScaleDecorator>
-              <View style={styles.cardWrapper}>
-                <View style={styles.cardShadowWrapper}>
-                  <TouchableOpacity onLongPress={drag} delayLongPress={200} activeOpacity={1}>
-                    <View
-                      style={[
-                        styles.card,
-                        isActive && {
-                          opacity: 0.8,
-                          width: screenWidth * 0.62,
-                          height: screenWidth * 0.62
-                        }
-                      ]}
-                    >
+          renderItem={({ item, drag, isActive, getIndex }) => {
+            const itemIndex = getIndex?.() ?? 0;
+
+            return (
+              <TouchableOpacity
+                activeOpacity={1}
+                onLongPress={() => {
+                  setIsReordering(true);
+                  placeholderIndexRef.current = itemIndex;
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                  drag();
+                }}
+                delayLongPress={260}
+              >
+                <View style={styles.cardWrapper}>
+                  <View style={[styles.cardShadowWrapper, isActive && styles.activeCardShadow]}>
+                    <View style={styles.card}>
                       <Image
                         source={{ uri: item.photoUrl }}
                         style={styles.cardImage}
@@ -419,75 +460,98 @@ export default function GeneratePage() {
                         />
                       </TouchableOpacity>
                     </View>
-                  </TouchableOpacity>
-                </View>
+                  </View>
 
-                <View style={styles.keywordContainer}>
-                  <Text style={styles.keywordHelper}>
-                    {(keywords[item.id] || []).length > 0
-                      ? `선택된 키워드 ${(keywords[item.id] || []).length}개`
-                      : "탭해서 고르거나 직접 추가해보세요."}
-                  </Text>
+                  <View style={styles.keywordContainer}>
+                    <Text style={styles.keywordHelper}>
+                      {(keywords[item.id] || []).length > 0
+                        ? `선택된 키워드 ${(keywords[item.id] || []).length}개`
+                        : "탭해서 고르거나 직접 추가해보세요."}
+                    </Text>
 
-                  {getOrderedKeywordOptions(item.id).map((kw, i) => {
-                    const isSelected = keywords[item.id]?.includes(kw);
-                    return (
-                      <TouchableOpacity
-                        key={`common-${i}`}
-                        style={[styles.keywordTag, isSelected && styles.selectedKeywordTag]}
-                        onPress={() => toggleKeywordSelection(item.id, kw)}
-                      >
-                        <Text
-                          style={[styles.keywordText, isSelected && styles.selectedKeywordText]}
+                    {getOrderedKeywordOptions(item.id).map((kw, i) => {
+                      const isSelected = keywords[item.id]?.includes(kw);
+                      return (
+                        <TouchableOpacity
+                          key={`common-${i}`}
+                          style={[styles.keywordTag, isSelected && styles.selectedKeywordTag]}
+                          onPress={() => toggleKeywordSelection(item.id, kw)}
                         >
-                          {kw}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
+                          <Text
+                            style={[styles.keywordText, isSelected && styles.selectedKeywordText]}
+                          >
+                            {kw}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
 
-                  {editingKeywordPhotoId === item.id ? (
-                    <View style={styles.keywordInputRow}>
-                      <TextInput
-                        value={newKeyword}
-                        onChangeText={setNewKeyword}
-                        placeholder="#새 키워드"
-                        style={styles.keywordInputInline}
-                        onSubmitEditing={handleKeywordSubmit}
-                        onBlur={handleKeywordSubmit}
-                        autoFocus
-                      />
+                    {editingKeywordPhotoId === item.id ? (
+                      <View style={styles.keywordInputRow}>
+                        <TextInput
+                          value={newKeyword}
+                          onChangeText={setNewKeyword}
+                          placeholder="#새 키워드"
+                          style={styles.keywordInputInline}
+                          onSubmitEditing={handleKeywordSubmit}
+                          onBlur={handleKeywordSubmit}
+                          autoFocus
+                        />
+                        <TouchableOpacity
+                          style={styles.keywordAddButton}
+                          onPress={handleKeywordSubmit}
+                        >
+                          <Text style={styles.keywordAddButtonText}>추가</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
                       <TouchableOpacity
-                        style={styles.keywordAddButton}
-                        onPress={handleKeywordSubmit}
+                        style={styles.addKeyword}
+                        onPress={() => handleAddKeyword(item.id)}
                       >
-                        <Text style={styles.keywordAddButtonText}>추가</Text>
+                        <Text style={styles.addText}># +</Text>
                       </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.addKeyword}
-                      onPress={() => handleAddKeyword(item.id)}
-                    >
-                      <Text style={styles.addText}># +</Text>
-                    </TouchableOpacity>
-                  )}
+                    )}
+                  </View>
                 </View>
-              </View>
-            </ScaleDecorator>
-          )}
-          activationDistance={20}
-          autoscrollThreshold={100}
-          autoscrollSpeed={25}
-          onDragEnd={handleDragEnd}
-          scrollEnabled={true}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{
-            paddingBottom: 260,
-            paddingTop: 20, // ✅ 위쪽 여유도 추가
-            minHeight: Dimensions.get("window").height
+              </TouchableOpacity>
+            );
           }}
+          activationDistance={18}
+          onDragBegin={(index) => {
+            setIsReordering(true);
+            placeholderIndexRef.current = index;
+          }}
+          onRelease={() => setIsReordering(false)}
+          onPlaceholderIndexChange={(index) => {
+            if (index == null || index < 0 || index === placeholderIndexRef.current) {
+              return;
+            }
+
+            placeholderIndexRef.current = index;
+            Haptics.selectionAsync().catch(() => {});
+          }}
+          dragItemOverflow
+          snapToInterval={isReordering ? undefined : SNAP_INTERVAL}
+          decelerationRate={isReordering ? "normal" : "fast"}
+          snapToAlignment="start"
+          autoscrollThreshold={32}
+          autoscrollSpeed={90}
+          contentContainerStyle={styles.listContent}
+          containerStyle={styles.listContainer}
+          keyboardShouldPersistTaps="handled"
+          removeClippedSubviews={false}
+          extraData={{ editingKeywordPhotoId, keywords, mainPhotoId, isReordering }}
+          onDragEnd={handleDragEnd}
         />
+
+        {visiblePhotos.length > 1 ? (
+          <Text style={styles.reorderHint}>
+            {isReordering
+              ? "좌우로 움직여 사진 순서를 바꿀 수 있어요."
+              : "사진을 길게 눌러 좌우로 움직이면 순서를 바꿀 수 있어요."}
+          </Text>
+        ) : null}
       </KeyboardAvoidingView>
 
       <View style={styles.bottomRow}>
@@ -556,24 +620,58 @@ const styles = StyleSheet.create({
     paddingTop: 5,
     paddingBottom: 10
   },
-  cardWrapper: {
-    width: screenWidth,
+  listContainer: {
+    flex: 1
+  },
+  pageIndicator: {
+    flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
-    marginTop: 20,
-    marginBottom: 40
+    gap: 16,
+    height: 22,
+    marginTop: 6,
+    marginBottom: 10
+  },
+  indicatorItem: {
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 4,
+    backgroundColor: "#D9D9D9"
+  },
+  thumbnail: {
+    width: 24,
+    height: 24,
+    borderRadius: 4
+  },
+  listContent: {
+    paddingHorizontal: SIDE_PADDING,
+    paddingTop: 12,
+    paddingBottom: 260
+  },
+  cardWrapper: {
+    width: CARD_WIDTH,
+    marginRight: CARD_GAP,
+    alignItems: "center"
   },
   cardShadowWrapper: {
-    backgroundColor: "#fff",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
-    borderRadius: 30
+    borderRadius: 30,
+    overflow: "visible"
+  },
+  activeCardShadow: {
+    transform: [{ scale: 1.03 }]
   },
   card: {
-    width: screenWidth * 0.6,
-    height: screenWidth * 0.6,
+    width: CARD_WIDTH,
+    height: CARD_WIDTH,
     aspectRatio: 1,
     borderRadius: 30,
     overflow: "hidden",
@@ -622,7 +720,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginTop: 16,
     gap: 8,
-    paddingHorizontal: 45
+    paddingHorizontal: 8,
+    paddingBottom: 8
   },
   keywordHelper: {
     width: "100%",
@@ -694,6 +793,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     color: "#fff"
+  },
+  reorderHint: {
+    marginTop: 8,
+    marginBottom: 6,
+    textAlign: "center",
+    fontSize: 12,
+    lineHeight: 18,
+    color: "#A78C7B",
+    paddingHorizontal: 36
   },
   bottomRow: {
     position: "absolute",

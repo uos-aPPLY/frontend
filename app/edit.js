@@ -284,6 +284,19 @@ export default function EditPage() {
     }
   };
 
+  const handleInlineReorder = useCallback(
+    (reorderedPhotos) => {
+      setPhotoList(reorderedPhotos);
+      setTempPhotoList(reorderedPhotos);
+      setSelected(reorderedPhotos.map((photo) => String(photo.id)));
+
+      if (!reorderedPhotos.some((photo) => String(photo.id) === String(mainPhotoId))) {
+        setMainPhotoId(reorderedPhotos[0] ? String(reorderedPhotos[0].id) : null);
+      }
+    },
+    [mainPhotoId, setMainPhotoId, setPhotoList, setSelected, setTempPhotoList]
+  );
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -306,6 +319,8 @@ export default function EditPage() {
             onAddPhoto={handleAddPhoto}
             currentIndex={currentIndex}
             setCurrentIndex={setCurrentIndex}
+            enableInlineReorder
+            onReorderPhotos={handleInlineReorder}
           />
 
           <View style={styles.characterRow}>
@@ -336,13 +351,7 @@ export default function EditPage() {
                   opacity: photos.filter((p) => p.type !== "add").length === 0 ? 0.3 : 1
                 }}
               />
-              <IconButton
-                source={require("../assets/icons/pictureinfoicon.png")}
-                wsize={28}
-                hsize={24}
-                onPress={photos.length === 0 ? null : () => nav.push("/photoReorder")}
-                style={{ opacity: photos.length <= 1 ? 0.3 : 1 }}
-              />
+              <View style={styles.rightButtonSpacer} />
             </View>
           </View>
 
@@ -432,6 +441,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
     alignItems: "center"
+  },
+  rightButtonSpacer: {
+    width: 28,
+    height: 24
   },
   textBoxWrapper: {
     paddingHorizontal: 30,
