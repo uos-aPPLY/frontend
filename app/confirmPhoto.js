@@ -17,6 +17,7 @@ import { formatGridData } from "../utils/formatGridData";
 import Constants from "expo-constants";
 import { useDiary } from "../contexts/DiaryContext";
 import { useMemo } from "react";
+// import CreationFlowProgress from "../components/CreationFlowProgress";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -159,6 +160,10 @@ export default function confirmPhoto() {
         </Text>
         <View style={{ width: 24 }} />
       </View>
+      {/* <CreationFlowProgress
+        currentStep={2}
+        subtitle="직접 쓰기와 AI 생성 일기 중 원하는 방식을 고르세요."
+      /> */}
       {photoList.length > 9 && <Text style={styles.count}>{`${selected.length}/9`}</Text>}
 
       <FlatList

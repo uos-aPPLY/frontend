@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -23,6 +23,15 @@ import { useAuth } from "../contexts/AuthContext";
 import Constants from "expo-constants";
 import ConfirmModal from "../components/Modal/ConfirmModal";
 import { openGalleryAndAdd } from "../utils/openGalleryAndAdd";
+
+function buildEditSnapshot({ text, selectedCharacter, photos, mainPhotoId }) {
+  return JSON.stringify({
+    text,
+    selectedCharacter: selectedCharacter?.name ?? "",
+    mainPhotoId: mainPhotoId ? String(mainPhotoId) : "",
+    photoIds: photos.filter((photo) => photo.type !== "add").map((photo) => String(photo.id))
+  });
+}
 
 export default function EditPage() {
   const { token } = useAuth();
@@ -54,6 +63,10 @@ export default function EditPage() {
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [photoToDelete, setPhotoToDelete] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const initialSnapshotRef = useRef(null);
+  const pendingActionRef = useRef(null);
+  const skipBeforeRemoveRef = useRef(false);
 
   useLayoutEffect(() => {
     navigation.setOptions({ gestureEnabled: false });
@@ -99,6 +112,26 @@ export default function EditPage() {
 
   console.log("📦 PATCH 요청 body:", JSON.stringify(payload, null, 2));
 
+  const currentSnapshot = useMemo(
+    () =>
+      buildEditSnapshot({
+        text,
+        selectedCharacter,
+        photos,
+        mainPhotoId
+      }),
+    [mainPhotoId, photos, selectedCharacter, text]
+  );
+
+  useEffect(() => {
+    if (diaryId && initialSnapshotRef.current === null) {
+      initialSnapshotRef.current = currentSnapshot;
+    }
+  }, [currentSnapshot, diaryId]);
+
+  const hasUnsavedChanges =
+    initialSnapshotRef.current !== null && initialSnapshotRef.current !== currentSnapshot;
+
   const photosToRender = [...photos];
   if (photosToRender.length < 9) {
     photosToRender.push({ id: "add", type: "add" });
@@ -107,6 +140,63 @@ export default function EditPage() {
     setPhotoToDelete(photoId);
     setConfirmVisible(true);
   };
+
+  const leaveToDiary = useCallback(() => {
+    skipBeforeRemoveRef.current = true;
+    initialSnapshotRef.current = currentSnapshot;
+    resetDiary();
+    resetPhoto();
+    setShowLeaveConfirm(false);
+
+    const pendingAction = pendingActionRef.current;
+    pendingActionRef.current = null;
+
+    if (pendingAction) {
+      navigation.dispatch(pendingAction);
+      return;
+    }
+
+    if (nav.canGoBack()) {
+      nav.back();
+      return;
+    }
+
+    nav.replace({ pathname: "/diary/[date]", params: { date } });
+  }, [currentSnapshot, date, nav, navigation, resetDiary, resetPhoto]);
+
+  const attemptLeave = useCallback(() => {
+    if (!hasUnsavedChanges) {
+      leaveToDiary();
+      return;
+    }
+
+    setShowLeaveConfirm(true);
+  }, [hasUnsavedChanges, leaveToDiary]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("beforeRemove", (event) => {
+      const actionType = event.data.action?.type;
+
+      if (skipBeforeRemoveRef.current) {
+        skipBeforeRemoveRef.current = false;
+        return;
+      }
+
+      if (!["GO_BACK", "POP", "POP_TO_TOP"].includes(actionType)) {
+        return;
+      }
+
+      if (!hasUnsavedChanges) {
+        return;
+      }
+
+      event.preventDefault();
+      pendingActionRef.current = event.data.action;
+      setShowLeaveConfirm(true);
+    });
+
+    return unsubscribe;
+  }, [hasUnsavedChanges, navigation]);
 
   const handleDeleteConfirmed = () => {
     if (photoToDelete) {
@@ -155,6 +245,8 @@ export default function EditPage() {
       }
 
       DeviceEventEmitter.emit("refreshCalendar");
+      skipBeforeRemoveRef.current = true;
+      initialSnapshotRef.current = currentSnapshot;
       resetPhoto();
       resetDiary();
 
@@ -200,17 +292,7 @@ export default function EditPage() {
       <View style={styles.container}>
         <HeaderDate
           date={date}
-          onBack={() => {
-            resetDiary();
-            resetPhoto();
-
-            if (nav.canGoBack()) {
-              nav.back();
-              return;
-            }
-
-            nav.replace({ pathname: "/diary/[date]", params: { date } });
-          }}
+          onBack={attemptLeave}
           hasText={text.trim().length > 0}
           onSave={handleSave}
         />
@@ -293,6 +375,19 @@ export default function EditPage() {
               onConfirm={handleDeleteConfirmed}
               cancelText="취소"
               confirmText="삭제"
+            />
+
+            <ConfirmModal
+              visible={showLeaveConfirm}
+              title="변경사항을 저장하지 않을까요?"
+              message="지금 나가면 수정 중인 내용이 반영되지 않습니다."
+              onCancel={() => {
+                pendingActionRef.current = null;
+                setShowLeaveConfirm(false);
+              }}
+              onConfirm={leaveToDiary}
+              cancelText="계속 수정"
+              confirmText="나가기"
             />
           </View>
         </ScrollView>

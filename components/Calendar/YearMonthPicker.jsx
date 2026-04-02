@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Modal,
   View,
@@ -11,19 +11,28 @@ import {
 import { format } from "date-fns";
 
 const screenHeight = Dimensions.get("window").height;
+const PICKER_ITEM_HEIGHT = 46;
 
 export default function YearMonthPicker({ visible, currentMonth, onSelect, onClose }) {
   const currentYear = currentMonth.getFullYear();
   const currentMonthNum = currentMonth.getMonth();
+  const actualCurrentYear = new Date().getFullYear();
 
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedMonth, setSelectedMonth] = useState(currentMonthNum);
+  const yearScrollRef = useRef(null);
+  const monthScrollRef = useRef(null);
 
-  // 2020년부터 현재 년도 + 5년까지
-  const years = [];
-  for (let year = 2020; year <= currentYear; year++) {
-    years.push(year);
-  }
+  const years = useMemo(() => {
+    const maxYear = Math.max(actualCurrentYear, currentYear);
+    const yearList = [];
+
+    for (let year = 2020; year <= maxYear; year++) {
+      yearList.push(year);
+    }
+
+    return yearList;
+  }, [actualCurrentYear, currentYear]);
 
   const months = [
     "1월",
@@ -39,6 +48,28 @@ export default function YearMonthPicker({ visible, currentMonth, onSelect, onClo
     "11월",
     "12월"
   ];
+
+  useEffect(() => {
+    if (!visible) return;
+
+    setSelectedYear(currentYear);
+    setSelectedMonth(currentMonthNum);
+
+    requestAnimationFrame(() => {
+      const yearIndex = years.findIndex((year) => year === currentYear);
+      if (yearIndex >= 0) {
+        yearScrollRef.current?.scrollTo({
+          y: Math.max(0, yearIndex * PICKER_ITEM_HEIGHT - PICKER_ITEM_HEIGHT),
+          animated: false
+        });
+      }
+
+      monthScrollRef.current?.scrollTo({
+        y: Math.max(0, currentMonthNum * PICKER_ITEM_HEIGHT - PICKER_ITEM_HEIGHT),
+        animated: false
+      });
+    });
+  }, [visible, currentMonthNum, currentYear, years]);
 
   const handleConfirm = () => {
     const selectedDate = new Date(selectedYear, selectedMonth, 1);
@@ -65,6 +96,7 @@ export default function YearMonthPicker({ visible, currentMonth, onSelect, onClo
             <View style={styles.pickerColumn}>
               <Text style={styles.columnTitle}>년도</Text>
               <ScrollView
+                ref={yearScrollRef}
                 style={styles.scrollView}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
@@ -87,6 +119,7 @@ export default function YearMonthPicker({ visible, currentMonth, onSelect, onClo
             <View style={styles.pickerColumn}>
               <Text style={styles.columnTitle}>월</Text>
               <ScrollView
+                ref={monthScrollRef}
                 style={styles.scrollView}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}

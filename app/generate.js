@@ -20,8 +20,36 @@ import { usePhoto } from "../contexts/PhotoContext";
 import Constants from "expo-constants";
 import ConfirmModal from "../components/Modal/ConfirmModal";
 import colors from "../constants/colors";
+// import CreationFlowProgress from "../components/CreationFlowProgress";
 
 const screenWidth = Dimensions.get("window").width;
+
+function normalizeKeywordInput(value) {
+  return value.replace(/^#+/, "").replace(/\s+/g, " ").trim();
+}
+
+function toKeywordLabel(value) {
+  const normalized = normalizeKeywordInput(value);
+  return normalized ? `#${normalized}` : "";
+}
+
+function getKeywordKey(value) {
+  return normalizeKeywordInput(value).toLocaleLowerCase();
+}
+
+function uniqueKeywords(values) {
+  const seen = new Set();
+
+  return values.filter((value) => {
+    const key = getKeywordKey(value);
+    if (!key || seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
+}
 
 export default function GeneratePage() {
   const nav = useRouter();
@@ -39,6 +67,7 @@ export default function GeneratePage() {
   const [editingKeywordPhotoId, setEditingKeywordPhotoId] = useState(null);
   const [newKeyword, setNewKeyword] = useState("");
   const [allKeywords, setAllKeywords] = useState([]);
+  const [customKeywordPool, setCustomKeywordPool] = useState([]);
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [targetDeletePhotoId, setTargetDeletePhotoId] = useState(null);
 
@@ -191,17 +220,21 @@ export default function GeneratePage() {
   };
 
   const handleKeywordSubmit = () => {
-    const trimmed = newKeyword.trim();
-    if (!trimmed) {
+    const formattedKeyword = toKeywordLabel(newKeyword);
+    if (!formattedKeyword) {
       setEditingKeywordPhotoId(null);
+      setNewKeyword("");
       return;
     }
 
-    const formatted = `#${trimmed}`;
     const existingKeywords = keywords[editingKeywordPhotoId] || [];
+    const keywordKey = getKeywordKey(formattedKeyword);
+    const reusableKeyword =
+      [...allKeywords, ...customKeywordPool, ...existingKeywords].find(
+        (keyword) => getKeywordKey(keyword) === keywordKey
+      ) || formattedKeyword;
 
-    // ✅ 이미 존재하는 키워드인지 확인
-    if (existingKeywords.includes(formatted)) {
+    if (existingKeywords.some((keyword) => getKeywordKey(keyword) === keywordKey)) {
       Alert.alert("중복 키워드", "이미 추가된 키워드입니다.");
       setEditingKeywordPhotoId(null);
       setNewKeyword("");
@@ -210,8 +243,9 @@ export default function GeneratePage() {
 
     setKeywords((prev) => ({
       ...prev,
-      [editingKeywordPhotoId]: [...existingKeywords, formatted]
+      [editingKeywordPhotoId]: [...existingKeywords, reusableKeyword]
     }));
+    setCustomKeywordPool((prev) => uniqueKeywords([reusableKeyword, ...prev]));
 
     setEditingKeywordPhotoId(null);
     setNewKeyword("");
@@ -267,6 +301,38 @@ export default function GeneratePage() {
     [selected]
   );
 
+  const getOrderedKeywordOptions = useCallback(
+    (photoId) => {
+      const selectedKeywords = keywords[photoId] || [];
+      const defaultKeywordKeys = new Set(allKeywords.map(getKeywordKey));
+
+      return uniqueKeywords([...selectedKeywords, ...allKeywords, ...customKeywordPool]).sort(
+        (left, right) => {
+          const leftSelected = selectedKeywords.some(
+            (keyword) => getKeywordKey(keyword) === getKeywordKey(left)
+          );
+          const rightSelected = selectedKeywords.some(
+            (keyword) => getKeywordKey(keyword) === getKeywordKey(right)
+          );
+
+          if (leftSelected !== rightSelected) {
+            return leftSelected ? -1 : 1;
+          }
+
+          const leftIsDefault = defaultKeywordKeys.has(getKeywordKey(left));
+          const rightIsDefault = defaultKeywordKeys.has(getKeywordKey(right));
+
+          if (leftIsDefault !== rightIsDefault) {
+            return leftIsDefault ? -1 : 1;
+          }
+
+          return left.localeCompare(right, "ko");
+        }
+      );
+    },
+    [allKeywords, customKeywordPool, keywords]
+  );
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -282,6 +348,11 @@ export default function GeneratePage() {
         <Text style={styles.title}>포커스 키워드 설정</Text>
         <View style={{ width: 22 }} />
       </View>
+
+      {/* <CreationFlowProgress
+        currentStep={4}
+        subtitle="사진마다 포커스 키워드를 붙이면 AI가 더 정확하게 기록해요."
+      /> */}
 
       <Text style={styles.subtitle}>
         AI일기 생성 퀄리티를 위해 각 사진의 포커스를 지정해주세요!
@@ -352,7 +423,13 @@ export default function GeneratePage() {
                 </View>
 
                 <View style={styles.keywordContainer}>
-                  {allKeywords.map((kw, i) => {
+                  <Text style={styles.keywordHelper}>
+                    {(keywords[item.id] || []).length > 0
+                      ? `선택된 키워드 ${(keywords[item.id] || []).length}개`
+                      : "탭해서 고르거나 직접 추가해보세요."}
+                  </Text>
+
+                  {getOrderedKeywordOptions(item.id).map((kw, i) => {
                     const isSelected = keywords[item.id]?.includes(kw);
                     return (
                       <TouchableOpacity
@@ -369,28 +446,24 @@ export default function GeneratePage() {
                     );
                   })}
 
-                  {(keywords[item.id] || [])
-                    .filter((kw) => !allKeywords.includes(kw))
-                    .map((kw, i) => (
-                      <TouchableOpacity
-                        key={`custom-${i}`}
-                        style={[styles.keywordTag, styles.selectedKeywordTag]}
-                        onPress={() => toggleKeywordSelection(item.id, kw)}
-                      >
-                        <Text style={styles.selectedKeywordText}>{kw}</Text>
-                      </TouchableOpacity>
-                    ))}
-
                   {editingKeywordPhotoId === item.id ? (
-                    <TextInput
-                      value={newKeyword}
-                      onChangeText={setNewKeyword}
-                      placeholder="새 키워드"
-                      style={styles.keywordInputInline}
-                      onSubmitEditing={handleKeywordSubmit}
-                      onBlur={handleKeywordSubmit}
-                      autoFocus
-                    />
+                    <View style={styles.keywordInputRow}>
+                      <TextInput
+                        value={newKeyword}
+                        onChangeText={setNewKeyword}
+                        placeholder="#새 키워드"
+                        style={styles.keywordInputInline}
+                        onSubmitEditing={handleKeywordSubmit}
+                        onBlur={handleKeywordSubmit}
+                        autoFocus
+                      />
+                      <TouchableOpacity
+                        style={styles.keywordAddButton}
+                        onPress={handleKeywordSubmit}
+                      >
+                        <Text style={styles.keywordAddButtonText}>추가</Text>
+                      </TouchableOpacity>
+                    </View>
                   ) : (
                     <TouchableOpacity
                       style={styles.addKeyword}
@@ -551,6 +624,13 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 45
   },
+  keywordHelper: {
+    width: "100%",
+    textAlign: "center",
+    fontSize: 12,
+    color: "#9B8678",
+    marginBottom: 4
+  },
   keywordTag: {
     paddingVertical: 6,
     paddingHorizontal: 12,
@@ -583,6 +663,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#3f3f3f"
   },
+  keywordInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8
+  },
   keywordInputInline: {
     paddingHorizontal: 12,
     backgroundColor: "#fff",
@@ -594,7 +679,21 @@ const styles = StyleSheet.create({
     textAlignVertical: "center",
     includeFontPadding: false,
     height: 30,
-    lineHeight: 16
+    lineHeight: 16,
+    minWidth: 104
+  },
+  keywordAddButton: {
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#D68089",
+    paddingHorizontal: 12,
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  keywordAddButtonText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#fff"
   },
   bottomRow: {
     position: "absolute",

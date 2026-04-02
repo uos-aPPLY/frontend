@@ -1,5 +1,5 @@
 // app/albums/[albumId].js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,12 +7,14 @@ import {
   FlatList,
   Image,
   ActivityIndicator,
-  TouchableOpacity
+  TouchableOpacity,
+  DeviceEventEmitter
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Constants from "expo-constants";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { parse, format } from "date-fns";
+import { useFocusEffect } from "@react-navigation/native";
+import { parse, format, isValid } from "date-fns";
 import { LinearGradient } from "expo-linear-gradient";
 import HeaderSettings from "../../../../components/Header/HeaderSettings";
 import { useAuth } from "../../../../contexts/AuthContext";
@@ -26,27 +28,71 @@ export default function AlbumDiaryList() {
   const [diaries, setDiaries] = useState([]);
   const [loading, setLoading] = useState(true);
   const title = name ?? (albumId === "favorite" ? "좋아요" : "앨범 일기");
+  const parsedDates = diaries
+    .map((item) => parse(item.diaryDate, "yyyy-MM-dd", new Date()))
+    .filter((date) => isValid(date))
+    .sort((left, right) => left - right);
+  const albumSummary = {
+    diaryCount: diaries.length,
+    photoDiaryCount: diaries.filter((item) => !!item.representativePhotoUrl).length,
+    period:
+      parsedDates.length > 0
+        ? `${format(parsedDates[0], "yyyy년 M월 d일")} - ${format(
+            parsedDates[parsedDates.length - 1],
+            "yyyy년 M월 d일"
+          )}`
+        : "아직 기록이 없어요.",
+    guideText:
+      albumId === "favorite"
+        ? "좋아요 일기를 한곳에 모아 빠르게 다시 볼 수 있어요."
+        : "같은 위치로 묶인 일기를 기간순으로 정리해 보여줘요."
+  };
+
+  const fetchAlbumDiaries = useCallback(async () => {
+    try {
+      if (!token) return;
+      const url =
+        albumId === "favorite"
+          ? `${BACKEND_URL}/api/albums/favorites`
+          : `${BACKEND_URL}/api/albums/${albumId}/diaries`;
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const json = await res.json();
+      setDiaries(Array.isArray(json) ? json : []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [albumId, token]);
 
   useEffect(() => {
-    (async () => {
-      try {
-        if (!token) return;
-        const url =
-          albumId === "favorite"
-            ? `${BACKEND_URL}/api/albums/favorites`
-            : `${BACKEND_URL}/api/albums/${albumId}/diaries`;
-        const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const json = await res.json();
-        setDiaries(json);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+    if (!token) {
+      return;
+    }
+
+    setLoading(true);
+    fetchAlbumDiaries();
+  }, [fetchAlbumDiaries, token]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!token) {
+        return;
       }
-    })();
-  }, [albumId, token]);
+
+      fetchAlbumDiaries();
+    }, [fetchAlbumDiaries, token])
+  );
+
+  useEffect(() => {
+    const subscription = DeviceEventEmitter.addListener("favoriteChanged", () => {
+      fetchAlbumDiaries();
+    });
+
+    return () => subscription.remove();
+  }, [fetchAlbumDiaries]);
 
   const goBack = () => router.back();
 
@@ -61,6 +107,21 @@ export default function AlbumDiaryList() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <HeaderSettings title={title} onBackPress={goBack} />
+
+      <View style={styles.summaryCard}>
+        <Text style={styles.summaryTitle}>{albumSummary.guideText}</Text>
+        <View style={styles.summaryRow}>
+          <View style={styles.summaryChip}>
+            <Text style={styles.summaryChipLabel}>일기 수</Text>
+            <Text style={styles.summaryChipValue}>{albumSummary.diaryCount}개</Text>
+          </View>
+          <View style={styles.summaryChip}>
+            <Text style={styles.summaryChipLabel}>사진 포함</Text>
+            <Text style={styles.summaryChipValue}>{albumSummary.photoDiaryCount}개</Text>
+          </View>
+        </View>
+        <Text style={styles.summaryPeriod}>{albumSummary.period}</Text>
+      </View>
 
       <FlatList
         data={diaries}
@@ -116,6 +177,48 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 20,
     paddingHorizontal: 20
+  },
+  summaryCard: {
+    backgroundColor: "#FFF8F4",
+    marginHorizontal: 20,
+    marginBottom: 16,
+    borderRadius: 24,
+    paddingHorizontal: 18,
+    paddingVertical: 16
+  },
+  summaryTitle: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: "#8D6F60",
+    fontWeight: "600"
+  },
+  summaryRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 12
+  },
+  summaryChip: {
+    flex: 1,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 10
+  },
+  summaryChipLabel: {
+    fontSize: 12,
+    color: "#B09587"
+  },
+  summaryChipValue: {
+    marginTop: 4,
+    fontSize: 15,
+    color: "#7E6458",
+    fontWeight: "700"
+  },
+  summaryPeriod: {
+    marginTop: 12,
+    fontSize: 13,
+    lineHeight: 20,
+    color: "#A78C7B"
   },
   card: {
     flexDirection: "row",

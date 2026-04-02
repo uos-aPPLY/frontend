@@ -7,6 +7,14 @@ import { useRouter } from "expo-router";
 import { useAuth } from "../../../../contexts/AuthContext";
 import Header from "../../../../components/Header/HeaderSettings";
 
+function normalizeKeywordName(value) {
+  return value.replace(/^#+/, "").replace(/\s+/g, " ").trim();
+}
+
+function keywordNameKey(value) {
+  return normalizeKeywordName(value).toLocaleLowerCase();
+}
+
 export default function DefaultKeywordsPage() {
   const router = useRouter();
   const { token } = useAuth();
@@ -38,11 +46,10 @@ export default function DefaultKeywordsPage() {
   };
 
   const addKeyword = async () => {
-    const trimmed = newKeyword.trim();
+    const trimmed = normalizeKeywordName(newKeyword);
     if (!trimmed || !token || isAddingKeywordRef.current) return false;
 
-    // 🔒 중복 방지
-    if (keywords.some((k) => k.name === trimmed)) {
+    if (keywords.some((k) => keywordNameKey(k.name) === keywordNameKey(trimmed))) {
       setNewKeyword("");
       return true;
     }
@@ -109,7 +116,8 @@ export default function DefaultKeywordsPage() {
         }
       />
 
-      {/* 키워드 목록 */}
+      <Text style={styles.helperText}>기본 키워드 {keywords.length}개</Text>
+
       <ScrollView contentContainerStyle={styles.keywordList}>
         {keywords.map((item, index) => (
           <View key={`${item.id || item.name}-${index}`} style={styles.keywordWrapper}>
@@ -137,6 +145,13 @@ export default function DefaultKeywordsPage() {
               placeholderTextColor="#aaa"
               textAlign="center"
             />
+            <TouchableOpacity
+              style={[styles.addButton, !normalizeKeywordName(newKeyword) && styles.disabledButton]}
+              disabled={!normalizeKeywordName(newKeyword)}
+              onPress={addKeyword}
+            >
+              <Text style={styles.addButtonText}>등록</Text>
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>
@@ -151,6 +166,12 @@ const styles = StyleSheet.create({
   },
   headerEditText: {
     fontSize: 16,
+    color: "#A78C7B"
+  },
+  helperText: {
+    paddingHorizontal: 45,
+    paddingBottom: 12,
+    fontSize: 12,
     color: "#A78C7B"
   },
   keywordList: {
@@ -184,5 +205,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     minWidth: 40,
     textAlign: "center"
+  },
+  addButton: {
+    marginLeft: 8,
+    backgroundColor: "#D68089",
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 5
+  },
+  disabledButton: {
+    backgroundColor: "#D9C6C9"
+  },
+  addButtonText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "700"
   }
 });

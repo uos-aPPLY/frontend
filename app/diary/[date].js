@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -120,10 +120,16 @@ export default function DiaryPage() {
         }
       );
       if (res.ok) {
+        const nextIsFavorited = !diary.isFavorited;
         setDiary((prev) => ({
           ...prev,
           isFavorited: !prev.isFavorited
         }));
+        DeviceEventEmitter.emit("favoriteChanged", {
+          diaryId: diary.id,
+          isFavorited: nextIsFavorited,
+          diaryDate: diary.diaryDate
+        });
       } else {
         console.warn("❌ 즐겨찾기 API 실패:", res.status);
       }
@@ -405,7 +411,9 @@ export default function DiaryPage() {
           </View>
         </View>
 
-        <Text style={styles.cardText}>{diary.content}</Text>
+        <View style={styles.cardTextWrapper}>
+          <Text style={styles.cardText}>{diary.content}</Text>
+        </View>
       </ScrollView>
 
       <ConfirmModal
@@ -462,17 +470,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12
   },
-  cardText: {
+  cardTextWrapper: {
     backgroundColor: "#fff",
+    borderRadius: 30,
+    marginHorizontal: 30,
+    minHeight: 360,
+    marginBottom: 60,
+    overflow: "hidden"
+  },
+  cardText: {
     color: "#A78C7B",
     fontSize: 16,
     lineHeight: 26,
     paddingVertical: 20,
-    paddingHorizontal: 25,
-    borderRadius: 30,
-    marginHorizontal: 30,
-    minHeight: 360,
-    marginBottom: 60
+    paddingHorizontal: 25
   },
   backButton: {
     marginTop: 20,

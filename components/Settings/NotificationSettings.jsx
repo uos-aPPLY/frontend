@@ -41,6 +41,20 @@ function parseAlarmTime(alarmTime) {
   return time;
 }
 
+function formatNextAlertTime(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return date.toLocaleString("ko-KR", {
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+    hour: "numeric",
+    minute: "2-digit"
+  });
+}
+
 export default function NotificationSettings() {
   const { token } = useAuth();
   const [photoAlertEnabled, setPhotoAlertEnabled] = useState(false);
@@ -49,6 +63,7 @@ export default function NotificationSettings() {
   const [draftAlertTime, setDraftAlertTime] = useState(createDefaultAlertTime);
 
   const authHeader = { Authorization: `Bearer ${token}` };
+  const nextAlertDate = photoAlertEnabled ? buildTriggers(alertTime).nextOccurrence : null;
 
   // Helper function to ensure permissions
   async function ensurePermission() {
@@ -262,12 +277,23 @@ export default function NotificationSettings() {
       </View>
 
       {photoAlertEnabled && (
-        <Pressable style={styles.itemRow} onPress={openTimePicker}>
-          <Text style={styles.itemText}>알림 시간</Text>
-          <Text style={styles.itemText}>
-            {alertTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true })}
-          </Text>
-        </Pressable>
+        <>
+          <Pressable style={styles.itemRow} onPress={openTimePicker}>
+            <Text style={styles.itemText}>알림 시간</Text>
+            <Text style={styles.itemText}>
+              {alertTime.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true
+              })}
+            </Text>
+          </Pressable>
+
+          <View style={styles.itemRow}>
+            <Text style={styles.itemText}>다음 알림</Text>
+            <Text style={styles.subItemText}>{formatNextAlertTime(nextAlertDate)}</Text>
+          </View>
+        </>
       )}
     </View>
   );
@@ -292,6 +318,13 @@ const styles = StyleSheet.create({
     borderBottomColor: "#A78C7B"
   },
   itemText: { fontSize: 16, color: "#A78C78" },
+  subItemText: {
+    maxWidth: "55%",
+    fontSize: 14,
+    color: "#8E7364",
+    textAlign: "right",
+    lineHeight: 20
+  },
   modalBackdrop: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.28)",
