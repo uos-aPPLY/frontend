@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Image,
@@ -6,10 +6,105 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
-  Modal
+  Modal,
+  Pressable
 } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue
+} from "react-native-reanimated";
 
 const screenWidth = Dimensions.get("window").width;
+
+function ZoomableImageModal({ photo, onClose }) {
+  const scale = useSharedValue(1);
+  const savedScale = useSharedValue(1);
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const savedTranslateX = useSharedValue(0);
+  const savedTranslateY = useSharedValue(0);
+
+  useEffect(() => {
+    scale.value = 1;
+    savedScale.value = 1;
+    translateX.value = 0;
+    translateY.value = 0;
+    savedTranslateX.value = 0;
+    savedTranslateY.value = 0;
+  }, [photo, savedScale, scale, savedTranslateX, savedTranslateY, translateX, translateY]);
+
+  const pinchGesture = Gesture.Pinch()
+    .onUpdate((event) => {
+      const nextScale = savedScale.value * event.scale;
+      scale.value = Math.min(Math.max(nextScale, 1), 4);
+    })
+    .onEnd(() => {
+      savedScale.value = scale.value;
+      if (scale.value <= 1) {
+        translateX.value = 0;
+        translateY.value = 0;
+        savedTranslateX.value = 0;
+        savedTranslateY.value = 0;
+      }
+    });
+
+  const panGesture = Gesture.Pan()
+    .onUpdate((event) => {
+      if (scale.value <= 1) {
+        translateX.value = 0;
+        translateY.value = 0;
+        return;
+      }
+
+      const maxOffset = ((screenWidth * 0.95) * (scale.value - 1)) / 2;
+      const nextX = savedTranslateX.value + event.translationX;
+      const nextY = savedTranslateY.value + event.translationY;
+
+      translateX.value = Math.max(-maxOffset, Math.min(maxOffset, nextX));
+      translateY.value = Math.max(-maxOffset, Math.min(maxOffset, nextY));
+    })
+    .onEnd(() => {
+      if (scale.value <= 1) {
+        savedTranslateX.value = 0;
+        savedTranslateY.value = 0;
+        return;
+      }
+
+      savedTranslateX.value = translateX.value;
+      savedTranslateY.value = translateY.value;
+    });
+
+  const composedGesture = Gesture.Simultaneous(pinchGesture, panGesture);
+
+  const animatedImageStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }, { translateY: translateY.value }, { scale: scale.value }]
+  }));
+
+  return (
+    <Modal visible={!!photo} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.fullscreenContainer}>
+        <Pressable style={styles.fullscreenOverlay} onPress={onClose} />
+
+        <View style={styles.fullscreenContent}>
+          <GestureDetector gesture={composedGesture}>
+            <Animated.View style={animatedImageStyle}>
+              <Image
+                source={{ uri: photo?.photoUrl }}
+                style={styles.fullscreenImage}
+                resizeMode="contain"
+              />
+            </Animated.View>
+          </GestureDetector>
+        </View>
+
+        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+          <Image source={require("../assets/icons/xicon.png")} style={styles.closeIcon} />
+        </TouchableOpacity>
+      </View>
+    </Modal>
+  );
+}
 
 export default function DiaryImageSlider({
   photos = [],
@@ -52,33 +147,7 @@ export default function DiaryImageSlider({
           ))}
         </View>
 
-        {/* 원본 사진 전체화면 모달 */}
-        <Modal
-          visible={!!fullscreenPhoto}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setFullscreenPhoto(null)}
-        >
-          <View style={styles.fullscreenContainer}>
-            <TouchableOpacity
-              style={styles.fullscreenOverlay}
-              activeOpacity={1}
-              onPress={() => setFullscreenPhoto(null)}
-            >
-              <TouchableOpacity activeOpacity={1}>
-                <Image
-                  source={{ uri: fullscreenPhoto?.photoUrl }}
-                  style={styles.fullscreenImage}
-                  resizeMode="contain"
-                />
-              </TouchableOpacity>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.closeButton} onPress={() => setFullscreenPhoto(null)}>
-              <Image source={require("../assets/icons/xicon.png")} style={styles.closeIcon} />
-            </TouchableOpacity>
-          </View>
-        </Modal>
+        <ZoomableImageModal photo={fullscreenPhoto} onClose={() => setFullscreenPhoto(null)} />
       </>
     );
   }
@@ -137,33 +206,7 @@ export default function DiaryImageSlider({
         />
       </View>
 
-      {/* 원본 사진 전체화면 모달 */}
-      <Modal
-        visible={!!fullscreenPhoto}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setFullscreenPhoto(null)}
-      >
-        <View style={styles.fullscreenContainer}>
-          <TouchableOpacity
-            style={styles.fullscreenOverlay}
-            activeOpacity={1}
-            onPress={() => setFullscreenPhoto(null)}
-          >
-            <TouchableOpacity activeOpacity={1}>
-              <Image
-                source={{ uri: fullscreenPhoto?.photoUrl }}
-                style={styles.fullscreenImage}
-                resizeMode="contain"
-              />
-            </TouchableOpacity>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.closeButton} onPress={() => setFullscreenPhoto(null)}>
-            <Image source={require("../assets/icons/xicon.png")} style={styles.closeIcon} />
-          </TouchableOpacity>
-        </View>
-      </Modal>
+      <ZoomableImageModal photo={fullscreenPhoto} onClose={() => setFullscreenPhoto(null)} />
     </>
   );
 }
@@ -224,10 +267,14 @@ const styles = StyleSheet.create({
     alignItems: "center"
   },
   fullscreenOverlay: {
+    ...StyleSheet.absoluteFillObject
+  },
+  fullscreenContent: {
     flex: 1,
     width: "100%",
     justifyContent: "center",
-    alignItems: "center"
+    alignItems: "center",
+    paddingHorizontal: 12
   },
   fullscreenImage: {
     width: screenWidth * 0.95,

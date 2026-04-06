@@ -7,10 +7,10 @@ import {
   TouchableOpacity,
   Dimensions,
   Image,
-  KeyboardAvoidingView,
   TextInput,
   Platform,
-  Alert
+  Alert,
+  Keyboard
 } from "react-native";
 import { useRouter } from "expo-router";
 import DraggableFlatList from "react-native-draggable-flatlist";
@@ -59,6 +59,7 @@ function uniqueKeywords(values) {
 export default function GeneratePage() {
   const nav = useRouter();
   const flatListRef = useRef(null);
+  const keywordInputRef = useRef(null);
   const { token } = useAuth();
   const { BACKEND_URL } = Constants.expoConfig.extra;
 
@@ -76,6 +77,8 @@ export default function GeneratePage() {
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [targetDeletePhotoId, setTargetDeletePhotoId] = useState(null);
   const [isReordering, setIsReordering] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [keywordEditingIndex, setKeywordEditingIndex] = useState(null);
   const placeholderIndexRef = useRef(0);
 
   console.log("selected:", selected);
@@ -97,6 +100,27 @@ export default function GeneratePage() {
     };
   }, []);
 
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const showSubscription = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardHeight(event.endCoordinates?.height ?? 0);
+      if (keywordEditingIndex != null) {
+        setCurrentIndex(keywordEditingIndex);
+        scrollToPhotoIndex(keywordEditingIndex);
+      }
+    });
+    const hideSubscription = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, [keywordEditingIndex, scrollToPhotoIndex]);
+
   const visiblePhotos = useMemo(() => {
     const filtered = selected
       .map((sel) => {
@@ -110,6 +134,19 @@ export default function GeneratePage() {
       .filter((p) => p && !hiddenIds.includes(p.id));
     return filtered;
   }, [photos, hiddenIds, selected]);
+
+  const scrollToPhotoIndex = useCallback((index, animated = false) => {
+    if (index == null || index < 0) {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      flatListRef.current?.scrollToOffset?.({
+        offset: Math.max(0, index * SNAP_INTERVAL),
+        animated
+      });
+    });
+  }, []);
 
   const handleNext = () => {
     const nextIdx = currentIndex + 1;
@@ -220,8 +257,20 @@ export default function GeneratePage() {
     }
   }, [hiddenIds, photos, mainPhotoId]);
 
-  const handleAddKeyword = (id) => {
+  const handleAddKeyword = (id, index) => {
+    setKeywordEditingIndex(index);
+    setCurrentIndex(index);
     setEditingKeywordPhotoId(id);
+    setNewKeyword("");
+    scrollToPhotoIndex(index);
+    requestAnimationFrame(() => {
+      keywordInputRef.current?.focus();
+    });
+  };
+
+  const handleCancelKeywordInput = () => {
+    setEditingKeywordPhotoId(null);
+    setKeywordEditingIndex(null);
     setNewKeyword("");
   };
 
@@ -229,6 +278,7 @@ export default function GeneratePage() {
     const formattedKeyword = toKeywordLabel(newKeyword);
     if (!formattedKeyword) {
       setEditingKeywordPhotoId(null);
+      setKeywordEditingIndex(null);
       setNewKeyword("");
       return;
     }
@@ -243,6 +293,7 @@ export default function GeneratePage() {
     if (existingKeywords.some((keyword) => getKeywordKey(keyword) === keywordKey)) {
       Alert.alert("중복 키워드", "이미 추가된 키워드입니다.");
       setEditingKeywordPhotoId(null);
+      setKeywordEditingIndex(null);
       setNewKeyword("");
       return;
     }
@@ -254,6 +305,7 @@ export default function GeneratePage() {
     setCustomKeywordPool((prev) => uniqueKeywords([reusableKeyword, ...prev]));
 
     setEditingKeywordPhotoId(null);
+    setKeywordEditingIndex(null);
     setNewKeyword("");
   };
 
@@ -373,10 +425,7 @@ export default function GeneratePage() {
       <Text style={styles.subtitle}>
         AI일기 생성 퀄리티를 위해 각 사진의 포커스를 지정해주세요!
       </Text>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <View style={styles.contentArea}>
         {visiblePhotos.length > 0 && (
           <View style={styles.pageIndicator}>
             {visiblePhotos.map((photo, index) => (
@@ -487,27 +536,13 @@ export default function GeneratePage() {
                     })}
 
                     {editingKeywordPhotoId === item.id ? (
-                      <View style={styles.keywordInputRow}>
-                        <TextInput
-                          value={newKeyword}
-                          onChangeText={setNewKeyword}
-                          placeholder="#새 키워드"
-                          style={styles.keywordInputInline}
-                          onSubmitEditing={handleKeywordSubmit}
-                          onBlur={handleKeywordSubmit}
-                          autoFocus
-                        />
-                        <TouchableOpacity
-                          style={styles.keywordAddButton}
-                          onPress={handleKeywordSubmit}
-                        >
-                          <Text style={styles.keywordAddButtonText}>추가</Text>
-                        </TouchableOpacity>
+                      <View style={styles.addKeywordActive}>
+                        <Text style={styles.addKeywordActiveText}># 입력 중...</Text>
                       </View>
                     ) : (
                       <TouchableOpacity
                         style={styles.addKeyword}
-                        onPress={() => handleAddKeyword(item.id)}
+                        onPress={() => handleAddKeyword(item.id, itemIndex)}
                       >
                         <Text style={styles.addText}># +</Text>
                       </TouchableOpacity>
@@ -552,26 +587,58 @@ export default function GeneratePage() {
               : "사진을 길게 눌러 좌우로 움직이면 순서를 바꿀 수 있어요."}
           </Text>
         ) : null}
-      </KeyboardAvoidingView>
+      </View>
+      <View
+        style={[
+          styles.bottomControls,
+          { bottom: keyboardHeight > 0 ? keyboardHeight + 6 : 24 }
+        ]}
+      >
+        {editingKeywordPhotoId ? (
+          <View style={styles.keywordComposer}>
+            <TextInput
+              ref={keywordInputRef}
+              value={newKeyword}
+              onChangeText={setNewKeyword}
+              placeholder="#새 키워드"
+              style={styles.keywordComposerInput}
+              onSubmitEditing={handleKeywordSubmit}
+              returnKeyType="done"
+              autoFocus
+            />
+            <TouchableOpacity
+              style={styles.keywordComposerCancelButton}
+              onPress={handleCancelKeywordInput}
+            >
+              <Text style={styles.keywordComposerCancelText}>취소</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.keywordAddButton}
+              onPress={handleKeywordSubmit}
+            >
+              <Text style={styles.keywordAddButtonText}>추가</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+        <View style={styles.bottomRow}>
+          <TouchableOpacity
+            style={styles.nextButton}
+            onPress={() => {
+              // 키워드 입력 중이면 먼저 반영
+              if (editingKeywordPhotoId && newKeyword.trim()) {
+                handleKeywordSubmit();
+              }
 
-      <View style={styles.bottomRow}>
-        <TouchableOpacity
-          style={styles.nextButton}
-          onPress={() => {
-            // 키워드 입력 중이면 먼저 반영
-            if (editingKeywordPhotoId && newKeyword.trim()) {
-              handleKeywordSubmit();
-            }
-
-            if (isLast) {
-              handleComplete();
-            } else {
-              handleNext();
-            }
-          }}
-        >
-          <Text style={styles.nextText}>{isLast ? "AI 일기 생성하기" : "다음"}</Text>
-        </TouchableOpacity>
+              if (isLast) {
+                handleComplete();
+              } else {
+                handleNext();
+              }
+            }}
+          >
+            <Text style={styles.nextText}>{isLast ? "AI 일기 생성하기" : "다음"}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ConfirmModal
@@ -619,6 +686,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
     paddingTop: 5,
     paddingBottom: 10
+  },
+  contentArea: {
+    flex: 1
+  },
+  bottomControls: {
+    position: "absolute",
+    left: 0,
+    right: 0
   },
   listContainer: {
     flex: 1
@@ -762,32 +837,61 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#3f3f3f"
   },
-  keywordInputRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8
-  },
-  keywordInputInline: {
+  addKeywordActive: {
+    paddingVertical: 6,
     paddingHorizontal: 12,
-    backgroundColor: "#fff",
+    backgroundColor: "#F4D6D9",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#D68089"
+  },
+  addKeywordActiveText: {
     fontSize: 13,
+    color: "#9F5E67",
+    fontWeight: "600"
+  },
+  keywordComposer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 24,
+    paddingTop: 10,
+    paddingBottom: 6
+  },
+  keywordComposerInput: {
+    flex: 1,
+    paddingHorizontal: 14,
+    backgroundColor: "#fff",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    fontSize: 14,
     color: "#3f3f3f",
     textAlignVertical: "center",
     includeFontPadding: false,
-    height: 30,
-    lineHeight: 16,
-    minWidth: 104
+    height: 36,
+    lineHeight: 18
   },
   keywordAddButton: {
-    height: 30,
-    borderRadius: 15,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: "#D68089",
     paddingHorizontal: 12,
     justifyContent: "center",
     alignItems: "center"
+  },
+  keywordComposerCancelButton: {
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#E8E6E3",
+    paddingHorizontal: 12,
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  keywordComposerCancelText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#6F625A"
   },
   keywordAddButtonText: {
     fontSize: 12,
@@ -804,10 +908,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 36
   },
   bottomRow: {
-    position: "absolute",
-    bottom: 40,
     width: "100%",
-    paddingHorizontal: 30
+    paddingHorizontal: 30,
+    paddingTop: 6,
+    paddingBottom: 0
   },
   nextButton: {
     backgroundColor: colors.pinkpoint,

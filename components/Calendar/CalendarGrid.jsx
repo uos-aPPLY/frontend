@@ -142,7 +142,7 @@ const useSingleNavigate = () => {
 
 export default function CalendarGrid({ currentMonth, diariesByDate, onPrev, onNext }) {
   const singleNavigate = useSingleNavigate();
-  const { selectedDate, setSelectedDate } = useDiary();
+  const { selectedDate, setSelectedDate, resetDiary } = useDiary();
   const { showEmotion } = useContext(CalendarViewContext);
 
   const slideX = useRef(new Animated.Value(0)).current;
@@ -284,6 +284,7 @@ export default function CalendarGrid({ currentMonth, diariesByDate, onPrev, onNe
                     singleNavigate(`/diary/${dateStr}`);
                   } else if (isPastNoDiary) {
                     if (selectedDate === dateStr) {
+                      resetDiary();
                       setSelectedDate(dateStr);
                       singleNavigate(`/create?date=${dateStr}&from=calendar`);
                     } else {
@@ -293,6 +294,8 @@ export default function CalendarGrid({ currentMonth, diariesByDate, onPrev, onNe
                     if (todayHasDiary) {
                       singleNavigate(`/diary/${dateStr}`);
                     } else {
+                      resetDiary();
+                      setSelectedDate(dateStr);
                       singleNavigate(`/create?date=${dateStr}&from=calendar`);
                     }
                   }

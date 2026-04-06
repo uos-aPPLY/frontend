@@ -10,7 +10,7 @@ import { format } from "date-fns";
 
 export default function Home() {
   const nav = useRouter();
-  const { setSelectedDate } = useDiary();
+  const { setSelectedDate, resetDiary } = useDiary();
   const [hasDiaryToday, setHasDiaryToday] = useState(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
@@ -80,6 +80,7 @@ export default function Home() {
       nav.push("/calendar");
       return;
     }
+    resetDiary();
     setSelectedDate(todayStr);
     nav.push(`/create?date=${todayStr}&from=home`);
   };

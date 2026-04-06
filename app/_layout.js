@@ -127,7 +127,16 @@ function RootLayoutNav() {
         screenOptions={{
           headerShown: false
         }}
-      />
+      >
+        <Stack.Screen
+          name="search"
+          options={{
+            presentation: "fullScreenModal",
+            animation: "fade",
+            gestureEnabled: false
+          }}
+        />
+      </Stack>
       <DeveloperMenu />
     </>
   );
