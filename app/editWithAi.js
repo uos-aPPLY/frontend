@@ -35,6 +35,91 @@ function sanitizeEditTokens(value) {
   return value.replace(/<\/?edit token>/gi, "");
 }
 
+function tokenizeForDiff(value) {
+  if (!value) {
+    return [];
+  }
+
+  return value.split(/(\s+)/).filter((token) => token.length > 0);
+}
+
+function buildHighlightedSegments(baseTokens, compareTokens, highlightType) {
+  const baseLength = baseTokens.length;
+  const compareLength = compareTokens.length;
+  const lcs = Array.from({ length: baseLength + 1 }, () => Array(compareLength + 1).fill(0));
+
+  for (let i = baseLength - 1; i >= 0; i -= 1) {
+    for (let j = compareLength - 1; j >= 0; j -= 1) {
+      if (baseTokens[i] === compareTokens[j]) {
+        lcs[i][j] = lcs[i + 1][j + 1] + 1;
+      } else {
+        lcs[i][j] = Math.max(lcs[i + 1][j], lcs[i][j + 1]);
+      }
+    }
+  }
+
+  const segments = [];
+  let buffer = "";
+  let currentType = "same";
+  let i = 0;
+  let j = 0;
+
+  const pushBuffer = () => {
+    if (!buffer) {
+      return;
+    }
+
+    segments.push({
+      text: buffer,
+      type: currentType
+    });
+    buffer = "";
+  };
+
+  const appendToken = (token, type) => {
+    if (currentType !== type) {
+      pushBuffer();
+      currentType = type;
+    }
+    buffer += token;
+  };
+
+  while (i < baseLength && j < compareLength) {
+    if (baseTokens[i] === compareTokens[j]) {
+      appendToken(baseTokens[i], "same");
+      i += 1;
+      j += 1;
+    } else if (lcs[i + 1][j] >= lcs[i][j + 1]) {
+      if (highlightType === "removed") {
+        appendToken(baseTokens[i], "highlight");
+      }
+      i += 1;
+    } else {
+      if (highlightType === "added") {
+        appendToken(compareTokens[j], "highlight");
+      }
+      j += 1;
+    }
+  }
+
+  while (i < baseLength) {
+    if (highlightType === "removed") {
+      appendToken(baseTokens[i], "highlight");
+    }
+    i += 1;
+  }
+
+  while (j < compareLength) {
+    if (highlightType === "added") {
+      appendToken(compareTokens[j], "highlight");
+    }
+    j += 1;
+  }
+
+  pushBuffer();
+  return segments;
+}
+
 export default function EditWithAIPage() {
   const nav = useRouter();
   const navigation = useNavigation();
@@ -71,6 +156,7 @@ export default function EditWithAIPage() {
   const [showDraftComparison, setShowDraftComparison] = useState(false);
   const pendingActionRef = useRef(null);
   const skipBeforeRemoveRef = useRef(false);
+  const textBoxOffsetRef = useRef(0);
   const originalCharacterName = selectedCharacter?.name ?? characterObj?.name ?? "";
   const hasUnsavedChanges = useMemo(
     () =>
@@ -89,12 +175,37 @@ export default function EditWithAIPage() {
       sanitizedOriginalText
     ]
   );
+  const originalDiffSegments = useMemo(
+    () =>
+      buildHighlightedSegments(
+        tokenizeForDiff(sanitizedOriginalText),
+        tokenizeForDiff(localText),
+        "removed"
+      ),
+    [localText, sanitizedOriginalText]
+  );
+  const addedSegments = useMemo(
+    () =>
+      buildHighlightedSegments(tokenizeForDiff(sanitizedOriginalText), tokenizeForDiff(localText), "added"),
+    [localText, sanitizedOriginalText]
+  );
 
   useEffect(() => {
     if (isSubmitting && scrollRef.current) {
       scrollRef.current.scrollTo({ y: 0, animated: true });
     }
   }, [isSubmitting]);
+
+  const scrollToEditor = useCallback(() => {
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({
+          y: Math.max(0, textBoxOffsetRef.current - 16),
+          animated: true
+        });
+      }, 120);
+    });
+  }, []);
 
   const goBackToEdit = useCallback(() => {
     skipBeforeRemoveRef.current = true;
@@ -150,11 +261,15 @@ export default function EditWithAIPage() {
     return unsubscribe;
   }, [hasUnsavedChanges, navigation]);
 
-  const handleMessage = async (event) => {
+  const handleMessage = useCallback(async (event) => {
     try {
       const { action, content, height } = JSON.parse(event.nativeEvent.data);
 
       if (action === "HEIGHT" && height) setWebViewHeight(height);
+      if (action === "FOCUS_EDITOR") {
+        scrollToEditor();
+        return;
+      }
 
       if (action === "FINAL_TEXT") {
         if (!diaryId || !content || !requestText) return;
@@ -229,7 +344,7 @@ export default function EditWithAIPage() {
       console.warn("💥 WebView 메시지 처리 중 오류", err);
       setIsSubmitting(false);
     }
-  };
+  }, [diaryId, goBackToEdit, scrollToEditor, token, requestText]);
 
   const handleSubmit = () => {
     setHasSubmitted(true);
@@ -330,7 +445,12 @@ export default function EditWithAIPage() {
               />
             </View>
 
-            <View style={styles.textBoxWrapper}>
+            <View
+              style={styles.textBoxWrapper}
+              onLayout={(event) => {
+                textBoxOffsetRef.current = event.nativeEvent.layout.y;
+              }}
+            >
               {(!webviewLoaded || isSubmitting) && (
                 <View style={styles.webviewLoading}>
                   <ActivityIndicator size="small" color="#D68089" />
@@ -375,11 +495,29 @@ export default function EditWithAIPage() {
                   <>
                     <View style={styles.comparisonCard}>
                       <Text style={styles.comparisonLabel}>수정 전</Text>
-                      <Text style={styles.comparisonText}>{sanitizedOriginalText}</Text>
+                      <Text style={styles.comparisonText}>
+                        {originalDiffSegments.map((segment, index) => (
+                          <Text
+                            key={`original-${index}`}
+                            style={segment.type === "highlight" ? styles.removedDiffText : undefined}
+                          >
+                            {segment.text}
+                          </Text>
+                        ))}
+                      </Text>
                     </View>
                     <View style={styles.comparisonCard}>
                       <Text style={styles.comparisonLabel}>AI 제안 후</Text>
-                      <Text style={styles.comparisonText}>{localText}</Text>
+                      <Text style={styles.comparisonText}>
+                        {addedSegments.map((segment, index) => (
+                          <Text
+                            key={`suggested-${index}`}
+                            style={segment.type === "highlight" ? styles.addedDiffText : undefined}
+                          >
+                            {segment.text}
+                          </Text>
+                        ))}
+                      </Text>
                     </View>
                   </>
                 )}
@@ -531,6 +669,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 22,
     color: "#7E6458"
+  },
+  removedDiffText: {
+    backgroundColor: "#F8D7DB",
+    color: "#8F4A55"
+  },
+  addedDiffText: {
+    backgroundColor: "#F5D9DC",
+    color: "#915965"
   },
   inputAreaFixed: {
     paddingHorizontal: 20,

@@ -1,5 +1,5 @@
 // app/create.js
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Menu, Divider } from "react-native-paper";
 import { KeyboardAvoidingView, Platform, View, StyleSheet, ScrollView } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
@@ -18,6 +18,8 @@ import Constants from "expo-constants";
 
 export default function CreatePage() {
   const nav = useRouter();
+  const scrollRef = useRef(null);
+  const textBoxOffsetRef = useRef(0);
   const { date: dateParam, from = "calendar" } = useLocalSearchParams();
   const { text, setText, selectedCharacter, setSelectedCharacter, selectedDate, setSelectedDate } =
     useDiary();
@@ -89,13 +91,24 @@ export default function CreatePage() {
     }
   }, [token]);
 
+  const scrollToTextBox = useCallback(() => {
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({
+          y: Math.max(0, textBoxOffsetRef.current - 16),
+          animated: true
+        });
+      }, 120);
+    });
+  }, []);
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       style={{ flex: 1 }}
     >
-      <Stack.Screen options={{ gestureEnabled: false }} />
+      <Stack.Screen options={{ gestureEnabled: true }} />
       <View style={styles.all}>
         <HeaderDate
           date={date}
@@ -115,6 +128,7 @@ export default function CreatePage() {
         />
         <View style={styles.middle}>
           <ScrollView
+            ref={scrollRef}
             contentContainerStyle={styles.scrollContainer}
             keyboardShouldPersistTaps="handled"
           >
@@ -177,7 +191,12 @@ export default function CreatePage() {
               <View style={{ width: 24 }} />
             </View>
 
-            <View style={styles.low}>
+            <View
+              style={styles.low}
+              onLayout={(event) => {
+                textBoxOffsetRef.current = event.nativeEvent.layout.y;
+              }}
+            >
               {isPickerVisible ? (
                 <CharacterPickerOverlay
                   visible={isPickerVisible}
@@ -192,6 +211,7 @@ export default function CreatePage() {
                   value={text}
                   onChangeText={setText}
                   placeholder="오늘의 이야기를 써보세요."
+                  onFocus={scrollToTextBox}
                 />
               )}
             </View>

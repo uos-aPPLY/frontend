@@ -16,9 +16,9 @@ import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import HeaderSettings from "../../../components/Header/HeaderSettings";
 import * as Localization from "expo-localization";
-import { utcToZonedTime } from "date-fns-tz";
+import { toZonedTime } from "date-fns-tz";
 import { ko, enUS } from "date-fns/locale";
-import { parse, format, getYear, getMonth } from "date-fns";
+import { format, getYear, getMonth } from "date-fns";
 import { useAuth } from "../../../contexts/AuthContext";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
@@ -124,7 +124,7 @@ export default function DiaryList() {
         keyExtractor={(item) => item.diaryId.toString()}
         contentContainerStyle={styles.listContent}
         renderItem={({ item }) => {
-          const zonedDate = utcToZonedTime(new Date(`${item.diaryDate}T00:00:00Z`), timeZone);
+          const zonedDate = toZonedTime(new Date(`${item.diaryDate}T00:00:00Z`), timeZone);
 
           return (
             <TouchableOpacity

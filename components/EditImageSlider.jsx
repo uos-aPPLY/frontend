@@ -49,10 +49,10 @@ export default function EditImageSlider({
     placeholderIndexRef.current = currentIndex;
   }, [currentIndex]);
 
-  const scrollToPhoto = useCallback((index) => {
+  const scrollToPhoto = useCallback((index, animated = true) => {
     flatListRef.current?.scrollToOffset?.({
       offset: Math.max(0, index * SNAP_INTERVAL),
-      animated: true
+      animated
     });
   }, []);
 
@@ -115,7 +115,13 @@ export default function EditImageSlider({
                       ? styles.badgeActive
                       : styles.badgeInactive
                   ]}
-                  onPress={() => setMainPhotoId(String(item.id))}
+                  onPress={() => {
+                    setMainPhotoId(String(item.id));
+                    setCurrentIndex(itemIndex);
+                    requestAnimationFrame(() => {
+                      scrollToPhoto(itemIndex, false);
+                    });
+                  }}
                 >
                   <Text style={styles.badgeText}>대표 사진</Text>
                 </TouchableOpacity>
@@ -134,7 +140,14 @@ export default function EditImageSlider({
         </TouchableOpacity>
       );
     },
-    [enableInlineReorder, mainPhotoId, onDeletePhoto, setCurrentIndex, setMainPhotoId]
+    [
+      enableInlineReorder,
+      mainPhotoId,
+      onDeletePhoto,
+      scrollToPhoto,
+      setCurrentIndex,
+      setMainPhotoId
+    ]
   );
 
   const renderAddCard = () => (
@@ -207,6 +220,7 @@ export default function EditImageSlider({
           autoscrollThreshold={32}
           autoscrollSpeed={90}
           dragItemOverflow
+          extraData={{ currentIndex, isReordering, mainPhotoId }}
         />
       )}
 

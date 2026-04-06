@@ -37,6 +37,8 @@ export default function EditPage() {
   const { token } = useAuth();
   const nav = useRouter();
   const navigation = useNavigation();
+  const scrollRef = useRef(null);
+  const textBoxOffsetRef = useRef(0);
   const {
     text,
     setText,
@@ -172,6 +174,17 @@ export default function EditPage() {
 
     setShowLeaveConfirm(true);
   }, [hasUnsavedChanges, leaveToDiary]);
+
+  const scrollToTextBox = useCallback(() => {
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({
+          y: Math.max(0, textBoxOffsetRef.current - 16),
+          animated: true
+        });
+      }, 120);
+    });
+  }, []);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("beforeRemove", (event) => {
@@ -310,7 +323,11 @@ export default function EditPage() {
           onSave={handleSave}
         />
 
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={styles.scrollContainer}
+          keyboardShouldPersistTaps="handled"
+        >
           <EditImageSlider
             photos={photosToRender}
             mainPhotoId={mainPhotoId}
@@ -355,7 +372,12 @@ export default function EditPage() {
             </View>
           </View>
 
-          <View style={styles.textBoxWrapper}>
+          <View
+            style={styles.textBoxWrapper}
+            onLayout={(event) => {
+              textBoxOffsetRef.current = event.nativeEvent.layout.y;
+            }}
+          >
             {isPickerVisible ? (
               <CharacterPickerOverlay
                 visible={isPickerVisible}
@@ -366,12 +388,13 @@ export default function EditPage() {
                 }}
               />
             ) : (
-              <TextBox
-                value={text}
-                onChangeText={setText}
-                placeholder="오늘의 이야기를 써보세요."
-              />
-            )}
+                <TextBox
+                  value={text}
+                  onChangeText={setText}
+                  placeholder="오늘의 이야기를 써보세요."
+                  onFocus={scrollToTextBox}
+                />
+              )}
 
             <ConfirmModal
               visible={confirmVisible}

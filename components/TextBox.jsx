@@ -1,17 +1,26 @@
 import { TextInput, StyleSheet } from "react-native";
-import React from "react";
+import React, { forwardRef } from "react";
 
-export default function TextBox({ value, onChangeText, placeholder }) {
+const TextBox = forwardRef(function TextBox(
+  { value, onChangeText, placeholder, onFocus, onBlur },
+  ref
+) {
   return (
     <TextInput
+      ref={ref}
       style={styles.input}
       value={value}
       onChangeText={onChangeText}
       placeholder={placeholder}
       multiline
+      onFocus={onFocus}
+      onBlur={onBlur}
+      textAlignVertical="top"
     />
   );
-}
+});
+
+export default TextBox;
 
 const styles = StyleSheet.create({
   input: {
@@ -23,6 +32,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 25,
     borderRadius: 30,
     minHeight: 360,
-    marginBottom: 40,
+    marginBottom: 40
   },
 });

@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   DeviceEventEmitter
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import Constants from "expo-constants";
 import { useAuth } from "../../contexts/AuthContext";
 import IconButton from "../../components/IconButton";
@@ -335,6 +335,11 @@ export default function DiaryPage() {
 
   return (
     <View style={styles.container}>
+      <Stack.Screen
+        options={{
+          gestureEnabled: from !== "generated"
+        }}
+      />
       <HeaderDateAndTrash
         date={parsedDate}
         onBack={async () => {

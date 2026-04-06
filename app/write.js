@@ -30,6 +30,8 @@ function buildWriteSnapshot({ text, selectedCharacter, photos, mainPhotoId }) {
 export default function WritePage() {
   const nav = useRouter();
   const navigation = useNavigation();
+  const scrollRef = useRef(null);
+  const textBoxOffsetRef = useRef(0);
   const { text, setText, selectedCharacter, setSelectedCharacter, selectedDate, resetDiary } =
     useDiary();
   const { token } = useAuth();
@@ -131,6 +133,17 @@ export default function WritePage() {
 
     setShowLeaveConfirm(true);
   }, [hasUnsavedChanges, leaveWritePage]);
+
+  const scrollToTextBox = useCallback(() => {
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({
+          y: Math.max(0, textBoxOffsetRef.current - 16),
+          animated: true
+        });
+      }, 120);
+    });
+  }, []);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("beforeRemove", (event) => {
@@ -282,6 +295,7 @@ export default function WritePage() {
 
         <View style={styles.middle}>
           <ScrollView
+            ref={scrollRef}
             contentContainerStyle={styles.scrollContainer}
             keyboardShouldPersistTaps="handled"
           >
@@ -308,7 +322,12 @@ export default function WritePage() {
               <View style={styles.rightButtonSpacer} />
             </View>
 
-            <View style={styles.low}>
+            <View
+              style={styles.low}
+              onLayout={(event) => {
+                textBoxOffsetRef.current = event.nativeEvent.layout.y;
+              }}
+            >
               {isPickerVisible ? (
                 <CharacterPickerOverlay
                   visible={isPickerVisible}
@@ -323,6 +342,7 @@ export default function WritePage() {
                   value={text}
                   onChangeText={setText}
                   placeholder="오늘의 이야기를 써보세요."
+                  onFocus={scrollToTextBox}
                 />
               )}
 
