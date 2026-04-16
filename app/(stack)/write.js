@@ -2,19 +2,19 @@ import { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } fr
 import { KeyboardAvoidingView, Platform, View, StyleSheet, ScrollView, Text } from "react-native";
 import { useRouter } from "expo-router";
 import { useNavigation } from "@react-navigation/native";
-import CharacterPickerOverlay from "../components/CharacterPickerOverlay";
-import HeaderDate from "../components/Header/HeaderDate";
-import IconButton from "../components/IconButton";
-import TextBox from "../components/TextBox";
-import characterList from "../assets/characterList";
-import { useDiary } from "../contexts/DiaryContext";
-import { usePhoto } from "../contexts/PhotoContext";
-import { useAuth } from "../contexts/AuthContext";
+import CharacterPickerOverlay from "../../components/CharacterPickerOverlay";
+import HeaderDate from "../../components/Header/HeaderDate";
+import IconButton from "../../components/IconButton";
+import TextBox from "../../components/TextBox";
+import characterList from "../../assets/characterList";
+import { useDiary } from "../../contexts/DiaryContext";
+import { usePhoto } from "../../contexts/PhotoContext";
+import { useAuth } from "../../contexts/AuthContext";
 import Constants from "expo-constants";
-import EditImageSlider from "../components/EditImageSlider";
-import { openGalleryAndAdd } from "../utils/openGalleryAndAdd";
-import ConfirmModal from "../components/Modal/ConfirmModal";
-import colors from "../constants/colors";
+import EditImageSlider from "../../components/EditImageSlider";
+import { openGalleryAndAdd } from "../../utils/openGalleryAndAdd";
+import ConfirmModal from "../../components/Modal/ConfirmModal";
+import colors from "../../constants/colors";
 
 const MAX_PHOTO_COUNT = 9;
 

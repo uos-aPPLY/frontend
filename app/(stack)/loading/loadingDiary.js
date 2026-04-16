@@ -3,12 +3,12 @@ import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity } from "rea
 import { Stack, useRouter, useLocalSearchParams } from "expo-router";
 import Constants from "expo-constants";
 import { useNavigation } from "@react-navigation/native";
-import { useAuth } from "../../contexts/AuthContext";
-import { useDiary } from "../../contexts/DiaryContext";
+import { useAuth } from "../../../contexts/AuthContext";
+import { useDiary } from "../../../contexts/DiaryContext";
 import { DeviceEventEmitter } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-import colors from "../../constants/colors";
-// import CreationFlowProgress from "../../components/CreationFlowProgress";
+import colors from "../../../constants/colors";
+// import CreationFlowProgress from "../../../components/CreationFlowProgress";
 
 const POLLING_INTERVAL_MS = 8000;
 const MAX_POLL_RETRIES = 30;
@@ -142,7 +142,7 @@ export default function LoadingDiary() {
 
       if (isMounted.current) {
         console.warn("⚠️ Polling 실패: 홈으로 이동");
-        router.replace("/home");
+        router.replace("/(tabs)");
       } else {
         console.log("⛔️ 포커스 사라짐 - 홈 이동 생략");
       }
@@ -216,11 +216,11 @@ export default function LoadingDiary() {
         }
       } else {
         console.warn("❗예상치 못한 상태:", json?.status);
-        router.replace("/home");
+        router.replace("/(tabs)");
       }
     } catch (err) {
       console.error("📛 일기 생성 실패:", err);
-      router.replace("/home");
+      router.replace("/(tabs)");
     }
   }, [
     BACKEND_URL,

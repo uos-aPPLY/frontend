@@ -10,14 +10,14 @@ import {
   Dimensions
 } from "react-native";
 import { useRouter, useNavigation } from "expo-router"; // ✅ useNavigation 추가
-import IconButton from "../components/IconButton";
-import { useAuth } from "../contexts/AuthContext";
-import { usePhoto } from "../contexts/PhotoContext";
-import { formatGridData } from "../utils/formatGridData";
+import IconButton from "../../components/IconButton";
+import { useAuth } from "../../contexts/AuthContext";
+import { usePhoto } from "../../contexts/PhotoContext";
+import { formatGridData } from "../../utils/formatGridData";
 import Constants from "expo-constants";
-import { useDiary } from "../contexts/DiaryContext";
+import { useDiary } from "../../contexts/DiaryContext";
 import { useMemo } from "react";
-// import CreationFlowProgress from "../components/CreationFlowProgress";
+// import CreationFlowProgress from "../../components/CreationFlowProgress";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -147,7 +147,7 @@ export default function confirmPhoto() {
     <View style={styles.container}>
       <View style={[styles.header, photoList.length <= 9 && { marginBottom: 30 }]}>
         <IconButton
-          source={require("../assets/icons/backicon.png")}
+          source={require("../../assets/icons/backicon.png")}
           hsize={22}
           wsize={22}
           style={styles.back}
@@ -183,7 +183,7 @@ export default function confirmPhoto() {
                   <>
                     <View style={styles.overlay} />
                     <Image
-                      source={require("../assets/icons/pinkcheckicon.png")}
+                      source={require("../../assets/icons/pinkcheckicon.png")}
                       style={styles.checkIcon}
                     />
                   </>

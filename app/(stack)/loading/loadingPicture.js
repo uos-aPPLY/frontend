@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { View, ActivityIndicator, StyleSheet, Text, SafeAreaView } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { useNavigation } from "@react-navigation/native";
-import CreationFlowProgress from "../../components/CreationFlowProgress";
+import CreationFlowProgress from "../../../components/CreationFlowProgress";
 
 export default function LoadingPage() {
   const nav = useRouter();

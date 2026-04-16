@@ -17,14 +17,14 @@ import { WebView } from "react-native-webview";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import Constants from "expo-constants";
-import { useAuth } from "../contexts/AuthContext";
-import { useDiary } from "../contexts/DiaryContext";
-import { usePhoto } from "../contexts/PhotoContext";
-import HeaderDate from "../components/Header/HeaderDate";
-import characterList from "../assets/characterList";
-import IconButton from "../components/IconButton";
-import ImageSlider from "../components/ImageSlider";
-import ConfirmModal from "../components/Modal/ConfirmModal";
+import { useAuth } from "../../contexts/AuthContext";
+import { useDiary } from "../../contexts/DiaryContext";
+import { usePhoto } from "../../contexts/PhotoContext";
+import HeaderDate from "../../components/Header/HeaderDate";
+import characterList from "../../assets/characterList";
+import IconButton from "../../components/IconButton";
+import ImageSlider from "../../components/ImageSlider";
+import ConfirmModal from "../../components/Modal/ConfirmModal";
 import { useNavigation } from "@react-navigation/native";
 
 function sanitizeEditTokens(value) {
@@ -434,8 +434,8 @@ export default function EditWithAIPage() {
               <IconButton
                 source={
                   isGridView
-                    ? require("../assets/icons/oneviewicon.png")
-                    : require("../assets/icons/viewicon.png")
+                    ? require("../../assets/icons/oneviewicon.png")
+                    : require("../../assets/icons/viewicon.png")
                 }
                 wsize={24}
                 hsize={24}
@@ -468,7 +468,7 @@ export default function EditWithAIPage() {
                 javaScriptEnabled
                 domStorageEnabled
                 scrollEnabled={false}
-                source={require("../assets/html/editor.html")}
+                source={require("../../assets/html/editor.html")}
                 onLoadEnd={onWebViewLoadEnd}
                 onMessage={handleMessage}
                 style={[
@@ -539,7 +539,7 @@ export default function EditWithAIPage() {
 
               <View style={styles.iconButtons}>
                 <IconButton
-                  source={require("../assets/icons/highlightingicon.png")}
+                  source={require("../../assets/icons/highlightingicon.png")}
                   wsize={32}
                   hsize={32}
                   onPress={() => {
@@ -551,7 +551,7 @@ export default function EditWithAIPage() {
                 />
                 <View style={{ height: 10 }} />
                 <IconButton
-                  source={require("../assets/icons/submiticon.png")}
+                  source={require("../../assets/icons/submiticon.png")}
                   wsize={32}
                   hsize={32}
                   onPress={handleSubmit}

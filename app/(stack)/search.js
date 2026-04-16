@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { View, FlatList, StyleSheet, Text, Image, TouchableOpacity } from "react-native";
-import HeaderSearch from "../components/Header/HeaderSearch";
+import HeaderSearch from "../../components/Header/HeaderSearch";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { format, parse } from "date-fns";
 
