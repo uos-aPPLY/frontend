@@ -11,18 +11,18 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { useLayoutEffect } from "react";
 import { useRouter } from "expo-router";
-import HeaderDate from "../components/Header/HeaderDate";
-import IconButton from "../components/IconButton";
-import TextBox from "../components/TextBox";
-import characterList from "../assets/characterList";
-import { usePhoto } from "../contexts/PhotoContext";
-import CharacterPickerOverlay from "../components/CharacterPickerOverlay";
-import EditImageSlider from "../components/EditImageSlider";
-import { useDiary } from "../contexts/DiaryContext";
-import { useAuth } from "../contexts/AuthContext";
+import HeaderDate from "../../components/Header/HeaderDate";
+import IconButton from "../../components/IconButton";
+import TextBox from "../../components/TextBox";
+import characterList from "../../assets/characterList";
+import { usePhoto } from "../../contexts/PhotoContext";
+import CharacterPickerOverlay from "../../components/CharacterPickerOverlay";
+import EditImageSlider from "../../components/EditImageSlider";
+import { useDiary } from "../../contexts/DiaryContext";
+import { useAuth } from "../../contexts/AuthContext";
 import Constants from "expo-constants";
-import ConfirmModal from "../components/Modal/ConfirmModal";
-import { openGalleryAndAdd } from "../utils/openGalleryAndAdd";
+import ConfirmModal from "../../components/Modal/ConfirmModal";
+import { openGalleryAndAdd } from "../../utils/openGalleryAndAdd";
 
 function buildEditSnapshot({ text, selectedCharacter, photos, mainPhotoId }) {
   return JSON.stringify({
@@ -350,7 +350,7 @@ export default function EditPage() {
             />
             <View style={styles.rightButtons}>
               <IconButton
-                source={require("../assets/icons/aipencilicon.png")}
+                source={require("../../assets/icons/aipencilicon.png")}
                 wsize={24}
                 hsize={24}
                 onPress={

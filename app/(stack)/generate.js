@@ -15,13 +15,13 @@ import {
 import { useRouter } from "expo-router";
 import DraggableFlatList from "react-native-draggable-flatlist";
 import * as Haptics from "expo-haptics";
-import IconButton from "../components/IconButton";
-import { useAuth } from "../contexts/AuthContext";
-import { usePhoto } from "../contexts/PhotoContext";
+import IconButton from "../../components/IconButton";
+import { useAuth } from "../../contexts/AuthContext";
+import { usePhoto } from "../../contexts/PhotoContext";
 import Constants from "expo-constants";
-import ConfirmModal from "../components/Modal/ConfirmModal";
-import colors from "../constants/colors";
-// import CreationFlowProgress from "../components/CreationFlowProgress";
+import ConfirmModal from "../../components/Modal/ConfirmModal";
+import colors from "../../constants/colors";
+// import CreationFlowProgress from "../../components/CreationFlowProgress";
 
 const screenWidth = Dimensions.get("window").width;
 const CARD_WIDTH = screenWidth - 112;
@@ -405,7 +405,7 @@ export default function GeneratePage() {
     <View style={styles.container}>
       <View style={styles.header}>
         <IconButton
-          source={require("../assets/icons/backicon.png")}
+          source={require("../../assets/icons/backicon.png")}
           hsize={22}
           wsize={22}
           onPress={() => {
@@ -504,7 +504,7 @@ export default function GeneratePage() {
                         }}
                       >
                         <Image
-                          source={require("../assets/icons/xicon.png")}
+                          source={require("../../assets/icons/xicon.png")}
                           style={styles.closeIconImg}
                         />
                       </TouchableOpacity>

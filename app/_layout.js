@@ -1,5 +1,5 @@
 // app/_layout.js
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import "react-native-reanimated";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Stack, useRouter, useSegments } from "expo-router";
@@ -74,7 +74,7 @@ function RootLayoutNav() {
       }
 
       if (!inAuthGroup && (openSegment === "" || openSegment === "login")) {
-        router.replace("/home");
+        router.replace("/(tabs)");
       }
     };
 
@@ -129,7 +129,7 @@ function RootLayoutNav() {
         }}
       >
         <Stack.Screen
-          name="search"
+          name="(stack)/search"
           options={{
             presentation: "fullScreenModal",
             animation: "fade",

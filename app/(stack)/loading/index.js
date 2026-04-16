@@ -2,12 +2,12 @@ import { View, Text, ActivityIndicator, StyleSheet } from "react-native";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "expo-router";
 import Constants from "expo-constants";
-import { useAuth } from "../contexts/AuthContext";
-import IconButton from "../components/IconButton";
-import { usePhoto } from "../contexts/PhotoContext";
-import ConfirmModal from "../components/Modal/ConfirmModal";
+import { useAuth } from "../../../contexts/AuthContext";
+import IconButton from "../../../components/IconButton";
+import { usePhoto } from "../../../contexts/PhotoContext";
+import ConfirmModal from "../../../components/Modal/ConfirmModal";
 import { useNavigation } from "@react-navigation/native";
-// import CreationFlowProgress from "../components/CreationFlowProgress";
+// import CreationFlowProgress from "../../../components/CreationFlowProgress";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
 

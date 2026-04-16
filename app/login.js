@@ -87,7 +87,7 @@ export default function Login() {
       });
 
       const requiredAgreed = await checkRequiredAgreed();
-      router.replace(requiredAgreed ? "/home" : "/terms");
+      router.replace(requiredAgreed ? "/(tabs)" : "/(onboarding)/terms");
     } catch (e) {
       // console.error("Apple 로그인 오류:", e);
       // Alert.alert("Apple 로그인 실패", e.message ?? "알 수 없는 오류");
@@ -126,7 +126,7 @@ export default function Login() {
       });
 
       const requiredAgreed = await checkRequiredAgreed();
-      router.replace(requiredAgreed ? "/home" : "/terms");
+      router.replace(requiredAgreed ? "/(tabs)" : "/(onboarding)/terms");
     } catch (e) {
       // console.error("네이버 로그인 처리 오류:", e);
       // Alert.alert("네이버 로그인 실패", e.message ?? "알 수 없는 오류");
@@ -161,7 +161,7 @@ export default function Login() {
       });
 
       const requiredAgreed = await checkRequiredAgreed();
-      router.replace(requiredAgreed ? "/home" : "/terms");
+      router.replace(requiredAgreed ? "/(tabs)" : "/(onboarding)/terms");
     } catch (e) {
       // console.error("Kakao login error", e);
       // Alert.alert("카카오 로그인 실패", e.message ?? "알 수 없는 오류");

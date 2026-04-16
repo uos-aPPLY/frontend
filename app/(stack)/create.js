@@ -4,16 +4,16 @@ import { Menu, Divider } from "react-native-paper";
 import { KeyboardAvoidingView, Platform, View, StyleSheet, ScrollView } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 
-import HeaderDate from "../components/Header/HeaderDate";
-import IconButton from "../components/IconButton";
-import TextBox from "../components/TextBox";
-import characterList from "../assets/characterList";
-import { useDiary } from "../contexts/DiaryContext";
-import { usePhoto } from "../contexts/PhotoContext"; // ✅ 추가
-import { useAuth } from "../contexts/AuthContext";
-import { clearAllTempPhotos } from "../utils/clearTempPhotos";
-import { openGalleryAndUpload } from "../utils/openGalleryAndUpload";
-import CharacterPickerOverlay from "../components/CharacterPickerOverlay";
+import HeaderDate from "../../components/Header/HeaderDate";
+import IconButton from "../../components/IconButton";
+import TextBox from "../../components/TextBox";
+import characterList from "../../assets/characterList";
+import { useDiary } from "../../contexts/DiaryContext";
+import { usePhoto } from "../../contexts/PhotoContext"; // ✅ 추가
+import { useAuth } from "../../contexts/AuthContext";
+import { clearAllTempPhotos } from "../../utils/clearTempPhotos";
+import { openGalleryAndUpload } from "../../utils/openGalleryAndUpload";
+import CharacterPickerOverlay from "../../components/CharacterPickerOverlay";
 import Constants from "expo-constants";
 
 export default function CreatePage() {
@@ -139,7 +139,7 @@ export default function CreatePage() {
                   onDismiss={() => setMenuVisible(false)}
                   anchor={
                     <IconButton
-                      source={require("../assets/icons/bigpinkplusicon.png")}
+                      source={require("../../assets/icons/bigpinkplusicon.png")}
                       wsize={50}
                       hsize={50}
                       onPress={() => {
