@@ -6,7 +6,7 @@ import { useFonts, Caveat_600SemiBold } from "@expo-google-fonts/caveat";
 import { format } from "date-fns";
 import { useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import IconButton from "../IconButton";
+import IconButton from "../common/IconButton";
 import { CalendarViewContext } from "../../contexts/CalendarViewContext";
 
 SplashScreen.preventAutoHideAsync();

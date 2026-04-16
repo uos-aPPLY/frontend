@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from "react-native";
-import IconButton from "../IconButton";
+import IconButton from "../common/IconButton";
 import { useEffect } from "react";
 import { useDiary } from "../../contexts/DiaryContext";
 import { isSameDay } from "date-fns";

@@ -6,8 +6,8 @@ const CheckBox = ({ value, onValueChange, style, size = 26 }) => (
     <Image
       source={
         value
-          ? require("../assets/icons/pinkcheckicon.png")
-          : require("../assets/icons/graycheckicon.png")
+          ? require("../../assets/icons/pinkcheckicon.png")
+          : require("../../assets/icons/graycheckicon.png")
       }
       style={[
         styles.checkbox,

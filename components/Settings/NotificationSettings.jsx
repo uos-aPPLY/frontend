@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, Pressable, Alert, Platform, Modal } from "react
 import Constants from "expo-constants";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as Notifications from "expo-notifications";
-import ToggleSwitch from "../ToggleSwitch";
+import ToggleSwitch from "../common/ToggleSwitch";
 import { useAuth } from "../../contexts/AuthContext";
 
 const NOTI_CONTENT = {

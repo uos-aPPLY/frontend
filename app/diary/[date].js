@@ -13,9 +13,9 @@ import {
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import Constants from "expo-constants";
 import { useAuth } from "../../contexts/AuthContext";
-import IconButton from "../../components/IconButton";
+import IconButton from "../../components/common/IconButton";
 import HeaderDateAndTrash from "../../components/Header/HeaderDateAndTrash";
-import ImageSlider from "../../components/ImageSlider";
+import ImageSlider from "../../components/photo/ImageSlider";
 import { parseISO } from "date-fns";
 import characterList from "../../assets/characterList";
 import fullHeartIcon from "../../assets/icons/fullhearticon.png";

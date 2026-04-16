@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import DraggableFlatList from "react-native-draggable-flatlist";
 import * as Haptics from "expo-haptics";
-import IconButton from "./IconButton";
+import IconButton from "../common/IconButton";
 
 const screenWidth = Dimensions.get("window").width;
 const CARD_WIDTH = screenWidth - 112;
@@ -130,7 +130,7 @@ export default function EditImageSlider({
                   onPress={() => onDeletePhoto(item.id)}
                 >
                   <Image
-                    source={require("../assets/icons/xicon.png")}
+                    source={require("../../assets/icons/xicon.png")}
                     style={styles.closeIconImg}
                   />
                 </TouchableOpacity>
@@ -154,7 +154,7 @@ export default function EditImageSlider({
     <View style={styles.addCardContainer}>
       <View style={styles.addCard}>
         <IconButton
-          source={require("../assets/icons/bigpinkplusicon.png")}
+          source={require("../../assets/icons/bigpinkplusicon.png")}
           wsize={50}
           hsize={50}
           onPress={onAddPhoto}

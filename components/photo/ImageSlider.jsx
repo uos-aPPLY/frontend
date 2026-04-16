@@ -99,7 +99,7 @@ function ZoomableImageModal({ photo, onClose }) {
         </View>
 
         <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-          <Image source={require("../assets/icons/xicon.png")} style={styles.closeIcon} />
+          <Image source={require("../../assets/icons/xicon.png")} style={styles.closeIcon} />
         </TouchableOpacity>
       </View>
     </Modal>

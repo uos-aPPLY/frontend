@@ -15,7 +15,7 @@ import {
 import { useRouter } from "expo-router";
 import DraggableFlatList from "react-native-draggable-flatlist";
 import * as Haptics from "expo-haptics";
-import IconButton from "../../components/IconButton";
+import IconButton from "../../components/common/IconButton";
 import { useAuth } from "../../contexts/AuthContext";
 import { usePhoto } from "../../contexts/PhotoContext";
 import Constants from "expo-constants";
@@ -589,10 +589,7 @@ export default function GeneratePage() {
         ) : null}
       </View>
       <View
-        style={[
-          styles.bottomControls,
-          { bottom: keyboardHeight > 0 ? keyboardHeight + 6 : 24 }
-        ]}
+        style={[styles.bottomControls, { bottom: keyboardHeight > 0 ? keyboardHeight + 6 : 24 }]}
       >
         {editingKeywordPhotoId ? (
           <View style={styles.keywordComposer}>
@@ -612,10 +609,7 @@ export default function GeneratePage() {
             >
               <Text style={styles.keywordComposerCancelText}>취소</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.keywordAddButton}
-              onPress={handleKeywordSubmit}
-            >
+            <TouchableOpacity style={styles.keywordAddButton} onPress={handleKeywordSubmit}>
               <Text style={styles.keywordAddButtonText}>추가</Text>
             </TouchableOpacity>
           </View>

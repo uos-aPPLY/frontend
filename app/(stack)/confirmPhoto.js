@@ -10,7 +10,7 @@ import {
   Dimensions
 } from "react-native";
 import { useRouter, useNavigation } from "expo-router"; // ✅ useNavigation 추가
-import IconButton from "../../components/IconButton";
+import IconButton from "../../components/common/IconButton";
 import { useAuth } from "../../contexts/AuthContext";
 import { usePhoto } from "../../contexts/PhotoContext";
 import { formatGridData } from "../../utils/formatGridData";

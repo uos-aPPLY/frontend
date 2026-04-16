@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "expo-router";
 import Constants from "expo-constants";
 import { useAuth } from "../../../contexts/AuthContext";
-import IconButton from "../../../components/IconButton";
+import IconButton from "../../../components/common/IconButton";
 import { usePhoto } from "../../../contexts/PhotoContext";
 import ConfirmModal from "../../../components/Modal/ConfirmModal";
 import { useNavigation } from "@react-navigation/native";
