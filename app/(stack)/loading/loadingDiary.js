@@ -24,6 +24,7 @@ function safeJsonParse(value, fallback) {
 }
 
 export default function LoadingDiary() {
+  console.log("LoadingDiary 렌더링");
   const navigation = useNavigation();
   const router = useRouter();
   const { token } = useAuth();
@@ -235,7 +236,6 @@ export default function LoadingDiary() {
     token,
     visiblePhotos.length
   ]);
-
   useFocusEffect(
     useCallback(() => {
       isMounted.current = true;

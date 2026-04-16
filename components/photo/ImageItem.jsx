@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Image, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
-import colors from "../constants/colors";
+import colors from "../../constants/colors";
 
 const SIZE = Dimensions.get("window").width / 3;
 
@@ -19,7 +19,7 @@ export default function ImageItem({ asset, selected, onPress, onLongPress, onLay
 
       {selected && (
         <View style={styles.checkIconWrapper}>
-          <Image source={require("../assets/icons/pinkcheckicon.png")} style={styles.checkIcon} />
+          <Image source={require("../../assets/icons/pinkcheckicon.png")} style={styles.checkIcon} />
         </View>
       )}
     </TouchableOpacity>

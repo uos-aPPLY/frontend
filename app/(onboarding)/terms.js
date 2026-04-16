@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../contexts/AuthContext";
-import CheckBox from "../../components/CheckBox";
+import CheckBox from "../../components/common/CheckBox";
 import Constants from "expo-constants";
 import RenderHtml from "react-native-render-html";
 

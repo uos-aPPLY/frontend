@@ -1,5 +1,5 @@
 import { Text, Image, StyleSheet, View } from "react-native";
-import IconButton from "../IconButton";
+import IconButton from "../common/IconButton";
 import { useFonts, HomemadeApple_400Regular } from "@expo-google-fonts/homemade-apple";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";

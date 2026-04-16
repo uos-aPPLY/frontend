@@ -11,7 +11,7 @@ import {
   PanResponder
 } from "react-native";
 import ImageItem from "./ImageItem";
-import colors from "../constants/colors";
+import colors from "../../constants/colors";
 import { inter400Regular } from "@expo-google-fonts/inter";
 
 const SIZE = Dimensions.get("window").width / 3;

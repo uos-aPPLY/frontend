@@ -2,7 +2,7 @@
 import { useRouter, useFocusEffect } from "expo-router";
 import { StyleSheet, View, Text, Animated } from "react-native";
 import HeaderDefault from "../../components/Header/HeaderDefault";
-import IconButton from "../../components/IconButton";
+import IconButton from "../../components/common/IconButton";
 import { useDiary } from "../../contexts/DiaryContext";
 import Constants from "expo-constants";
 import { useEffect, useState, useCallback, useRef } from "react";

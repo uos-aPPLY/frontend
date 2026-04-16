@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from "react-native";
-import IconButton from "../IconButton";
+import IconButton from "../common/IconButton";
 import { useRouter } from "expo-router";
 
 const dayNames = ["일", "월", "화", "수", "목", "금", "토"];

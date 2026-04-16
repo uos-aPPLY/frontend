@@ -5,8 +5,8 @@ import { KeyboardAvoidingView, Platform, View, StyleSheet, ScrollView } from "re
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 
 import HeaderDate from "../../components/Header/HeaderDate";
-import IconButton from "../../components/IconButton";
-import TextBox from "../../components/TextBox";
+import IconButton from "../../components/common/IconButton";
+import TextBox from "../../components/common/TextBox";
 import characterList from "../../assets/characterList";
 import { useDiary } from "../../contexts/DiaryContext";
 import { usePhoto } from "../../contexts/PhotoContext"; // ✅ 추가

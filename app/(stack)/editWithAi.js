@@ -22,8 +22,8 @@ import { useDiary } from "../../contexts/DiaryContext";
 import { usePhoto } from "../../contexts/PhotoContext";
 import HeaderDate from "../../components/Header/HeaderDate";
 import characterList from "../../assets/characterList";
-import IconButton from "../../components/IconButton";
-import ImageSlider from "../../components/ImageSlider";
+import IconButton from "../../components/common/IconButton";
+import ImageSlider from "../../components/photo/ImageSlider";
 import ConfirmModal from "../../components/Modal/ConfirmModal";
 import { useNavigation } from "@react-navigation/native";
 

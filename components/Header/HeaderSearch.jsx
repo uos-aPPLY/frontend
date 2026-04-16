@@ -7,7 +7,7 @@ import {
   Text,
   ActivityIndicator,
 } from "react-native";
-import IconButton from "../IconButton";
+import IconButton from "../common/IconButton";
 import Constants from "expo-constants";
 
 const { BACKEND_URL } = Constants.expoConfig.extra;
